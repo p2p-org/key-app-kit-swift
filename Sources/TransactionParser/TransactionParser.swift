@@ -1,0 +1,43 @@
+// Copyright 2022 P2P Validator Authors. All rights reserved.
+// Use of this source code is governed by a MIT-style license that can be
+// found in the LICENSE file.
+
+import Foundation
+import RxSwift
+import SolanaSwift
+
+/// An additional parsing configuration
+public struct Configuration {
+  /// An optional account address that is responsible for this transaction.
+  let account: String?
+
+  /// An optional token symbol that is responsible for this transaction.
+  let symbol: String?
+
+  /// A optional account addresses that covert a fee for this transaction.
+  let feePayers: [String]
+}
+
+/// The interface that is responsible for parsing raw transaction into user-friendly transaction.
+///
+/// The user-friendly transactions are easier to read and displaying to end users.
+public protocol TransactionParser {
+  @available(*, deprecated, renamed: "parse")
+  func parse(
+    transactionInfo: SolanaSDK.TransactionInfo,
+    myAccount: String?,
+    myAccountSymbol: String?,
+    p2pFeePayerPubkeys: [String]
+  ) async throws -> SolanaSDK.ParsedTransaction
+
+  /// Parses a raw transaction
+  ///
+  /// - Parameters:
+  ///   - transactionInfo: a raw transaction from SolanaSwift.
+  ///   - configuration: a additional configuration that improve parsing accuracy.
+  /// - Returns: a user-friendly parsed transaction
+  func parse(
+    _ transactionInfo: SolanaSDK.TransactionInfo,
+    config configuration: Configuration
+  ) async throws -> ParsedTransaction
+}
