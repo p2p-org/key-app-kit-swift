@@ -12,15 +12,44 @@ class OrcaSwapStrategyTests: XCTestCase {
   lazy var apiClient = JSONRPCAPIClient(endpoint: endpoint)
   lazy var tokensRepository = TokensRepository(endpoint: endpoint)
   lazy var strategy = OrcaSwapParseStrategy(apiClient: apiClient, tokensRepository: tokensRepository)
-  
-  func testParsingSuccessfulTransaction() async throws {
-    let trx = Bundle.main.decode(TransactionInfo.self, from: "trx-swap-orca-ok.json")
 
+  func testParsingSuccessfulTransaction() async throws {
+    let trx = Bundle.module.decode(TransactionInfo.self, from: "trx-swap-orca-ok.json")
+
+    // Parse
     let parsedTransaction = try await strategy.parse(
       trx,
-      config: .init(account: "FG4Y3yX4AAchp1HvNZ7LfzFTewF2f6nDoMDCohTFrdpT", symbol: nil, feePayers: [])
+      config: .init(accountView: nil, symbolView: nil, feePayers: [])
     )
-    
-    print(parsedTransaction)
+
+    // Tests
+    guard let parsedTransaction = parsedTransaction as? SwapInfo else {
+      XCTFail("Info should be SwapInfo")
+      return
+    }
+
+    XCTAssertEqual(parsedTransaction.sourceAmount, 0.001)
+    XCTAssertEqual(parsedTransaction.source?.pubkey, "BjUEdE292SLEq9mMeKtY3GXL6wirn7DqJPhrukCqAUua")
+    XCTAssertEqual(parsedTransaction.source?.token.symbol, "SRM")
+
+    XCTAssertEqual(parsedTransaction.destinationAmount, 0.00036488500000000001)
+    XCTAssertEqual(parsedTransaction.destination?.pubkey, "BjUEdE292SLEq9mMeKtY3GXL6wirn7DqJPhrukCqAUua")
+    XCTAssertEqual(parsedTransaction.destination?.token.symbol, "SOL")
+  }
+  
+  func testParsingFailedTransaction() async throws {
+    let trx = Bundle.module.decode(TransactionInfo.self, from: "trx-swap-orca-error.json")
+
+    // Parse
+    let parsedTransaction = try await strategy.parse(
+      trx,
+      config: .init(accountView: nil, symbolView: nil, feePayers: [])
+    )
+
+    // Tests
+    guard let parsedTransaction = parsedTransaction as? SwapInfo else {
+      XCTFail("Info should be SwapInfo")
+      return
+    }
   }
 }

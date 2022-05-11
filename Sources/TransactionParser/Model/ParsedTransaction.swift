@@ -96,56 +96,6 @@ public struct ParsedTransaction: Hashable {
   }
 }
 
-struct SwapTransaction: Hashable {
-  public init(
-    source: Wallet?,
-    sourceAmount: Double?,
-    destination: Wallet?,
-    destinationAmount: Double?,
-    myAccountSymbol: String?
-  ) {
-    self.source = source
-    self.sourceAmount = sourceAmount
-    self.destination = destination
-    self.destinationAmount = destinationAmount
-    self.myAccountSymbol = myAccountSymbol
-  }
-
-  public enum Direction {
-    case spend, receive, transitiv
-  }
-
-  // source
-  public let source: Wallet?
-  public let sourceAmount: Double?
-
-  // destination
-  public let destination: Wallet?
-  public let destinationAmount: Double?
-
-  public var myAccountSymbol: String?
-
-  static var empty: Self {
-    SwapTransaction(
-      source: nil,
-      sourceAmount: nil,
-      destination: nil,
-      destinationAmount: nil,
-      myAccountSymbol: nil
-    )
-  }
-
-  public var direction: Direction {
-    if myAccountSymbol == source?.token.symbol {
-      return .spend
-    }
-    if myAccountSymbol == destination?.token.symbol {
-      return .receive
-    }
-    return .transitiv
-  }
-}
-
 public extension ParsedTransaction {
   /// The enum of possible status of transaction in blockchain
   enum Status: Equatable, Hashable {

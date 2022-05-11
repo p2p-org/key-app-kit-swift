@@ -9,10 +9,10 @@ import SolanaSwift
 /// An additional parsing configuration
 public struct Configuration {
   /// An optional account address that is responsible for this transaction.
-  let account: String?
+  let accountView: String?
 
   /// An optional token symbol that is responsible for this transaction.
-  let symbol: String?
+  let symbolView: String?
 
   /// A optional account addresses that covert a fee for this transaction.
   let feePayers: [String]
