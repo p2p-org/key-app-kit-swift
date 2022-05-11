@@ -2,13 +2,13 @@ name: Swift
 
 on:
   push:
-    branches: [ main ]
-#  pull_request:
-#    branches: [ main ]
+    branches: [ master ]
+  pull_request:
+    branches: [ master ]
 
 jobs:
-  test:
-    runs-on: macos-latest
+  build:
+    runs-on: macos-12
     steps:
     - uses: actions/checkout@v3
     - uses: fwal/setup-swift@v1
@@ -17,18 +17,21 @@ jobs:
     - name: Build
       run: swift build -v
     - name: Run tests
-      run: swift test -v
-    - name: Get path to coverage result
-      run: echo "COVERAGE_RESULT=$(swift test --show-codecov-path)" >> $GITHUB_ENV
+      run: swift test --enable-code-coverage -v
+    #- name: Get path to coverage result
+    #  run: echo "COVERAGE_RESULT=$(swift test --show-codecov-path)" >> $GITHUB_ENV
+    - name: Convert to standart format
+      run: |
+        xcrun llvm-cov export -format="lcov" .build/debug/P2PSolanaSwiftLibraryPackageTests.xctest/Contents/MacOS/P2PSolanaSwiftLibraryPackageTests -instr-profile .build/debug/codecov/default.profdata > info.lcov
+
     - uses: codecov/codecov-action@v2
       with:
         token: ${{ secrets.CODECOV_TOKEN }} # not required for public repos
-        files: ${{ COVERAGE_RESULT }} # optional
+        files: ./info.lcov # optional
         flags: unittests # optional
         name: codecov-umbrella # optional
         fail_ci_if_error: true # optional (default = false)
         verbose: true # optional (default = false)
-
 
   docs:
     runs-on: macos-latest

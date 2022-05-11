@@ -28,7 +28,7 @@ let package = Package(
     .target(
       name: "TransactionParser",
       dependencies: [
-        .product(name: "SolanaSwift", package: "SolanaSwift"),
+        .product(name: "SolanaSwift", package: "solana-swift"),
         // .product(name: "OrcaSwapSwift", package: "OrcaSwapSwift"),
       ]
     ),
