@@ -1,34 +1,44 @@
-name: Docs
+name: Swift
 
 on:
   push:
     branches: [ main ]
-  pull_request:
-    branches: [ main ]
+#  pull_request:
+#    branches: [ main ]
 
 jobs:
-#  build:
-#    runs-on: macos-latest
-#    steps:
-#    - uses: actions/checkout@v3
-#    - uses: fwal/setup-swift@v1
-#      with:
-#        swift-version: "5.6.0"
-#    - name: Build
-#      run: swift build -v
-#    - name: Run tests
-#      run: swift test -v
-#
-  docs:
+  test:
     runs-on: macos-latest
-    # needs: build
     steps:
     - uses: actions/checkout@v3
-    
     - uses: fwal/setup-swift@v1
       with:
         swift-version: "5.6.0"
-        
+    - name: Build
+      run: swift build -v
+    - name: Run tests
+      run: swift test -v
+    - name: Get path to coverage result
+      run: echo "COVERAGE_RESULT=$(swift test --show-codecov-path)" >> $GITHUB_ENV
+    - uses: codecov/codecov-action@v2
+      with:
+        token: ${{ secrets.CODECOV_TOKEN }} # not required for public repos
+        files: ${{ COVERAGE_RESULT }} # optional
+        flags: unittests # optional
+        name: codecov-umbrella # optional
+        fail_ci_if_error: true # optional (default = false)
+        verbose: true # optional (default = false)
+
+
+  docs:
+    runs-on: macos-latest
+    needs: build
+    steps:
+    - uses: actions/checkout@v3
+    - uses: fwal/setup-swift@v1
+      with:
+        swift-version: "5.6.0"
+
     - uses: fwcd/swift-docc-action@v1
       with:
         target: RxConcurrency
@@ -36,8 +46,8 @@ jobs:
         hosting-base-path: RxConcurrency
         disable-indexing: 'true'
         transform-for-static-hosting: 'true'
-        
-    - name: Init new repo in dist folder and commit generated files
+
+    - name: Init new repo for docs
       run: |
         cd docs
         git init

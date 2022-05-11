@@ -19,10 +19,10 @@ let package = Package(
     ),
   ],
   dependencies: [
-    //.package(url: "https://github.com/p2p-org/solana-swift", branch: "refactor/fix-protection-level"),
-    .package(path: "/Users/longtran/workspace/p2p/p2p-wallet-ios/SolanaSwift"),
+    .package(url: "https://github.com/p2p-org/solana-swift", branch: "refactor/fix-protection-level"),
+//     .package(path: "/Users/longtran/workspace/p2p/p2p-wallet-ios/SolanaSwift"),
     // .package(url: "https://github.com/p2p-org/OrcaSwapSwift", branch: "main"),
-//    .package(url: "https://github.com/apple/swift-docc-plugin", from: "1.0.0"),
+    .package(url: "https://github.com/apple/swift-docc-plugin", from: "1.0.0"),
   ],
   targets: [
     .target(
