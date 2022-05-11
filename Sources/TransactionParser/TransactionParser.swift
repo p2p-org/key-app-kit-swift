@@ -24,11 +24,11 @@ public struct Configuration {
 public protocol TransactionParser {
   @available(*, deprecated, renamed: "parse")
   func parse(
-    transactionInfo: SolanaSDK.TransactionInfo,
+    transactionInfo: TransactionInfo,
     myAccount: String?,
     myAccountSymbol: String?,
     p2pFeePayerPubkeys: [String]
-  ) async throws -> SolanaSDK.ParsedTransaction
+  ) async throws -> ParsedTransaction
 
   /// Parses a raw transaction
   ///
@@ -37,7 +37,7 @@ public protocol TransactionParser {
   ///   - configuration: a additional configuration that improve parsing accuracy.
   /// - Returns: a user-friendly parsed transaction
   func parse(
-    _ transactionInfo: SolanaSDK.TransactionInfo,
+    _ transactionInfo: TransactionInfo,
     config configuration: Configuration
   ) async throws -> ParsedTransaction
 }

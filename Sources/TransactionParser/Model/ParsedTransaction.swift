@@ -30,7 +30,7 @@ public struct ParsedTransaction: Hashable {
   public var blockTime: Date?
 
   /// The fee amount this transaction was charged.
-  public let fee: SolanaSDK.FeeAmount?
+  public let fee: FeeAmount?
 
   /// The blockhash of this block
   public let blockhash: String?
@@ -45,7 +45,7 @@ public struct ParsedTransaction: Hashable {
     amountInFiat: Double? = nil,
     slot: UInt64?,
     blockTime: Date?,
-    fee: SolanaSDK.FeeAmount?,
+    fee: FeeAmount?,
     blockhash: String?,
     paidByP2POrg: Bool = false
   ) {
@@ -98,9 +98,9 @@ public struct ParsedTransaction: Hashable {
 
 struct SwapTransaction: Hashable {
   public init(
-    source: SolanaSDK.Wallet?,
+    source: Wallet?,
     sourceAmount: Double?,
-    destination: SolanaSDK.Wallet?,
+    destination: Wallet?,
     destinationAmount: Double?,
     myAccountSymbol: String?
   ) {
@@ -116,11 +116,11 @@ struct SwapTransaction: Hashable {
   }
 
   // source
-  public let source: SolanaSDK.Wallet?
+  public let source: Wallet?
   public let sourceAmount: Double?
 
   // destination
-  public let destination: SolanaSDK.Wallet?
+  public let destination: Wallet?
   public let destinationAmount: Double?
 
   public var myAccountSymbol: String?
@@ -146,9 +146,9 @@ struct SwapTransaction: Hashable {
   }
 }
 
-extension ParsedTransaction {
+public extension ParsedTransaction {
   /// The enum of possible status of transaction in blockchain
-  public enum Status: Equatable, Hashable {
+  enum Status: Equatable, Hashable {
     /// The transaction is in requesting process. The transaction can be being prepared or submitted.
     case requesting
 
@@ -165,7 +165,7 @@ extension ParsedTransaction {
     public func getError() -> Error? {
       switch self {
       case let .error(err) where err != nil:
-        return SolanaSDK.Error.other(err!)
+        return SolanaError.other(err!)
       default:
         break
       }

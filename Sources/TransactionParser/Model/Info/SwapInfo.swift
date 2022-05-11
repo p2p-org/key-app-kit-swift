@@ -25,13 +25,13 @@ struct SwapInfo: Hashable {
   }
 
   /// A source wallet
-  public let source: SolanaSDK.Wallet?
+  public let source: Wallet?
 
   /// A swapping amount in source wallet
   public let sourceAmount: Double?
 
   /// A destination wallet
-  public let destination: SolanaSDK.Wallet?
+  public let destination: Wallet?
 
   /// A receiving amount in destination wallet
   public let destinationAmount: Double?
@@ -42,9 +42,9 @@ struct SwapInfo: Hashable {
   public var accountSymbol: String?
 
   public init(
-    source: SolanaSDK.Wallet?,
+    source: Wallet?,
     sourceAmount: Double?,
-    destination: SolanaSDK.Wallet?,
+    destination: Wallet?,
     destinationAmount: Double?,
     accountSymbol: String?
   ) {

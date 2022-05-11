@@ -19,21 +19,23 @@ let package = Package(
     ),
   ],
   dependencies: [
-    .package(url: "https://github.com/p2p-org/solana-swift", branch: "main"),
-    .package(url: "https://github.com/p2p-org/OrcaSwapSwift", branch: "main"),
-    .package(url: "https://github.com/apple/swift-docc-plugin", from: "1.0.0"),
+    //.package(url: "https://github.com/p2p-org/solana-swift", branch: "refactor/fix-protection-level"),
+    .package(path: "/Users/longtran/workspace/p2p/p2p-wallet-ios/SolanaSwift"),
+    // .package(url: "https://github.com/p2p-org/OrcaSwapSwift", branch: "main"),
+//    .package(url: "https://github.com/apple/swift-docc-plugin", from: "1.0.0"),
   ],
   targets: [
     .target(
       name: "TransactionParser",
       dependencies: [
-        .product(name: "SolanaSwift", package: "solana-swift"),
-        .product(name: "OrcaSwapSwift", package: "OrcaSwapSwift")
+        .product(name: "SolanaSwift", package: "SolanaSwift"),
+        // .product(name: "OrcaSwapSwift", package: "OrcaSwapSwift"),
       ]
     ),
     .testTarget(
       name: "TransactionParserTests",
-      dependencies: ["TransactionParser"]
+      dependencies: ["TransactionParser"],
+      resources: [.copy("./Resource")]
     ),
   ]
 )

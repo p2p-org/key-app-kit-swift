@@ -10,9 +10,9 @@ struct CloseAccountTransactionInfo: Hashable {
   public let reimbursedAmount: Double?
 
   // The closed wallet
-  public let closedWallet: SolanaSDK.Wallet?
+  public let closedWallet: Wallet?
 
-  public init(reimbursedAmount: Double?, closedWallet: SolanaSDK.Wallet?) {
+  public init(reimbursedAmount: Double?, closedWallet: Wallet?) {
     self.reimbursedAmount = reimbursedAmount
     self.closedWallet = closedWallet
   }

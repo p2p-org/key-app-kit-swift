@@ -1,18 +1,18 @@
-//
-// Created by Giang Long Tran on 28.04.2022.
-//
+// Copyright 2022 P2P Validator Authors. All rights reserved.
+// Use of this source code is governed by a MIT-style license that can be
+// found in the LICENSE file.
 
 import Foundation
 import SolanaSwift
 
 /// A parse strategy
-protocol ParseStrategy: AnyObject {
+public protocol ParseStrategy: AnyObject {
   /// Check is current parsing strategy can handle this transaction
-  func isHandlable(with transactionInfo: SolanaSDK.TransactionInfo) -> Bool
+  func isHandlable(with transactionInfo: TransactionInfo) -> Bool
 
   /// Parse a transaction
   func parse(
-    _ transactionInfo: SolanaSDK.TransactionInfo,
+    _ transactionInfo: TransactionInfo,
     config configuration: Configuration
-  ) async throws -> ParsedTransaction
+  ) async throws -> AnyHashable?
 }

@@ -12,10 +12,10 @@ struct TransferInfo: Hashable {
   }
 
   /// The source account address.
-  public let source: SolanaSDK.Wallet?
+  public let source: Wallet?
 
   /// The destination account address.
-  public let destination: SolanaSDK.Wallet?
+  public let destination: Wallet?
 
   public let authority: String?
 
@@ -30,8 +30,8 @@ struct TransferInfo: Hashable {
   public let account: String?
 
   public init(
-    source: SolanaSDK.Wallet?,
-    destination: SolanaSDK.Wallet?,
+    source: Wallet?,
+    destination: Wallet?,
     authority: String?,
     destinationAuthority: String?,
     amount: Double?,
@@ -47,7 +47,7 @@ struct TransferInfo: Hashable {
 
   /// A current transfer type that depends on account view.
   public var transferType: TransferType? {
-    (source?.pubkey == myAccount || authority == myAccount) ? .send : .receive
+    (source?.pubkey == account || authority == account) ? .send : .receive
   }
 
   @available(*, deprecated, renamed: "account")
