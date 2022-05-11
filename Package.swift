@@ -35,7 +35,7 @@ let package = Package(
     .testTarget(
       name: "TransactionParserTests",
       dependencies: ["TransactionParser"],
-      resources: [.copy("./Resource")]
+      resources: [.process("./Resource")]
     ),
   ]
 )
