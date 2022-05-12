@@ -3,19 +3,10 @@ name: Swift
 on:
   push:
     branches: [ master ]
-    paths:
-      - 'Sources/**/*'
-      - 'Tests/**/*'
-  pull_request:
-    branches: [ master ]
-    paths:
-      - 'Sources/**/*'
-      - 'Tests/**/*'
 
 jobs:
   docs:
     runs-on: macos-latest
-    needs: build
     steps:
     - uses: actions/checkout@v3
     - uses: fwal/setup-swift@v1
@@ -24,9 +15,9 @@ jobs:
 
     - uses: fwcd/swift-docc-action@v1
       with:
-        target: RxConcurrency
+        target: TransactionParser
         output: ./docs
-        hosting-base-path: RxConcurrency
+        hosting-base-path: solana-swift-library
         disable-indexing: 'true'
         transform-for-static-hosting: 'true'
 

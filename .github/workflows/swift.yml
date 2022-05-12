@@ -6,6 +6,11 @@ on:
     paths:
       - 'Sources/**/*'
       - 'Tests/**/*'
+  pull_request:
+    branches: [ master ]
+    paths:
+      - 'Sources/**/*'
+      - 'Tests/**/*'
 
 jobs:
   build:
