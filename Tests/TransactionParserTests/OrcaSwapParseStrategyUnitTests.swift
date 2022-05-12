@@ -83,7 +83,7 @@ class OrcaSwapStrategyTests: XCTestCase {
     XCTAssertEqual(parsedTransaction.source?.token.symbol, "KIN")
 
     XCTAssertNil(parsedTransaction.destinationAmount)
-    XCTAssertNil(parsedTransaction.destination?.pubkey)
+    XCTAssertEqual(parsedTransaction.destination?.pubkey, "G8PrkEwmVx3kt3rXBin5o1bdDC1cvz7oBnXbHksNg7R4")
     XCTAssertEqual(parsedTransaction.destination?.token.symbol, "SOL")
   }
 }
