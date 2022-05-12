@@ -37,6 +37,32 @@ class OrcaSwapStrategyTests: XCTestCase {
     XCTAssertEqual(parsedTransaction.destination?.token.symbol, "SOL")
   }
 
+  func testParsingTransitiveTransaction() async throws {
+    let trx = Bundle.module.decode(TransactionInfo.self, from: "trx-swap-orca-transitive-ok.json")
+
+    // Parse
+    let parsedTransaction = try await strategy.parse(
+      trx,
+      config: .init(accountView: nil, symbolView: nil, feePayers: [])
+    )
+
+    // Tests
+    guard let parsedTransaction = parsedTransaction as? SwapInfo else {
+      XCTFail("Info should be SwapInfo")
+      return
+    }
+
+    print(parsedTransaction)
+    
+    XCTAssertEqual(parsedTransaction.sourceAmount, 0.000999999)
+    XCTAssertEqual(parsedTransaction.source?.pubkey, "HVc47am8HPYgvkkCiFJzV6Q8qsJJKJUYT6o7ucd6ZYXY")
+    XCTAssertEqual(parsedTransaction.source?.token.symbol, "SOL")
+
+    XCTAssertEqual(parsedTransaction.destinationAmount, 0.088808)
+    XCTAssertEqual(parsedTransaction.destination?.pubkey, "HVc47am8HPYgvkkCiFJzV6Q8qsJJKJUYT6o7ucd6ZYXY")
+    XCTAssertEqual(parsedTransaction.destination?.token.symbol, "SLIM")
+  }
+
   func testParsingFailedTransaction() async throws {
     let trx = Bundle.module.decode(TransactionInfo.self, from: "trx-swap-orca-error.json")
 
