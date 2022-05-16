@@ -6,7 +6,7 @@ import Foundation
 import SolanaSwift
 
 /// A parse strategy
-public protocol ParseStrategy: AnyObject {
+public protocol TransactionParseStrategy: AnyObject {
   /// Check is current parsing strategy can handle this transaction
   func isHandlable(with transactionInfo: TransactionInfo) -> Bool
 

@@ -1,34 +1,49 @@
-//
-// Created by Giang Long Tran on 28.04.2022.
-//
+// Copyright 2022 P2P Validator Authors. All rights reserved.
+// Use of this source code is governed by a MIT-style license that can be
+// found in the LICENSE file.
 
 import Foundation
+import RxSwift
 import SolanaSwift
 
-/// The fully service that is responsible for parsing raw transaction.
-class TransactionParserService: TransactionParser {
-  let parseStrategies: [ParseStrategy]
+/// An additional parsing configuration
+public struct Configuration {
+  /// An optional account address that is responsible for this transaction.
+  let accountView: String?
 
-  init(parseStrategies: [ParseStrategy]) { self.parseStrategies = parseStrategies }
+  /// An optional token symbol that is responsible for this transaction.
+  let symbolView: String?
 
-  static func `default`(apiClient: JSONRPCAPIClient, tokensRepository: TokensRepository) -> TransactionParserService {
-    .init(parseStrategies: [
-      OrcaSwapParseStrategy(apiClient: apiClient, tokensRepository: tokensRepository),
-    ])
+  /// A optional account addresses that covert a fee for this transaction.
+  let feePayers: [String]
+  
+  public init(accountView: String?, symbolView: String?, feePayers: [String]) {
+    self.accountView = accountView
+    self.symbolView = symbolView
+    self.feePayers = feePayers
   }
+}
 
+/// The interface that is responsible for parsing raw transaction into user-friendly transaction.
+///
+/// The user-friendly transactions are easier to read and displaying to end users.
+public protocol TransactionParserService {
+  @available(*, deprecated, renamed: "parse")
   func parse(
-    transactionInfo _: TransactionInfo,
-    myAccount _: String?,
-    myAccountSymbol _: String?,
-    p2pFeePayerPubkeys _: [String]
-  ) async throws
-  -> ParsedTransaction {
-    fatalError("parse(transactionInfo:myAccount:myAccountSymbol:p2pFeePayerPubkeys:) has not been implemented")
-  }
+    transactionInfo: TransactionInfo,
+    myAccount: String?,
+    myAccountSymbol: String?,
+    p2pFeePayerPubkeys: [String]
+  ) async throws -> ParsedTransaction
 
+  /// Parses a raw transaction
+  ///
+  /// - Parameters:
+  ///   - transactionInfo: a raw transaction from SolanaSwift.
+  ///   - configuration: a additional configuration that improve parsing accuracy.
+  /// - Returns: a user-friendly parsed transaction
   func parse(
-    _: TransactionInfo,
-    config _: Configuration
-  ) async throws -> ParsedTransaction { fatalError("parse(_:config:) has not been implemented") }
+    _ transactionInfo: TransactionInfo,
+    config configuration: Configuration
+  ) async throws -> ParsedTransaction
 }

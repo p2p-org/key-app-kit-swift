@@ -5,7 +5,8 @@
 import Foundation
 import SolanaSwift
 
-class AccountCreationParseStrategy: ParseStrategy {
+/// The strategy for parsing creation account transaction
+class CreationAccountParseStrategy: TransactionParseStrategy {
   private let tokensRepository: TokensRepository
 
   init(tokensRepository: TokensRepository) { self.tokensRepository = tokensRepository }
