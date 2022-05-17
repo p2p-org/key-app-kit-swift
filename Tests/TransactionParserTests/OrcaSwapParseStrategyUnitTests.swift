@@ -18,7 +18,7 @@ class OrcaSwapStrategyTests: XCTestCase {
       at: "trx-swap-orca-ok.json",
       strategy: strategy,
       configuration: .init(accountView: nil, symbolView: nil, feePayers: [])
-    )
+    )!
 
     XCTAssertEqual(trx.sourceAmount, 0.001)
     XCTAssertEqual(trx.source?.pubkey, "BjUEdE292SLEq9mMeKtY3GXL6wirn7DqJPhrukCqAUua")
@@ -34,7 +34,7 @@ class OrcaSwapStrategyTests: XCTestCase {
       at: "trx-swap-orca-transitive-ok.json",
       strategy: strategy,
       configuration: .init(accountView: nil, symbolView: nil, feePayers: [])
-    )
+    )!
 
     XCTAssertEqual(trx.sourceAmount, 0.000999999)
     XCTAssertEqual(trx.source?.pubkey, "HVc47am8HPYgvkkCiFJzV6Q8qsJJKJUYT6o7ucd6ZYXY")
@@ -50,7 +50,7 @@ class OrcaSwapStrategyTests: XCTestCase {
       at: "trx-swap-orca-error.json",
       strategy: strategy,
       configuration: .init(accountView: nil, symbolView: nil, feePayers: [])
-    )
+    )!
 
     XCTAssertEqual(trx.sourceAmount, 100.0)
     XCTAssertEqual(trx.source?.pubkey, "2xKofw1wK2CVMVUssGTv3G5pVrUALAR9r8J9zZnwtrUG")
@@ -59,5 +59,25 @@ class OrcaSwapStrategyTests: XCTestCase {
     XCTAssertNil(trx.destinationAmount)
     XCTAssertEqual(trx.destination?.pubkey, "G8PrkEwmVx3kt3rXBin5o1bdDC1cvz7oBnXbHksNg7R4")
     XCTAssertEqual(trx.destination?.token.symbol, "SOL")
+  }
+
+  func testBurningLiquidity() async throws {
+    let trx: SwapInfo? = try await ParseStrategyUtils.parse(
+      at: "trx-swap-orca-burn-liquidity.json",
+      strategy: strategy,
+      configuration: .init(accountView: "H1yu3R247X5jQN9bbDU8KB7RY4JSeEaCv45p5CMziefd", symbolView: nil, feePayers: [])
+    )
+    
+    XCTAssertNil(trx)
+  }
+
+  func testProvideLiquidity() async throws {
+    let trx: SwapInfo? = try await ParseStrategyUtils.parse(
+      at: "trx-swap-orca-provide-liquidity.json",
+      strategy: strategy,
+      configuration: .init(accountView: "H1yu3R247X5jQN9bbDU8KB7RY4JSeEaCv45p5CMziefd", symbolView: nil, feePayers: [])
+    )
+    
+    XCTAssertNil(trx)
   }
 }

@@ -18,7 +18,7 @@ class CloseAccountParseStrategyTests: XCTestCase {
       at: "trx-close-account-ok.json",
       strategy: strategy,
       configuration: .init(accountView: nil, symbolView: nil, feePayers: [])
-    )
+    )!
 
     // Tests
     XCTAssertEqual(trx.reimbursedAmount, 0.00203928)

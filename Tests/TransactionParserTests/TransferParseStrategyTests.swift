@@ -18,7 +18,7 @@ class TransferParseStrategyTests: XCTestCase {
       at: "trx-transfer-sol-ok.json",
       strategy: strategy,
       configuration: .init(accountView: nil, symbolView: nil, feePayers: [])
-    )
+    )!
 
     XCTAssertEqual(trx.source?.token.symbol, "SOL")
     XCTAssertEqual(trx.source?.pubkey, "6QuXb6mB6WmRASP2y8AavXh6aabBXEH5ZzrSH5xRrgSm")
@@ -33,7 +33,7 @@ class TransferParseStrategyTests: XCTestCase {
       at: "trx-transfer-sol-p2p-ok.json",
       strategy: strategy,
       configuration: .init(accountView: nil, symbolView: nil, feePayers: [])
-    )
+    )!
 
     XCTAssertEqual(trx.source?.token.symbol, "SOL")
     XCTAssertEqual(trx.source?.pubkey, "6QuXb6mB6WmRASP2y8AavXh6aabBXEH5ZzrSH5xRrgSm")
@@ -48,7 +48,7 @@ class TransferParseStrategyTests: XCTestCase {
       at: "trx-transfer-spl-to-sol-ok.json",
       strategy: strategy,
       configuration: .init(accountView: nil, symbolView: nil, feePayers: [])
-    )
+    )!
 
     XCTAssertEqual(trx.source?.token.symbol, "soUSDT")
     XCTAssertEqual(trx.source?.pubkey, "22hXC9c4SGccwCkjtJwZ2VGRfhDYh9KSRCviD8bs4Xbg")
@@ -63,7 +63,7 @@ class TransferParseStrategyTests: XCTestCase {
       at: "trx-transfer-spl-to-spl-ok.json",
       strategy: strategy,
       configuration: .init(accountView: nil, symbolView: nil, feePayers: [])
-    )
+    )!
 
     XCTAssertEqual(trx.source?.token.symbol, "SRM")
     XCTAssertEqual(trx.source?.pubkey, "BjUEdE292SLEq9mMeKtY3GXL6wirn7DqJPhrukCqAUua")
@@ -77,7 +77,7 @@ class TransferParseStrategyTests: XCTestCase {
       at: "trx-transfer-with-associated-account-ok.json",
       strategy: strategy,
       configuration: .init(accountView: nil, symbolView: nil, feePayers: [])
-    )
+    )!
 
     XCTAssertEqual(trx.source?.token.symbol, "MAPS")
     XCTAssertEqual(trx.source?.pubkey, "H1yu3R247X5jQN9bbDU8KB7RY4JSeEaCv45p5CMziefd")
@@ -91,7 +91,8 @@ class TransferParseStrategyTests: XCTestCase {
       at: "trx-transfer-no-associated-account-ok.json",
       strategy: strategy,
       configuration: .init(accountView: nil, symbolView: nil, feePayers: [])
-    )
+    )!
+    
     XCTAssertEqual(trx.source?.token.symbol, "MAPS")
     XCTAssertEqual(trx.source?.pubkey, "H1yu3R247X5jQN9bbDU8KB7RY4JSeEaCv45p5CMziefd")
     XCTAssertEqual(trx.amount, 0.001)
@@ -104,7 +105,7 @@ class TransferParseStrategyTests: XCTestCase {
       at: "trx-transfer-spl-native-wallet-ok.json",
       strategy: strategy,
       configuration: .init(accountView: "5ADqZHdZzL3xd2NiP8MrM4pCFj5ijC4oQWSBzvXx4fbY", symbolView: nil, feePayers: [])
-    )
+    )!
 
     XCTAssertEqual(trx.source?.token.symbol, "RAY")
     XCTAssertEqual(trx.authority, "3h1zGmCwsRJnVk5BuRNMLsPaQu1y2aqXqXDWYCgrp5UG")

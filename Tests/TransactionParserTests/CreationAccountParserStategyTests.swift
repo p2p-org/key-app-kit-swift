@@ -18,7 +18,7 @@ class AccountCreationParseStrategyTests: XCTestCase {
       at: "trx-create-account-ok.json",
       strategy: strategy,
       configuration: .init(accountView: nil, symbolView: nil, feePayers: [])
-    )
+    )!
 
     XCTAssertEqual(trx.fee, 0.00203928)
     XCTAssertEqual(trx.newWallet?.token.symbol, "soETH")
@@ -30,7 +30,7 @@ class AccountCreationParseStrategyTests: XCTestCase {
       at: "trx-create-bop-account.json",
       strategy: strategy,
       configuration: .init(accountView: nil, symbolView: nil, feePayers: [])
-    )
+    )!
 
     XCTAssertEqual(trx.newWallet?.token.symbol, "BOP")
     XCTAssertEqual(trx.newWallet?.pubkey, "3qjHF2CHQbPEkuq3cTbS9iwfWfSsHsqmgyMj7M2ZuVSx")

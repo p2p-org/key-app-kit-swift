@@ -3,7 +3,6 @@
 // found in the LICENSE file.
 
 import Foundation
-import RxSwift
 import SolanaSwift
 
 /// An additional parsing configuration
