@@ -27,22 +27,11 @@ public struct Configuration {
 ///
 /// The user-friendly transactions are easier to read and displaying to end users.
 public protocol TransactionParserService {
-  @available(*, deprecated, renamed: "parse")
-  func parse(
-    transactionInfo: TransactionInfo,
-    myAccount: String?,
-    myAccountSymbol: String?,
-    p2pFeePayerPubkeys: [String]
-  ) async throws -> ParsedTransaction
-
   /// Parses a raw transaction
   ///
   /// - Parameters:
   ///   - transactionInfo: a raw transaction from SolanaSwift.
   ///   - configuration: a additional configuration that improve parsing accuracy.
   /// - Returns: a user-friendly parsed transaction
-  func parse(
-    _ transactionInfo: TransactionInfo,
-    config configuration: Configuration
-  ) async throws -> ParsedTransaction
+  func parse(_ transactionInfo: TransactionInfo, config configuration: Configuration) async throws -> ParsedTransaction
 }
