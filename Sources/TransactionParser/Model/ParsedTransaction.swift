@@ -41,7 +41,7 @@ public struct ParsedTransaction: Hashable {
   public init(
     status: Status,
     signature: String?,
-    info _: AnyHashable?,
+    info: AnyHashable?,
     amountInFiat: Double? = nil,
     slot: UInt64?,
     blockTime: Date?,
@@ -51,7 +51,7 @@ public struct ParsedTransaction: Hashable {
   ) {
     self.status = status
     self.signature = signature
-//    self.info = info
+    self.info = info
     self.amountInFiat = amountInFiat
     self.slot = slot
     self.blockTime = blockTime

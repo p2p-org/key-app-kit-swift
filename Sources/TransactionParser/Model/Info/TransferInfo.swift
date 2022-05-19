@@ -5,7 +5,8 @@
 import Foundation
 import SolanaSwift
 
-struct TransferInfo: Hashable {
+/// A struct that contains all information about transfer.
+public struct TransferInfo: Hashable {
   /// The type of transfer in context of current account view.
   public enum TransferType {
     case send, receive

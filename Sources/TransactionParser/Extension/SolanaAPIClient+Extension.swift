@@ -1,6 +1,6 @@
-//
-// Created by Giang Long Tran on 04.05.2022.
-//
+// Copyright 2022 P2P Validator Authors. All rights reserved.
+// Use of this source code is governed by a MIT-style license that can be
+// found in the LICENSE file.
 
 import Foundation
 import SolanaSwift
@@ -13,7 +13,7 @@ extension SolanaAPIClient {
   ///   - anotherAccount: the second address of account, in case when first ``account`` address can't be solved. Throw exception if can't retrieve address.
   /// - Returns: ``BufferInfo``
   /// - Throws: ``Error.other`` if account can't be solved.
-  func getAccountInfo<T: DecodableBufferLayout>(
+  func getAccountInfo<T: BufferLayout>(
     account: String?,
     or anotherAccount: String?
   ) async throws -> BufferInfo<T>? {
@@ -25,7 +25,7 @@ extension SolanaAPIClient {
     } else if let anotherAccount = anotherAccount {
       return try await getAccountInfo(account: anotherAccount)
     } else {
-      throw SolanaSDK.Error.other("Could not retrieve account info")
+      throw SolanaError.couldNotRetrieveAccountInfo
     }
   }
 }

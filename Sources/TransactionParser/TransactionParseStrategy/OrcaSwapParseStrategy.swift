@@ -5,8 +5,8 @@
 import Foundation
 import SolanaSwift
 
-/// The parse strategy for orca swap
-public class OrcaSwapParseStrategy: ParseStrategy {
+/// A strategy for orca swap transactions.
+public class OrcaSwapParseStrategy: TransactionParseStrategy {
   /// The list of orca program signatures that will be parsed by this strategy
   private static let orcaProgramSignatures = [
     PublicKey.orcaSwapId(version: 1).base58EncodedString,
@@ -15,10 +15,10 @@ public class OrcaSwapParseStrategy: ParseStrategy {
     "SwaPpA9LAaLfeLi3a68M4DjnLqgtticKg6CnyNwgAC8", /* main deprecated */
   ]
 
-  private let apiClient: JSONRPCAPIClient
+  private let apiClient: SolanaAPIClient
   private let tokensRepository: TokensRepository
 
-  init(apiClient: JSONRPCAPIClient, tokensRepository: TokensRepository) {
+  init(apiClient: SolanaAPIClient, tokensRepository: TokensRepository) {
     self.apiClient = apiClient
     self.tokensRepository = tokensRepository
   }
