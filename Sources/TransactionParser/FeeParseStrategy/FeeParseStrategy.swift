@@ -6,12 +6,12 @@ import Foundation
 import SolanaSwift
 
 /// A strategy for parsing fee.
-protocol FeeParseStrategy {
+public protocol FeeParseStrategy {
   /// Retrieves transaction fee.
   ///
   /// - Parameters:
   ///   - transactionInfo: raw transaction
   ///   - feePayers: a additional fee payer addresses
   /// - Returns: fee
-  func parse(transactionInfo: TransactionInfo, feePayers: [String]) async throws -> FeeAmount
+  func calculate(transactionInfo: TransactionInfo, feePayers: [String]) async throws -> FeeAmount
 }

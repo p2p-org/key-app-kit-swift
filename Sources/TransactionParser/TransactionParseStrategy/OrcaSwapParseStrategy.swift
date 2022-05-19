@@ -15,10 +15,10 @@ public class OrcaSwapParseStrategy: TransactionParseStrategy {
     "SwaPpA9LAaLfeLi3a68M4DjnLqgtticKg6CnyNwgAC8", /* main deprecated */
   ]
 
-  private let apiClient: JSONRPCAPIClient
+  private let apiClient: SolanaAPIClient
   private let tokensRepository: TokensRepository
 
-  init(apiClient: JSONRPCAPIClient, tokensRepository: TokensRepository) {
+  init(apiClient: SolanaAPIClient, tokensRepository: TokensRepository) {
     self.apiClient = apiClient
     self.tokensRepository = tokensRepository
   }

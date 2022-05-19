@@ -1,4 +1,4 @@
-// swift-tools-version:5.4.0
+// swift-tools-version:5.4
 // The swift-tools-version declares the minimum version of Swift required to build this package.
 
 import PackageDescription
@@ -19,16 +19,14 @@ let package = Package(
     ),
   ],
   dependencies: [
-    // .package(url: "https://github.com/p2p-org/solana-swift", branch: "refactor/fix-protection-level"),
-    .package(path: "/Users/longtran/workspace/p2p/p2p-wallet-ios/SolanaSwift"),
-    // .package(url: "https://github.com/p2p-org/OrcaSwapSwift", branch: "main"),
+    .package(url: "https://github.com/p2p-org/solana-swift", branch: "refactor/fix-protection-level"),
+    .package(url: "https://github.com/apple/swift-docc-plugin", from: "1.0.0"),
   ],
   targets: [
     .target(
       name: "TransactionParser",
       dependencies: [
-        .product(name: "SolanaSwift", package: "SolanaSwift"),
-        // .product(name: "OrcaSwapSwift", package: "OrcaSwapSwift"),
+        .product(name: "SolanaSwift", package: "solana-swift"),
       ]
     ),
     .testTarget(
@@ -39,6 +37,7 @@ let package = Package(
   ]
 )
 
-//#if swift(>=5.6)
-//  package.dependencies.append(.package(url: "https://github.com/apple/swift-docc-plugin", from: "1.0.0"))
-//#endif
+
+#if swift(>=5.6)
+  package.dependencies.append(.package(url: "https://github.com/apple/swift-docc-plugin", from: "1.0.0"))
+#endif

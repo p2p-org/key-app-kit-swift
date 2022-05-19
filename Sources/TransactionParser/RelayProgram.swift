@@ -5,14 +5,14 @@
 import Foundation
 import SolanaSwift
 
+/// A class that represents relay program.
 public enum RelayProgram {
-  public func id(network: Network) -> PublicKey {
+  public static func id(network: Network) -> PublicKey {
     switch network {
     case .mainnetBeta:
       return "12YKFL4mnZz6CBEGePrf293mEzueQM3h8VLPUJsKpGs9"
     default:
-      // Devnet
-      return "6xKJFyuM6UHCT8F5SBxnjGt6ZrZYjsVfnAnAeHPU775k"
+      return "6xKJFyuM6UHCT8F5SBxnjGt6ZrZYjsVfnAnAeHPU775k" // Devnet
     }
   }
 }

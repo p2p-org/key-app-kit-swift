@@ -5,18 +5,31 @@
 import Foundation
 import SolanaSwift
 
-class TransactionParserImpl: TransactionParserService {
-  let apiClient: SolanaAPIClient
+public class TransactionParserImpl: TransactionParserService {
   let strategies: [TransactionParseStrategy]
   let feeParserStrategy: FeeParseStrategy
 
-  init(apiClient: SolanaAPIClient, strategies: [TransactionParseStrategy], feeParserStrategy: FeeParseStrategy) {
-    self.apiClient = apiClient
+  init(strategies: [TransactionParseStrategy], feeParserStrategy: FeeParseStrategy) {
     self.strategies = strategies
     self.feeParserStrategy = feeParserStrategy
   }
 
-  func parse(
+  static func `default`(apiClient: SolanaAPIClient) -> TransactionParserImpl {
+    let tokensRepository = TokensRepository(endpoint: apiClient.endpoint)
+
+    return .init(
+      strategies: [
+        OrcaSwapParseStrategy(apiClient: apiClient, tokensRepository: tokensRepository),
+        SerumSwapParseStrategy(tokensRepository: tokensRepository),
+        CreationAccountParseStrategy(tokensRepository: tokensRepository),
+        CloseAccountParseStrategy(tokensRepository: tokensRepository),
+        TransferParseStrategy(apiClient: apiClient, tokensRepository: tokensRepository),
+      ],
+      feeParserStrategy: DefaultFeeParseStrategy(apiClient: apiClient)
+    )
+  }
+
+  public func parse(
     _ transactionInfo: TransactionInfo,
     config configuration: Configuration
   ) async throws -> ParsedTransaction {
@@ -33,7 +46,7 @@ class TransactionParserImpl: TransactionParserService {
       parseTransaction(transactionInfo: transactionInfo, config: configuration),
       parseFee(transactionInfo: transactionInfo, config: configuration)
     )
-
+    
     return ParsedTransaction(
       status: status,
       signature: transactionInfo.transaction.signatures.first,
@@ -45,7 +58,10 @@ class TransactionParserImpl: TransactionParserService {
     )
   }
 
-  private func parseTransaction(
+  /// Algorithm for choosing strategy
+  ///
+  /// The picking is depends on order of strategies. If strategy has been chosen, but it can't parse the transaction, the next strategy will try to parse.
+  internal func parseTransaction(
     transactionInfo: TransactionInfo,
     config configuration: Configuration
   ) async throws -> AnyHashable? {
@@ -65,7 +81,7 @@ class TransactionParserImpl: TransactionParserService {
     transactionInfo: TransactionInfo,
     config configuration: Configuration
   ) async throws -> FeeAmount {
-    try await feeParserStrategy.parse(transactionInfo: transactionInfo, feePayers: configuration.feePayers)
+    try await feeParserStrategy.calculate(transactionInfo: transactionInfo, feePayers: configuration.feePayers)
   }
 }
 

@@ -6,16 +6,26 @@ import Foundation
 import SolanaSwift
 
 /// A default implementation for parsing transaction fee.
-public class DefaultFeeParseStrategy {
+public class DefaultFeeParseStrategy: FeeParseStrategy {
   let apiClient: SolanaAPIClient
   let cache: Cache<String, Any>
 
+  /// Initialize a default strategy with build-in cache system.
+  public init(apiClient: SolanaAPIClient) {
+    self.apiClient = apiClient
+    cache = Cache()
+  }
+
+  /// Initialize a default strategy.
   public init(apiClient: SolanaAPIClient, cache: Cache<String, Any>) {
     self.apiClient = apiClient
     self.cache = cache
   }
 
-  func calculateFee(transactionInfo: TransactionInfo, feePayerPubkeys: [String]) async throws -> FeeAmount {
+  public func calculate(
+    transactionInfo: TransactionInfo,
+    feePayers feePayerPubkeys: [String]
+  ) async throws -> FeeAmount {
     let confirmedTransaction = transactionInfo.transaction
 
     // Prepare
@@ -59,7 +69,7 @@ public class DefaultFeeParseStrategy {
        feePayerPubkeys.contains(firstPubkey)
     {
       if let lastTransaction = confirmedTransaction.message.instructions.last,
-         lastTransaction.programId == RelayProgram.id(network: self.solanaSDK.endpoint.network)
+         lastTransaction.programId == RelayProgram.id(network: apiClient.endpoint.network)
            .base58EncodedString,
            let innerInstruction = transactionInfo.meta?.innerInstructions?
              .first(where: { $0.index == UInt32(confirmedTransaction.message.instructions.count - 1) }),
@@ -76,21 +86,21 @@ public class DefaultFeeParseStrategy {
     return .init(transaction: transactionFee, accountBalances: accountCreationFee, deposit: depositFee)
   }
 
-  private func getRentException() async throws -> Lamport {
+  internal func getRentException() async throws -> Lamports {
     let kRentExemption = "rentExemption"
 
     // Load from cache
-    if let rentExemption = try cache.value(forKey: kRentExemption) as? Lamports { return rentExemption }
+    if let rentExemption = await cache.value(forKey: kRentExemption) as? Lamports { return rentExemption }
 
     // Load from network
     let rentExemption = try await apiClient.getMinimumBalanceForRentExemption(span: 65)
 
     // Store in cache
-    try cache.insert(rentExemption, forKey: kRentExemption)
+    await cache.insert(rentExemption, forKey: kRentExemption)
     return rentExemption
   }
 
-  private func getLamportPerSignature() async throws -> Lamports {
+  internal func getLamportPerSignature() async throws -> Lamports {
     let kLamportsPerSignature = "lamportsPerSignature"
 
     // Load from cache

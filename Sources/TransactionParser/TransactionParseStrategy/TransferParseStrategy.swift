@@ -6,10 +6,10 @@ import Foundation
 import SolanaSwift
 
 class TransferParseStrategy: TransactionParseStrategy {
-  private let apiClient: JSONRPCAPIClient
+  private let apiClient: SolanaAPIClient
   private let tokensRepository: TokensRepository
 
-  init(apiClient: JSONRPCAPIClient, tokensRepository: TokensRepository) {
+  init(apiClient: SolanaAPIClient, tokensRepository: TokensRepository) {
     self.apiClient = apiClient
     self.tokensRepository = tokensRepository
   }
