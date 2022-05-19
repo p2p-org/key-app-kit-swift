@@ -10,7 +10,7 @@ class TransactionParserImplTests: XCTestCase {
   let endpoint = APIEndPoint.defaultEndpoints.first!
 
   lazy var apiClient = JSONRPCAPIClient(endpoint: endpoint)
-  lazy var parseService: TransactionParserImpl = TransactionParserImpl.default(apiClient: apiClient)
+  lazy var parseService: TransactionParserServiceImpl = TransactionParserServiceImpl.default(apiClient: apiClient)
 
   func testParsing() async throws {
     let rawTrx: TransactionInfo = ParseStrategyUtils.readTransaction(at: "trx-transfer-sol-ok.json")

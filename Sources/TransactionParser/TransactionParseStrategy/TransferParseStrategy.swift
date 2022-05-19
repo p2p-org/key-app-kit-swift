@@ -5,7 +5,8 @@
 import Foundation
 import SolanaSwift
 
-class TransferParseStrategy: TransactionParseStrategy {
+/// A strategy for parsing transfer transactions.
+public class TransferParseStrategy: TransactionParseStrategy {
   private let apiClient: SolanaAPIClient
   private let tokensRepository: TokensRepository
 
@@ -13,8 +14,8 @@ class TransferParseStrategy: TransactionParseStrategy {
     self.apiClient = apiClient
     self.tokensRepository = tokensRepository
   }
-
-  func isHandlable(
+  
+  public func isHandlable(
     with transactionInfo: TransactionInfo
   ) -> Bool {
     let instructions = transactionInfo.transaction.message.instructions
@@ -22,8 +23,8 @@ class TransferParseStrategy: TransactionParseStrategy {
       (instructions.last?.parsed?.type == "transfer" || instructions.last?.parsed?
         .type == "transferChecked")
   }
-
-  func parse(
+  
+  public func parse(
     _ transactionInfo: TransactionInfo,
     config configuration: Configuration
   ) async throws -> AnyHashable? {

@@ -5,7 +5,7 @@
 import Foundation
 import SolanaSwift
 
-/// The parse strategy for orca swap
+/// A strategy for orca swap transactions.
 public class OrcaSwapParseStrategy: TransactionParseStrategy {
   /// The list of orca program signatures that will be parsed by this strategy
   private static let orcaProgramSignatures = [

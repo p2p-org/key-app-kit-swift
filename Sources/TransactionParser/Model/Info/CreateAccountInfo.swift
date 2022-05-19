@@ -5,6 +5,7 @@
 import Foundation
 import SolanaSwift
 
+/// A struct that contains all information about creating account.
 public struct CreateAccountInfo: Hashable {
   /// The amount of fee in SOL.
   public let fee: Double?

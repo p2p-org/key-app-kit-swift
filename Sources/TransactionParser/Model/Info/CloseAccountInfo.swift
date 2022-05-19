@@ -5,7 +5,8 @@
 import Foundation
 import SolanaSwift
 
-struct CloseAccountTransactionInfo: Hashable {
+/// A struct that contains all information about closing account.
+public struct CloseAccountTransactionInfo: Hashable {
   // The SOL amount of the account that will be returned.
   public let reimbursedAmount: Double?
 

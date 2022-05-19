@@ -5,16 +5,17 @@
 import Foundation
 import SolanaSwift
 
-public class TransactionParserImpl: TransactionParserService {
+/// A default implementation of parser service.
+public class TransactionParserServiceImpl: TransactionParserService {
   let strategies: [TransactionParseStrategy]
   let feeParserStrategy: FeeParseStrategy
 
-  init(strategies: [TransactionParseStrategy], feeParserStrategy: FeeParseStrategy) {
+  public init(strategies: [TransactionParseStrategy], feeParserStrategy: FeeParseStrategy) {
     self.strategies = strategies
     self.feeParserStrategy = feeParserStrategy
   }
 
-  static func `default`(apiClient: SolanaAPIClient) -> TransactionParserImpl {
+  public static func `default`(apiClient: SolanaAPIClient) -> TransactionParserServiceImpl {
     let tokensRepository = TokensRepository(endpoint: apiClient.endpoint)
 
     return .init(

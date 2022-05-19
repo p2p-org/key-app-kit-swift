@@ -6,18 +6,18 @@ import Foundation
 import SolanaSwift
 
 /// A strategy for parsing serum transactions.
-class SerumSwapParseStrategy: TransactionParseStrategy {
+public class SerumSwapParseStrategy: TransactionParseStrategy {
   private let tokensRepository: TokensRepository
 
   init(tokensRepository: TokensRepository) { self.tokensRepository = tokensRepository }
-  
+
   public func isHandlable(
     with transactionInfo: SolanaSwift.TransactionInfo
   ) -> Bool {
     let instructions = transactionInfo.transaction.message.instructions
     return instructions.contains { $0.programId == PublicKey.serumSwapPID.base58EncodedString }
   }
-  
+
   public func parse(
     _ transactionInfo: SolanaSwift.TransactionInfo,
     config configuration: Configuration
@@ -28,9 +28,7 @@ class SerumSwapParseStrategy: TransactionParseStrategy {
         $0.instructions
           .contains(where: { $0.programId == PublicKey.serumSwapPID.base58EncodedString })
       })
-    
-      print(transactionInfo.meta?.innerInstructions)
-      
+
     let swapInstructionIndex = serumInstruction(transactionInfo: transactionInfo)!
     guard let swapInstruction = instructions[safe: swapInstructionIndex] else { return nil }
     let preTokenBalances = transactionInfo.meta?.preTokenBalances
@@ -77,7 +75,7 @@ class SerumSwapParseStrategy: TransactionParseStrategy {
     var toAmount: Lamports?
 
     // from amount
-      print(innerInstruction)
+    print(innerInstruction)
     if let instruction = innerInstruction?.instructions
       .first(where: { $0.parsed?.type == "transfer" }),
       let amountString = instruction.parsed?.info.amount,

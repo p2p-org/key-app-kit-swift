@@ -5,13 +5,13 @@
 import Foundation
 import SolanaSwift
 
-/// The strategy for parsing creation account transaction
-class CreationAccountParseStrategy: TransactionParseStrategy {
+/// The strategy for parsing creation account transactions.
+public class CreationAccountParseStrategy: TransactionParseStrategy {
   private let tokensRepository: TokensRepository
 
   init(tokensRepository: TokensRepository) { self.tokensRepository = tokensRepository }
-
-  func isHandlable(with transactionInfo: SolanaSwift.TransactionInfo) -> Bool {
+  
+  public func isHandlable(with transactionInfo: SolanaSwift.TransactionInfo) -> Bool {
     let instructions = transactionInfo.transaction.message.instructions
     switch instructions.count {
     case 1: return instructions[0].program == "spl-associated-token-account"
@@ -20,8 +20,8 @@ class CreationAccountParseStrategy: TransactionParseStrategy {
     default: return false
     }
   }
-
-  func parse(_ transactionInfo: SolanaSwift.TransactionInfo, config _: Configuration) async throws -> AnyHashable? {
+  
+  public func parse(_ transactionInfo: SolanaSwift.TransactionInfo, config _: Configuration) async throws -> AnyHashable? {
     let instructions = transactionInfo.transaction.message.instructions
 
     if let program = extractProgram(instructions, with: "spl-associated-token-account") {

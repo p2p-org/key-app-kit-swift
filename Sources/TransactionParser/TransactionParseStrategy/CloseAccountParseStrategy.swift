@@ -5,6 +5,7 @@
 import Foundation
 import SolanaSwift
 
+/// A strategy for parsing close transactions.
 public class CloseAccountParseStrategy: TransactionParseStrategy {
   private let tokensRepository: TokensRepository
 

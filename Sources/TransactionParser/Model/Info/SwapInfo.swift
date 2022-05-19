@@ -5,7 +5,8 @@
 import Foundation
 import SolanaSwift
 
-struct SwapInfo: Hashable {
+/// A struct that contains all information about swapping.
+public struct SwapInfo: Hashable {
   /// A direction of swap on depends on account symbol view.
   public enum Direction {
     /// The spending swap transaction
