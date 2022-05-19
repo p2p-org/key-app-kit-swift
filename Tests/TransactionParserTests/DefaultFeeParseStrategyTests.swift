@@ -56,7 +56,7 @@ class DefaultFeeParseStrategyTests: XCTestCase {
       transactionInfo: rawTrx,
       feePayers: ["FG4Y3yX4AAchp1HvNZ7LfzFTewF2f6nDoMDCohTFrdpT"]
     )
-    XCTAssertEqual(fee.transaction, 10000)
+    XCTAssertEqual(fee.transaction, 0)
     XCTAssertEqual(fee.accountBalances, 0)
     XCTAssertEqual(fee.deposit, 0)
     XCTAssertNil(fee.others)
