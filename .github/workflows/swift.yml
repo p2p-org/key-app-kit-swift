@@ -27,7 +27,7 @@ jobs:
       run: |
         xcrun llvm-cov export -format="lcov" .build/debug/P2PSolanaSwiftLibraryPackageTests.xctest/Contents/MacOS/P2PSolanaSwiftLibraryPackageTests -instr-profile .build/debug/codecov/default.profdata > info.lcov
 
-    - uses: codecov/codecov-action@v2
+    - uses: codecov/codecov-action@v3
       with:
         token: ${{ secrets.CODECOV_TOKEN }} # not required for public repos
         files: ./info.lcov # optional
