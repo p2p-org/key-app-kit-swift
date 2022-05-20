@@ -4,7 +4,7 @@
 import PackageDescription
 
 let package = Package(
-  name: "P2PSolanaSwiftLibrary",
+  name: "SolanaSwiftMagic",
   platforms: [
     .macOS(.v10_15),
     .iOS(.v13),
@@ -19,7 +19,7 @@ let package = Package(
     ),
   ],
   dependencies: [
-    .package(url: "https://github.com/p2p-org/solana-swift", branch: "refactor/fix-protection-level"),
+    .package(url: "https://github.com/p2p-org/solana-swift", branch: "refactor/pwn-3297"),
   ],
   targets: [
     .target(

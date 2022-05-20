@@ -21,11 +21,9 @@ jobs:
       run: swift build -v
     - name: Run tests
       run: swift test --enable-code-coverage -v
-    #- name: Get path to coverage result
-    #  run: echo "COVERAGE_RESULT=$(swift test --show-codecov-path)" >> $GITHUB_ENV
     - name: Convert to standart format
       run: |
-        xcrun llvm-cov export -format="lcov" .build/debug/P2PSolanaSwiftLibraryPackageTests.xctest/Contents/MacOS/P2PSolanaSwiftLibraryPackageTests -instr-profile .build/debug/codecov/default.profdata > info.lcov
+        xcrun llvm-cov export -format="lcov" .build/debug/P2PSolanaSwiftMagicPackageTests.xctest/Contents/MacOS/P2PSolanaSwiftMagicPackageTests -instr-profile .build/debug/codecov/default.profdata > info.lcov
 
     - uses: codecov/codecov-action@v3
       with:

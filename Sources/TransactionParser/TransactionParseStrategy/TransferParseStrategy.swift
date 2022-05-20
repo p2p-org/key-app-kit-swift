@@ -43,8 +43,6 @@ public class TransferParseStrategy: TransactionParseStrategy {
     config configuration: Configuration
   ) async throws -> TransferInfo {
     let instructions = transactionInfo.transaction.message.instructions
-    let postTokenBalances = transactionInfo.meta?.postTokenBalances ?? []
-    let accountKeys = transactionInfo.transaction.message.accountKeys
 
     // get pubkeys
     let transferInstruction = instructions.last

@@ -23,18 +23,9 @@
         "package": "SolanaSwift",
         "repositoryURL": "https://github.com/p2p-org/solana-swift",
         "state": {
-          "branch": "refactor/fix-protection-level",
-          "revision": "ffc6286234de646518bc8743d9af183fae2c820e",
+          "branch": "refactor/pwn-3297",
+          "revision": "7f3f5cf77c418706ca68041c85cd23233a1860ad",
           "version": null
-        }
-      },
-      {
-        "package": "SwiftDocCPlugin",
-        "repositoryURL": "https://github.com/apple/swift-docc-plugin",
-        "state": {
-          "branch": null,
-          "revision": "3303b164430d9a7055ba484c8ead67a52f7b74f6",
-          "version": "1.0.0"
         }
       },
       {

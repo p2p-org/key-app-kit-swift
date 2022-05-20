@@ -16,7 +16,7 @@ jobs:
       with:
         target: TransactionParser
         output: ./docs
-        hosting-base-path: solana-swift-library
+        hosting-base-path: solana-swift-magic
         disable-indexing: 'true'
         transform-for-static-hosting: 'true'
 
