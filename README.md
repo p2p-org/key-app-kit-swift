@@ -1,6 +1,6 @@
 # SolanaSwiftParser
 
-[![codecov](https://codecov.io/gh/p2p-org/solana-swift-library/branch/master/graph/badge.svg?token=iq6Du6XAXT)](https://codecov.io/gh/p2p-org/solana-swift-library)
+[![codecov](https://codecov.io/gh/p2p-org/solana-swift-magic/branch/master/graph/badge.svg?token=iq6Du6XAXT)](https://codecov.io/gh/p2p-org/solana-swift-magic)
 
 ### Modules
 
