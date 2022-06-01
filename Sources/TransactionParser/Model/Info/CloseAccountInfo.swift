@@ -5,8 +5,11 @@
 import Foundation
 import SolanaSwift
 
+@available(* , deprecated, renamed: "CloseAccountInfo")
+public typealias CloseAccountTransaction = CloseAccountInfo
+
 /// A struct that contains all information about closing account.
-public struct CloseAccountTransactionInfo: Hashable {
+public struct CloseAccountInfo: Hashable {
   // The SOL amount of the account that will be returned.
   public let reimbursedAmount: Double?
 
@@ -19,7 +22,7 @@ public struct CloseAccountTransactionInfo: Hashable {
   }
 }
 
-extension CloseAccountTransactionInfo: Info {
+extension CloseAccountInfo: Info {
   public var amount: Double? { reimbursedAmount ?? 0 }
   public var symbol: String? { "SOL " }
 }

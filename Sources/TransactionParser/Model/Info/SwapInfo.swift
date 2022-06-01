@@ -5,6 +5,9 @@
 import Foundation
 import SolanaSwift
 
+@available(* , deprecated, renamed: "SwapTransaction")
+public typealias SwapTransaction = SwapInfo
+
 /// A struct that contains all information about swapping.
 public struct SwapInfo: Hashable {
   /// A direction of swap on depends on account symbol view.

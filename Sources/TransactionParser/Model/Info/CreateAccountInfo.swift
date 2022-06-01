@@ -5,6 +5,9 @@
 import Foundation
 import SolanaSwift
 
+@available(* , deprecated, renamed: "CreateAccountInfo")
+public typealias CreateAccountTransaction = CreateAccountInfo
+
 /// A struct that contains all information about creating account.
 public struct CreateAccountInfo: Hashable {
   /// The amount of fee in SOL.

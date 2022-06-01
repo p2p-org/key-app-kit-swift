@@ -5,6 +5,9 @@
 import Foundation
 import SolanaSwift
 
+@available(* , deprecated, renamed: "TransferInfo")
+public typealias TransferTransaction = TransferInfo
+
 /// A struct that contains all information about transfer.
 public struct TransferInfo: Hashable {
   /// The type of transfer in context of current account view.

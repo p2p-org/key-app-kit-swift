@@ -39,7 +39,7 @@ public class CloseAccountParseStrategy: TransactionParseStrategy {
     let reimbursedAmount = reimbursedAmountLamports?.convertToBalance(decimals: Decimals.SOL)
     let token = try await tokensRepository.getTokenWithMint(preTokenBalance?.mint)
 
-    return CloseAccountTransactionInfo(
+    return CloseAccountInfo(
       reimbursedAmount: reimbursedAmount,
       closedWallet: Wallet(
         pubkey: closedTokenPubkey,
