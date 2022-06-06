@@ -19,7 +19,7 @@ let package = Package(
     ),
   ],
   dependencies: [
-    .package(url: "https://github.com/p2p-org/solana-swift", branch: "refactor/pwn-3297"),
+    .package(url: "https://github.com/p2p-org/solana-swift", from: "2.0.1"),
   ],
   targets: [
     .target(

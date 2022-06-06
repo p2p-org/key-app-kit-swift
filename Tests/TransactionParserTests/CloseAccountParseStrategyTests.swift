@@ -14,7 +14,7 @@ class CloseAccountParseStrategyTests: XCTestCase {
   lazy var strategy = CloseAccountParseStrategy(tokensRepository: tokensRepository)
 
   func testCloseAccountParsing() async throws {
-    let trx: CloseAccountTransactionInfo = try await ParseStrategyUtils.parse(
+    let trx: CloseAccountInfo = try await ParseStrategyUtils.parse(
       at: "trx-close-account-ok.json",
       strategy: strategy,
       configuration: .init(accountView: nil, symbolView: nil, feePayers: [])
