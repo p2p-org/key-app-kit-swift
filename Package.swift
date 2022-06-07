@@ -17,6 +17,10 @@ let package = Package(
       name: "TransactionParser",
       targets: ["TransactionParser"]
     ),
+    .library(
+      name: "NameService",
+      targets: ["NameService"]
+    ),
   ],
   dependencies: [
     .package(url: "https://github.com/p2p-org/solana-swift", from: "2.0.1"),
@@ -32,6 +36,10 @@ let package = Package(
       name: "TransactionParserTests",
       dependencies: ["TransactionParser"],
       resources: [.process("./Resource")]
+    ),
+    .target(
+      name: "NameService",
+      dependencies: []
     ),
   ]
 )
