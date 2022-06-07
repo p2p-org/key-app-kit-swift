@@ -5,7 +5,7 @@
 import Foundation
 import SolanaSwift
 
-@available(* , deprecated, renamed: "SwapTransaction")
+@available(* , deprecated, renamed: "SwapInfo")
 public typealias SwapTransaction = SwapInfo
 
 /// A struct that contains all information about swapping.
