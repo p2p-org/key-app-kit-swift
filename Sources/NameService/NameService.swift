@@ -70,8 +70,17 @@ public class NameServiceImpl: NameService {
         urlRequest.setValue("application/json", forHTTPHeaderField: "Content-Type")
         urlRequest.httpBody = try JSONEncoder().encode(params)
         try Task.checkCancellation()
-        let (data, _) = try await URLSession.shared.data(from: urlRequest)
+        let (data, response) = try await URLSession.shared.data(from: urlRequest)
         try Task.checkCancellation()
+        let stringResponse = String(data: data, encoding: .utf8)
+        if let stringResponse = stringResponse,
+           stringResponse.contains("insufficient funds for instruction")
+        {
+            throw NameServiceError.invalidStatusCode(500) // server error
+        }
+        #if DEBUG
+        print(String(describing: stringResponse))
+        #endif
         return try JSONDecoder().decode(PostResponse.self, from: data)
     }
 
