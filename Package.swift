@@ -21,9 +21,15 @@ let package = Package(
       name: "NameService",
       targets: ["NameService"]
     ),
+    // Analytics manager for wallet
+    .library(
+      name: "AnalyticsManager",
+      targets: ["AnalyticsManager"]
+    )
   ],
   dependencies: [
     .package(url: "https://github.com/p2p-org/solana-swift", from: "2.0.1"),
+    .package(name: "Amplitude", url: "https://github.com/amplitude/Amplitude-iOS", from: "8.3.0")
   ],
   targets: [
     .target(
@@ -40,6 +46,16 @@ let package = Package(
     .target(
       name: "NameService",
       dependencies: []
+    ),
+    // AnalyticsManager
+    .target(
+      name: "AnalyticsManager",
+      dependencies: ["Amplitude"]
+    ),
+    .testTarget(
+      name: "AnalyticsManagerTests",
+      dependencies: ["AnalyticsManager"]
+//      resources: [.process("./Resource")]
     ),
   ]
 )

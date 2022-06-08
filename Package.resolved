@@ -2,6 +2,24 @@
   "object": {
     "pins": [
       {
+        "package": "Amplitude",
+        "repositoryURL": "https://github.com/amplitude/Amplitude-iOS",
+        "state": {
+          "branch": null,
+          "revision": "e135cfe3b4fc13fbf17e7e475b8d0053aa44eeec",
+          "version": "8.10.0"
+        }
+      },
+      {
+        "package": "analytics-connector-ios",
+        "repositoryURL": "https://github.com/amplitude/analytics-connector-ios.git",
+        "state": {
+          "branch": null,
+          "revision": "b44981119e2efc0edd1d2e26831c3c4c0e0264e6",
+          "version": "1.0.0"
+        }
+      },
+      {
         "package": "LoggerSwift",
         "repositoryURL": "https://github.com/bigearsenal/loggerswift.git",
         "state": {
