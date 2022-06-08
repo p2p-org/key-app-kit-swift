@@ -12,9 +12,20 @@ jobs:
     runs-on: macos-12
     steps:
     - uses: actions/checkout@v3
+
+    # Transaction parser
     - uses: fwcd/swift-docc-action@v1
       with:
         target: TransactionParser
+        output: ./docs
+        hosting-base-path: solana-swift-magic
+        disable-indexing: 'true'
+        transform-for-static-hosting: 'true'
+
+    # Name service
+    - uses: fwcd/swift-docc-action@v1
+      with:
+        target: NameService
         output: ./docs
         hosting-base-path: solana-swift-magic
         disable-indexing: 'true'

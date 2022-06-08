@@ -1,12 +1,10 @@
-//
-//  NameServiceCache.swift
-//  p2p_wallet
-//
-//  Created by Chung Tran on 10/03/2022.
-//
+// Copyright 2022 P2P Validator Authors. All rights reserved.
+// Use of this source code is governed by a MIT-style license that can be
+// found in the LICENSE file.
 
 import Foundation
 
+/// The protocol for caching username
 public protocol NameServiceCacheType {
     func save(_ name: String?, for owner: String)
     func getName(for owner: String) -> NameServiceSearchResult?
