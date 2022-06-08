@@ -53,8 +53,13 @@ let package = Package(
     
     // FeeRelayer
     .binaryTarget(
+      name: "FeeRelayerBinary",
+      path: "Sources/FeeRelayer/Binary/FeeRelayerBinary.xcframework"
+    ),
+    .target(
       name: "FeeRelayer",
-      path: "Sources/FeeRelayer/FeeRelayer.xcframework"
+      dependencies: ["FeeRelayerBinary"],
+      path: "Sources/FeeRelayer/Bridge"
     ),
     .testTarget(
       name: "FeeRelayerTests",

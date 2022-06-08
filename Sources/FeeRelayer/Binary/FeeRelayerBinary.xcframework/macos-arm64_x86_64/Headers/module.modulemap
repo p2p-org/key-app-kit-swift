@@ -1,4 +1,4 @@
-module FeeRelayer {
+module FeeRelayerBinary {
     header "p2p_sdk.h"
     export *
 }

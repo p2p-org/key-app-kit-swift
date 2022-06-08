@@ -19,20 +19,12 @@ class FeeRelayerTests: XCTestCase {
     }
 
     func testGreet() throws {
-        let result = greet("test")
-        let string = String(cString: result!)
+        let string = FeeRelayerImpl().sayHello(name: "test")
         XCTAssertEqual(string, "hello, test")
     }
     
     func testTransferSPLToken() throws {
         
-    }
-
-    func testPerformanceExample() throws {
-        // This is an example of a performance test case.
-        self.measure {
-            // Put the code you want to measure the time of here.
-        }
     }
 
 }
