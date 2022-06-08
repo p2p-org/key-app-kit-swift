@@ -13,19 +13,27 @@ let package = Package(
 
   ],
   products: [
+    // TransactionParser to parse type of transactions in Solana Blockchain
     .library(
       name: "TransactionParser",
       targets: ["TransactionParser"]
     ),
+    // Name service manages unique, decentralized user name on Solana Blockchain
     .library(
       name: "NameService",
       targets: ["NameService"]
     ),
+    // Fee relayer is the service that helps customizing fee payer on Transaction in Solana Blockchain
+    .library(
+      name: "FeeRelayer",
+      targets: ["FeeRelayer"]
+    )
   ],
   dependencies: [
     .package(url: "https://github.com/p2p-org/solana-swift", from: "2.0.1"),
   ],
   targets: [
+    // TransactionParser
     .target(
       name: "TransactionParser",
       dependencies: [
@@ -37,9 +45,21 @@ let package = Package(
       dependencies: ["TransactionParser"],
       resources: [.process("./Resource")]
     ),
+    // NameService
     .target(
       name: "NameService",
       dependencies: []
+    ),
+    
+    // FeeRelayer
+    .binaryTarget(
+      name: "FeeRelayer",
+      path: "Sources/FeeRelayer/FeeRelayer.xcframework"
+    ),
+    .testTarget(
+      name: "FeeRelayerTests",
+      dependencies: ["FeeRelayer"]
+//      resources: [.process("./Resource")]
     ),
   ]
 )
