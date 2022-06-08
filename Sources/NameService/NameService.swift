@@ -70,7 +70,7 @@ public class NameServiceImpl: NameService {
         urlRequest.setValue("application/json", forHTTPHeaderField: "Content-Type")
         urlRequest.httpBody = try JSONEncoder().encode(params)
         try Task.checkCancellation()
-        let (data, response) = try await URLSession.shared.data(from: urlRequest)
+        let (data, _) = try await URLSession.shared.data(from: urlRequest)
         try Task.checkCancellation()
         let stringResponse = String(data: data, encoding: .utf8)
         if let stringResponse = stringResponse,
