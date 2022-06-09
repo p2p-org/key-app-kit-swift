@@ -26,10 +26,15 @@ let package = Package(
             name: "AnalyticsManager",
             targets: ["AnalyticsManager"]
         ),
+        // Price service for wallet
+        .library(
+            name: "SolanaPricesAPIs",
+            targets: ["SolanaPricesAPIs"]
+        )
     ],
     dependencies: [
         .package(url: "https://github.com/p2p-org/solana-swift", from: "2.0.1"),
-        .package(name: "Amplitude", url: "https://github.com/amplitude/Amplitude-iOS", from: "8.3.0"),
+        .package(name: "Amplitude", url: "https://github.com/amplitude/Amplitude-iOS", from: "8.3.0")
     ],
     targets: [
         .target(
@@ -65,7 +70,18 @@ let package = Package(
             name: "AnalyticsManagerUnitTests",
             dependencies: ["AnalyticsManager"],
             path: "Tests/UnitTests/AnalyticsManagerUnitTests"
-        )
+        ),
+        // PricesService
+        .target(
+            name: "SolanaPricesAPIs",
+            dependencies: []
+        ),
+        .testTarget(
+            name: "SolanaPricesAPIsUnitTests",
+            dependencies: ["SolanaPricesAPIs"],
+            path: "Tests/UnitTests/SolanaPricesAPIsUnitTests"
+            //      resources: [.process("./Resource")]
+        ),
     ]
 )
 
