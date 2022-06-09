@@ -6,6 +6,7 @@
 //
 
 import Foundation
+import Common
 
 public protocol NameService {
     func getName(_ owner: String) async throws -> String?

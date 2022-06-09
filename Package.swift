@@ -10,7 +10,6 @@ let package = Package(
     .iOS(.v13),
     .tvOS(.v13),
     .watchOS(.v6),
-
   ],
   products: [
     .library(
@@ -25,6 +24,11 @@ let package = Package(
     .library(
       name: "AnalyticsManager",
       targets: ["AnalyticsManager"]
+    ),
+    // Price service for wallet
+    .library(
+      name: "PricesService",
+      targets: ["PricesService"]
     )
   ],
   dependencies: [
@@ -32,6 +36,9 @@ let package = Package(
     .package(name: "Amplitude", url: "https://github.com/amplitude/Amplitude-iOS", from: "8.3.0")
   ],
   targets: [
+    .target(
+      name: "Common"
+    ),
     .target(
       name: "TransactionParser",
       dependencies: [
@@ -45,7 +52,7 @@ let package = Package(
     ),
     .target(
       name: "NameService",
-      dependencies: []
+      dependencies: ["Common"]
     ),
     // AnalyticsManager
     .target(
@@ -55,6 +62,16 @@ let package = Package(
     .testTarget(
       name: "AnalyticsManagerTests",
       dependencies: ["AnalyticsManager"]
+//      resources: [.process("./Resource")]
+    ),
+    // PricesService
+    .target(
+      name: "PricesService",
+      dependencies: ["Common"]
+    ),
+    .testTarget(
+      name: "PricesServiceTests",
+      dependencies: ["PricesService"]
 //      resources: [.process("./Resource")]
     ),
   ]
