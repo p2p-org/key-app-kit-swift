@@ -8,7 +8,30 @@ class MockSolanaAPIClient: SolanaAPIClient {
     }
     
     func getAccountInfo<T>(account: String) async throws -> BufferInfo<T>? where T : BufferLayout {
-        fatalError()
+        switch account {
+        case "BjUEdE292SLEq9mMeKtY3GXL6wirn7DqJPhrukCqAUua":
+            return nil
+        case "8Vu3KXjZJPUdUf7cRWR9ukXuahoV9vNU5ExEo52SNH4G":
+            var binaryReader = BinaryReader(bytes: Data(base64Encoded: "BoMQhhqYMn0FUFdNhEGKpuEMM1Ldqn/X9YFSzO6yOIdi/XalJxOwfrmp1jI9t6I30VBlnsq7A+waTZA0Mr2M+3GeHQcAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA")!.bytes)
+            return .init(
+                lamports: 2039280,
+                owner: "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA",
+                data: try! AccountInfo(from: &binaryReader) as! T,
+                executable: false,
+                rentEpoch: 316
+            )
+        case "EFs4FuHmb3bbC4BUD4tu188x4k5UMmxPbm6PZQjDnxL6":
+            var binaryReader = BinaryReader(bytes: Data(base64Encoded: "BpuIV/6rgYT7aH9jRhjANdrEOdwa6ztVmKDwAAAAAAFi/XalJxOwfrmp1jI9t6I30VBlnsq7A+waTZA0Mr2M+8X0TbsAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQEAAADwHR8AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA")!.bytes)
+            return .init(
+                lamports: 3144487605,
+                owner: "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA",
+                data: try! AccountInfo(from: &binaryReader) as! T,
+                executable: false,
+                rentEpoch: 316
+            )
+        default:
+            fatalError()
+        }
     }
     
     func getBalance(account: String, commitment: Commitment?) async throws -> UInt64 {

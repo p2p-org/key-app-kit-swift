@@ -16,9 +16,9 @@ public class OrcaSwapParseStrategy: TransactionParseStrategy {
   ]
 
   private let apiClient: SolanaAPIClient
-  private let tokensRepository: TokensRepository
+  private let tokensRepository: SolanaTokensRepository
 
-  init(apiClient: SolanaAPIClient, tokensRepository: TokensRepository) {
+  init(apiClient: SolanaAPIClient, tokensRepository: SolanaTokensRepository) {
     self.apiClient = apiClient
     self.tokensRepository = tokensRepository
   }
