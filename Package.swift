@@ -34,12 +34,9 @@ let package = Package(
     ],
     dependencies: [
         .package(url: "https://github.com/p2p-org/solana-swift", from: "2.0.1"),
-        .package(name: "Amplitude", url: "https://github.com/amplitude/Amplitude-iOS", from: "8.3.0"),
+        .package(name: "Amplitude", url: "https://github.com/amplitude/Amplitude-iOS", from: "8.3.0")
     ],
     targets: [
-        .target(
-            name: "_Common"
-        ),
         .target(
             name: "TransactionParser",
             dependencies: [
@@ -54,7 +51,7 @@ let package = Package(
         ),
         .target(
             name: "NameService",
-            dependencies: ["_Common"]
+            dependencies: []
         ),
         .testTarget(
             name: "NameServiceIntegrationTests",
@@ -77,7 +74,7 @@ let package = Package(
         // PricesService
         .target(
             name: "SolanaPricesAPIs",
-            dependencies: ["_Common"]
+            dependencies: []
         ),
         .testTarget(
             name: "SolanaPricesAPIsUnitTests",
