@@ -5,7 +5,7 @@
 import Foundation
 import SolanaSwift
 
-extension TokensRepository {
+extension SolanaTokensRepository {
   func getTokenWithMint(_ mint: String?) async throws -> Token {
     guard let mint = mint else {
       return .unsupported(mint: nil)

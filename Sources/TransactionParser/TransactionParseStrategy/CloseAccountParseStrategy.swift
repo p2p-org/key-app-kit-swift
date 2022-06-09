@@ -7,9 +7,9 @@ import SolanaSwift
 
 /// A strategy for parsing close transactions.
 public class CloseAccountParseStrategy: TransactionParseStrategy {
-  private let tokensRepository: TokensRepository
+  private let tokensRepository: SolanaTokensRepository
 
-  init(tokensRepository: TokensRepository) { self.tokensRepository = tokensRepository }
+  init(tokensRepository: SolanaTokensRepository) { self.tokensRepository = tokensRepository }
   
   public func isHandlable(
     with transactionInfo: TransactionInfo

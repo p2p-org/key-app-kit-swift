@@ -7,9 +7,9 @@ import SolanaSwift
 
 /// The strategy for parsing creation account transactions.
 public class CreationAccountParseStrategy: TransactionParseStrategy {
-  private let tokensRepository: TokensRepository
+  private let tokensRepository: SolanaTokensRepository
 
-  init(tokensRepository: TokensRepository) { self.tokensRepository = tokensRepository }
+  init(tokensRepository: SolanaTokensRepository) { self.tokensRepository = tokensRepository }
   
   public func isHandlable(with transactionInfo: SolanaSwift.TransactionInfo) -> Bool {
     let instructions = transactionInfo.transaction.message.instructions

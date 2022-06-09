@@ -7,10 +7,8 @@ import XCTest
 @testable import TransactionParser
 
 class DefaultFeeParseStrategyTests: XCTestCase {
-  let endpoint = APIEndPoint.defaultEndpoints.first!
-
-  lazy var apiClient = JSONRPCAPIClient(endpoint: endpoint)
-  lazy var tokensRepository = TokensRepository(endpoint: endpoint)
+  lazy var apiClient = MockSolanaAPIClient()
+  lazy var tokensRepository = MockTokensRepository()
   lazy var strategy: DefaultFeeParseStrategy = .init(apiClient: apiClient)
 
   func testGetLamportPerSignature() async throws {
@@ -44,7 +42,7 @@ class DefaultFeeParseStrategyTests: XCTestCase {
 
     let fee = try await strategy.calculate(transactionInfo: rawTrx, feePayers: [])
     XCTAssertEqual(fee.transaction, 10000)
-    XCTAssertEqual(fee.accountBalances, 1_343_280)
+    XCTAssertEqual(fee.accountBalances, 2039280)
     XCTAssertEqual(fee.deposit, 0)
     XCTAssertNil(fee.others)
   }

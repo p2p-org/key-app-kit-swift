@@ -7,9 +7,7 @@ import XCTest
 @testable import TransactionParser
 
 class AccountCreationParseStrategyTests: XCTestCase {
-  let endpoint = APIEndPoint.defaultEndpoints.first!
-
-  lazy var tokensRepository = TokensRepository(endpoint: endpoint)
+  lazy var tokensRepository = MockTokensRepository()
   lazy var strategy = CreationAccountParseStrategy(tokensRepository: tokensRepository)
 
   func testCreateAccountParsing() async throws {
