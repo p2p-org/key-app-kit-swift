@@ -7,10 +7,8 @@ import XCTest
 @testable import TransactionParser
 
 class OrcaSwapStrategyTests: XCTestCase {
-  let endpoint = APIEndPoint.defaultEndpoints.first!
-
-  lazy var apiClient = JSONRPCAPIClient(endpoint: endpoint)
-  lazy var tokensRepository = TokensRepository(endpoint: endpoint)
+  lazy var apiClient = MockSolanaAPIClient()
+  lazy var tokensRepository = MockTokensRepository()
   lazy var strategy = OrcaSwapParseStrategy(apiClient: apiClient, tokensRepository: tokensRepository)
 
   func testParsingSuccessfulTransaction() async throws {
