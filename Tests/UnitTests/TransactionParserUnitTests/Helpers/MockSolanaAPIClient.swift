@@ -49,6 +49,8 @@ class MockSolanaAPIClient: SolanaAPIClient {
                 executable: false,
                 rentEpoch: 316
             )
+        case "3YuhjsaohzpzEYAsonBQakYDj3VFWimhDn7bci8ERKTh":
+            return nil
         default:
             fatalError()
         }
