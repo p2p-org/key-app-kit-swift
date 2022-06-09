@@ -12,6 +12,9 @@ import Common
 public class CryptoComparePricesProvider: PricesProvider {
     // MARK: - Properties
     
+    /// Network manager
+    public var pricesNetworkManager: PricesNetworkManager
+    
     /// Endpoint of the provider
     private let endpoint = "https://min-api.cryptocompare.com/data"
     
@@ -19,8 +22,9 @@ public class CryptoComparePricesProvider: PricesProvider {
     private let apikey: String?
     
     // MARK: - Initializer
-    public init(apikey: String?) {
+    public init(apikey: String?, pricesNetworkManager: PricesNetworkManager = DefaultPricesNetworkManager()) {
         self.apikey = apikey
+        self.pricesNetworkManager = pricesNetworkManager
     }
     
     // MARK: - Methods
@@ -86,8 +90,10 @@ public class CryptoComparePricesProvider: PricesProvider {
             .addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? ""
         //
         if let apikey = apikey {
-            path += "api_key=\(apikey)&fsyms=\(coinListQuery)&tsyms=\(fiat)"
+            path += "api_key=\(apikey)&"
         }
+        
+        path += "fsyms=\(coinListQuery)&tsyms=\(fiat)"
         
         let dict: [String: [String: Double]] = try await get(urlString: endpoint + path)
         var result = [String: CurrentPrice?]()

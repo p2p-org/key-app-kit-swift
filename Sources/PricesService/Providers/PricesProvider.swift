@@ -2,6 +2,8 @@ import Foundation
 
 /// Generic protocol to define a cryptocurrency prices provider
 public protocol PricesProvider {
+    /// Network manager for prices
+    var pricesNetworkManager: PricesNetworkManager {get}
     
     /// Get prices of current set of coins' ticket
     /// - Parameters:
@@ -24,21 +26,8 @@ public protocol PricesProvider {
 extension PricesProvider {
     /// Generic get function for retrieving data over network
     func get<T: Decodable>(urlString: String) async throws -> T {
-        guard let url = URL(string: urlString) else {
-            throw PricesProviderError.invalidURL
-        }
+        let data = try await pricesNetworkManager.get(urlString: urlString)
         try Task.checkCancellation()
-        let (data, response) = try await URLSession.shared.data(from: url)
-        guard let response = response as? HTTPURLResponse else {
-            throw PricesProviderError.invalidResponseStatusCode(nil)
-        }
-        switch response.statusCode {
-        case 200 ... 299:
-            try Task.checkCancellation()
-            return try JSONDecoder().decode(T.self, from: data)
-        default:
-            try Task.checkCancellation()
-            throw PricesProviderError.invalidResponseStatusCode(response.statusCode)
-        }
+        return try JSONDecoder().decode(T.self, from: data)
     }
 }

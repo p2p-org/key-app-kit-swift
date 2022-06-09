@@ -47,8 +47,9 @@ let package = Package(
             ]
         ),
         .testTarget(
-            name: "TransactionParserTests",
+            name: "TransactionParserUnitTests",
             dependencies: ["TransactionParser"],
+            path: "Tests/UnitTests/TransactionParserUnitTests",
             resources: [.process("./Resource")]
         ),
         .target(
@@ -56,8 +57,12 @@ let package = Package(
             dependencies: ["Common"]
         ),
         .testTarget(
-            name: "NameServiceTests",
-            dependencies: ["NameService", .product(name: "SolanaSwift", package: "solana-swift"),]
+            name: "NameServiceIntegrationTests",
+            dependencies: [
+                "NameService",
+                .product(name: "SolanaSwift", package: "solana-swift")
+            ],
+            path: "Tests/IntegrationTests/NameServiceIntegrationTests"
         ),
         // AnalyticsManager
         .target(
@@ -65,8 +70,9 @@ let package = Package(
             dependencies: ["Amplitude"]
         ),
         .testTarget(
-            name: "AnalyticsManagerTests",
-            dependencies: ["AnalyticsManager"]
+            name: "AnalyticsManagerUnitTests",
+            dependencies: ["AnalyticsManager"],
+            path: "Tests/UnitTests/AnalyticsManagerUnitTests"
         ),
         // PricesService
         .target(
@@ -74,8 +80,9 @@ let package = Package(
             dependencies: ["Common"]
         ),
         .testTarget(
-            name: "PricesServiceTests",
-            dependencies: ["PricesService"]
+            name: "PricesServiceUnitTests",
+            dependencies: ["PricesService"],
+            path: "Tests/UnitTests/PricesServiceUnitTests"
             //      resources: [.process("./Resource")]
         ),
     ]

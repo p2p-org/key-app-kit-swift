@@ -9,7 +9,6 @@ import XCTest
 class SerumParseStrategyTests: XCTestCase {
   let endpoint = APIEndPoint.defaultEndpoints.first!
 
-  lazy var apiClient = JSONRPCAPIClient(endpoint: endpoint)
   lazy var tokensRepository = TokensRepository(endpoint: endpoint)
   lazy var strategy = SerumSwapParseStrategy(tokensRepository: tokensRepository)
 
