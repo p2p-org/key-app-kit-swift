@@ -9,7 +9,7 @@ import Foundation
 import Common
 
 /// Prices provider from cryptocompare.com
-public class CryptoComparePricesProvider: PricesProvider {
+public class CryptoComparePricesAPI: SolanaPricesAPI {
     // MARK: - Properties
     
     /// Network manager
@@ -108,7 +108,7 @@ public class CryptoComparePricesProvider: PricesProvider {
     }
 }
 
-extension CryptoComparePricesProvider {
+extension CryptoComparePricesAPI {
     struct Response: Decodable {
 //        "Response": "Success",
 //        "Message": "",

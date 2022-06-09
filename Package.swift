@@ -28,8 +28,8 @@ let package = Package(
         ),
         // Price service for wallet
         .library(
-            name: "PricesService",
-            targets: ["PricesService"]
+            name: "SolanaPricesAPIs",
+            targets: ["SolanaPricesAPIs"]
         )
     ],
     dependencies: [
@@ -76,13 +76,13 @@ let package = Package(
         ),
         // PricesService
         .target(
-            name: "PricesService",
+            name: "SolanaPricesAPIs",
             dependencies: ["Common"]
         ),
         .testTarget(
-            name: "PricesServiceUnitTests",
-            dependencies: ["PricesService"],
-            path: "Tests/UnitTests/PricesServiceUnitTests"
+            name: "SolanaPricesAPIsUnitTests",
+            dependencies: ["SolanaPricesAPIs"],
+            path: "Tests/UnitTests/SolanaPricesAPIsUnitTests"
             //      resources: [.process("./Resource")]
         ),
     ]

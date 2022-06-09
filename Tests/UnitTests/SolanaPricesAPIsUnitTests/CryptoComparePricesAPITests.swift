@@ -6,12 +6,12 @@
 //
 
 import XCTest
-import PricesService
+import SolanaPricesAPIs
 
-class CryptoComparePricesProviderTests: XCTestCase {
+class CryptoComparePricesAPITests: XCTestCase {
 
     let networkManager = MockNetworkManager()
-    var pricesProvider: CryptoComparePricesProvider!
+    var pricesProvider: CryptoComparePricesAPI!
     
     override func setUp() async throws {
         pricesProvider = .init(apikey: nil, pricesNetworkManager: networkManager)

@@ -1,7 +1,7 @@
 import Foundation
 
 /// Generic protocol to define a cryptocurrency prices provider
-public protocol PricesProvider {
+public protocol SolanaPricesAPI {
     /// Network manager for prices
     var pricesNetworkManager: PricesNetworkManager {get}
     
@@ -23,7 +23,7 @@ public protocol PricesProvider {
 //    func getValueInUSD(fiat: String) async throws -> Double?
 }
 
-extension PricesProvider {
+extension SolanaPricesAPI {
     /// Generic get function for retrieving data over network
     func get<T: Decodable>(urlString: String) async throws -> T {
         let data = try await pricesNetworkManager.get(urlString: urlString)
