@@ -5,7 +5,7 @@ on:
     branches: [ master ]
     paths:
       - 'Sources/**/*'
-      - 'Tests/**/*'
+      - 'Tests/UnitTests/**/*'
   pull_request:
     branches: [ master ]
     paths:
