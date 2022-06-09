@@ -20,7 +20,9 @@ public protocol SolanaPricesAPI {
     /// - Returns: The records of prices in given period
     func getHistoricalPrice(of coinName: String, fiat: String, period: Period) async throws -> [PriceRecord]
     
-//    func getValueInUSD(fiat: String) async throws -> Double?
+    /// Get value of a fiat in USD
+    /// - Parameter fiat: fiat (other than USD)
+    func getValueInUSD(fiat: String) async throws -> Double?
 }
 
 extension SolanaPricesAPI {

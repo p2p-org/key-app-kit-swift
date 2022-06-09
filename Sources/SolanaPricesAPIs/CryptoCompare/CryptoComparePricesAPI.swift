@@ -81,6 +81,11 @@ public class CryptoComparePricesAPI: SolanaPricesAPI {
             
     }
     
+    public func getValueInUSD(fiat: String) async throws -> Double? {
+        let response: [String: Double] = try await get(urlString: endpoint + "/price?fsym=USD&tsyms=\(fiat)")
+        return response[fiat]
+    }
+    
     // MARK: - Helpers
     private func getCurrentPrices(partialCoins coins: [String], toFiat fiat: String) async throws -> [String: CurrentPrice?] {
         var path = "/pricemulti?"
