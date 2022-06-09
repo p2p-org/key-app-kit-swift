@@ -33,6 +33,13 @@ public enum AnalyticsEvent: MirrorableEnum {
     case backingUpIcloud
     case backingUpManually
     case backingUpError
+
+    /// Event 49: The wallet was successfully created
+    case walletCreated(lastScreen: String)
+
+    /// Event 50: The wallet was successfully created
+    case walletRestored(lastScreen: String)
+
     // setup
     case setupOpen(fromPage: String)
     case setupPinKeydown1
@@ -193,42 +200,5 @@ extension AnalyticsEvent {
 
     var params: [AnyHashable: Any]? {
         mirror.params.isEmpty ? nil : mirror.params
-    }
-}
-
-private extension String {
-    func snakeCased() -> String? {
-        let pattern = "([a-z0-9])([A-Z])"
-
-        let regex = try? NSRegularExpression(pattern: pattern, options: [])
-        let range = NSRange(location: 0, length: count)
-        return regex?.stringByReplacingMatches(in: self, options: [], range: range, withTemplate: "$1_$2")
-            .uppercaseFirst
-    }
-    
-    var firstCharacter: String {
-        String(prefix(1))
-    }
-
-    var uppercaseFirst: String {
-        firstCharacter.uppercased() + String(dropFirst())
-    }
-}
-
-protocol MirrorableEnum {}
-extension MirrorableEnum {
-    var mirror: (label: String, params: [String: Any]) {
-        let reflection = Mirror(reflecting: self)
-        guard reflection.displayStyle == .enum,
-              let associated = reflection.children.first
-        else {
-            return ("\(self)", [:])
-        }
-        let values = Mirror(reflecting: associated.value).children
-        var valuesArray = [String: Any]()
-        for case let item in values where item.label != nil {
-            valuesArray[item.label!] = item.value
-        }
-        return (associated.label!, valuesArray)
     }
 }
