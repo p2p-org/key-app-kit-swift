@@ -51,6 +51,8 @@ class MockSolanaAPIClient: SolanaAPIClient {
             )
         case "3YuhjsaohzpzEYAsonBQakYDj3VFWimhDn7bci8ERKTh":
             return nil
+        case "4ijqHixcbzhxQbfJWAoPkvBhokBDRGtXyqVcMN8ywj8W":
+            return nil
         default:
             fatalError()
         }
