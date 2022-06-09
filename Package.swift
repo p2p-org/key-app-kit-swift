@@ -38,7 +38,7 @@ let package = Package(
     ],
     targets: [
         .target(
-            name: "Common"
+            name: "_Common"
         ),
         .target(
             name: "TransactionParser",
@@ -54,7 +54,7 @@ let package = Package(
         ),
         .target(
             name: "NameService",
-            dependencies: ["Common"]
+            dependencies: ["_Common"]
         ),
         .testTarget(
             name: "NameServiceIntegrationTests",
@@ -77,7 +77,7 @@ let package = Package(
         // PricesService
         .target(
             name: "SolanaPricesAPIs",
-            dependencies: ["Common"]
+            dependencies: ["_Common"]
         ),
         .testTarget(
             name: "SolanaPricesAPIsUnitTests",

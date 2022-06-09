@@ -6,7 +6,7 @@
 //
 
 import Foundation
-import Common
+import _Common
 
 /// Prices provider from cryptocompare.com
 public class CryptoComparePricesAPI: SolanaPricesAPI {

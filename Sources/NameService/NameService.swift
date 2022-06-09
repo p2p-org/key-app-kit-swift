@@ -3,7 +3,7 @@
 // found in the LICENSE file.
 
 import Foundation
-import Common
+import _Common
 
 public protocol NameService {
     /// Resolve user name by account's public key.
