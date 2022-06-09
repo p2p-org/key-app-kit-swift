@@ -100,25 +100,6 @@ public class CryptoComparePricesProvider: PricesProvider {
         }
         return result
     }
-    
-    private func get<T: Decodable>(urlString: String) async throws -> T {
-        guard let url = URL(string: urlString) else {
-            throw PricesProviderError.invalidURL
-        }
-        try Task.checkCancellation()
-        let (data, response) = try await URLSession.shared.data(from: url)
-        guard let response = response as? HTTPURLResponse else {
-            throw PricesProviderError.invalidResponseStatusCode(nil)
-        }
-        switch response.statusCode {
-        case 200 ... 299:
-            try Task.checkCancellation()
-            return try JSONDecoder().decode(T.self, from: data)
-        default:
-            try Task.checkCancellation()
-            throw PricesProviderError.invalidResponseStatusCode(response.statusCode)
-        }
-    }
 }
 
 extension CryptoComparePricesProvider {
