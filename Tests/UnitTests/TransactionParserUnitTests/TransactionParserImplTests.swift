@@ -7,9 +7,7 @@ import XCTest
 @testable import TransactionParser
 
 class TransactionParserImplTests: XCTestCase {
-  let endpoint = APIEndPoint.defaultEndpoints.first!
-
-  lazy var apiClient = JSONRPCAPIClient(endpoint: endpoint)
+  lazy var apiClient = MockSolanaAPIClient()
   lazy var parseService: TransactionParserServiceImpl = TransactionParserServiceImpl.default(apiClient: apiClient)
 
   func testParsing() async throws {
