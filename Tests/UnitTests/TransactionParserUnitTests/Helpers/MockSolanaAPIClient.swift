@@ -29,6 +29,26 @@ class MockSolanaAPIClient: SolanaAPIClient {
                 executable: false,
                 rentEpoch: 316
             )
+        case "HVc47am8HPYgvkkCiFJzV6Q8qsJJKJUYT6o7ucd6ZYXY":
+            return nil
+        case "FdiTt7XQ94fGkgorywN1GuXqQzmURHCDgYtUutWRcy4q":
+            var binaryReader = BinaryReader(bytes: Data(base64Encoded: "BpuIV/6rgYT7aH9jRhjANdrEOdwa6ztVmKDwAAAAAAGVnOqUkPJVr6muuizyY38m7w+KGKPwmhy/esO7Llb6UB/ruyd7AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQEAAADwHR8AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA")!.bytes)
+            return .init(
+                lamports: 562102267325,
+                owner: "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA",
+                data: try! AccountInfo(from: &binaryReader) as! T,
+                executable: false,
+                rentEpoch: 316
+            )
+        case "ErcxwkPgLdyoVL6j2SsekZ5iysPZEDRGfAggh282kQb8":
+            var binaryReader = BinaryReader(bytes: Data(base64Encoded: "DlY5XjyGAUOALpuUoCzG0E91/scqP7txUmg1XgzXzYlZ9QCnv3uHbULVucoY03CjVfA+0o2LoUEOuFZWBIqlfMNn0YsuAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA")!.bytes)
+            return .init(
+                lamports: 2039280,
+                owner: "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA",
+                data: try! AccountInfo(from: &binaryReader) as! T,
+                executable: false,
+                rentEpoch: 316
+            )
         default:
             fatalError()
         }
