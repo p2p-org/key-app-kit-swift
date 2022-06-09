@@ -9,7 +9,6 @@ import XCTest
 class AccountCreationParseStrategyTests: XCTestCase {
   let endpoint = APIEndPoint.defaultEndpoints.first!
 
-  lazy var apiClient = JSONRPCAPIClient(endpoint: endpoint)
   lazy var tokensRepository = TokensRepository(endpoint: endpoint)
   lazy var strategy = CreationAccountParseStrategy(tokensRepository: tokensRepository)
 
