@@ -23,7 +23,7 @@ jobs:
       run: swift test --enable-code-coverage -v
     - name: Convert to standart format
       run: |
-        xcrun llvm-cov export -format="lcov" .build/debug/SolanaSwiftMagicPackageTests.xctest/Contents/MacOS/SolanaSwiftMagicPackageTests -instr-profile .build/debug/codecov/default.profdata > info.lcov
+        xcrun llvm-cov export -format="lcov" .build/debug/KeyAppKitPackageTests.xctest/Contents/MacOS/KeyAppKitPackageTests -instr-profile .build/debug/codecov/default.profdata > info.lcov
 
     - uses: codecov/codecov-action@v3
       with:
