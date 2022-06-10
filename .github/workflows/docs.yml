@@ -18,7 +18,7 @@ jobs:
       with:
         target: TransactionParser
         output: ./docs
-        hosting-base-path: solana-swift-magic
+        hosting-base-path: key-app-kit-swift
         disable-indexing: 'true'
         transform-for-static-hosting: 'true'
 
@@ -27,7 +27,7 @@ jobs:
       with:
         target: NameService
         output: ./docs
-        hosting-base-path: solana-swift-magic
+        hosting-base-path: key-app-kit-swift
         disable-indexing: 'true'
         transform-for-static-hosting: 'true'
 
