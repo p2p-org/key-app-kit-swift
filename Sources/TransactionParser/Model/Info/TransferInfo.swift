@@ -5,7 +5,7 @@
 import Foundation
 import SolanaSwift
 
-@available(* , deprecated, renamed: "TransferInfo")
+@available(*, deprecated, renamed: "TransferInfo")
 public typealias TransferTransaction = TransferInfo
 
 /// A struct that contains all information about transfer.
@@ -26,7 +26,7 @@ public struct TransferInfo: Hashable {
   public let destinationAuthority: String?
 
   /// The amount of transfer
-  public let amount: Double?
+  public let rawAmount: Double?
 
   /// The current account address view.
   ///
@@ -38,14 +38,14 @@ public struct TransferInfo: Hashable {
     destination: Wallet?,
     authority: String?,
     destinationAuthority: String?,
-    amount: Double?,
+    rawAmount: Double?,
     account: String?
   ) {
     self.source = source
     self.destination = destination
     self.authority = authority
     self.destinationAuthority = destinationAuthority
-    self.amount = amount
+    self.rawAmount = rawAmount
     self.account = account
   }
 
@@ -59,5 +59,11 @@ public struct TransferInfo: Hashable {
 }
 
 extension TransferInfo: Info {
+  public var amount: Double? {
+    var amount = rawAmount ?? 0
+    if transferType == .send { amount = -amount }
+    return amount
+  }
+
   public var symbol: String? { source?.token.symbol ?? destination?.token.symbol ?? "" }
 }

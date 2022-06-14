@@ -62,7 +62,7 @@ public class TransferParseStrategy: TransactionParseStrategy {
       destination: destination,
       authority: nil,
       destinationAuthority: nil,
-      amount: lamports?.convertToBalance(decimals: source.token.decimals),
+      rawAmount: lamports?.convertToBalance(decimals: source.token.decimals),
       account: configuration.accountView
     )
   }
@@ -128,7 +128,7 @@ public class TransferParseStrategy: TransactionParseStrategy {
         destination: destination,
         authority: authority,
         destinationAuthority: destinationAuthority,
-        amount: lamports?.convertToBalance(decimals: source.token.decimals),
+        rawAmount: lamports?.convertToBalance(decimals: source.token.decimals),
         account: myAccount
       )
     } else {
@@ -144,7 +144,7 @@ public class TransferParseStrategy: TransactionParseStrategy {
         destination: destination,
         authority: authority,
         destinationAuthority: destinationAuthority,
-        amount: lamports?.convertToBalance(decimals: source.token.decimals),
+        rawAmount: lamports?.convertToBalance(decimals: source.token.decimals),
         account: configuration.accountView
       )
     }
@@ -159,7 +159,7 @@ public class TransferParseStrategy: TransactionParseStrategy {
         destination: transferInfo.destination,
         authority: transferInfo.authority,
         destinationAuthority: accountInfo?.owner,
-        amount: transferInfo.amount,
+        rawAmount: transferInfo.rawAmount,
         account: configuration.accountView
       )
     } catch {
@@ -168,7 +168,7 @@ public class TransferParseStrategy: TransactionParseStrategy {
         destination: transferInfo.destination,
         authority: transferInfo.authority,
         destinationAuthority: nil,
-        amount: transferInfo.amount,
+        rawAmount: transferInfo.rawAmount,
         account: configuration.accountView
       )
     }
