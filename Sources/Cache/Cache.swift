@@ -5,21 +5,25 @@
 import Foundation
 
 public final actor Cache<Key: Hashable, Value> {
-  private let wrapped = NSCache<WrappedKey, Entry>()
+    private let wrapped = NSCache<WrappedKey, Entry>()
 
-  func insert(_ value: Value, forKey key: Key) {
-    let entry = Entry(value: value)
-    wrapped.setObject(entry, forKey: WrappedKey(key))
-  }
+    public init() {
 
-  func value(forKey key: Key) -> Value? {
-    let entry = wrapped.object(forKey: WrappedKey(key))
-    return entry?.value
-  }
+    }
 
-  func removeValue(forKey key: Key) {
-    wrapped.removeObject(forKey: WrappedKey(key))
-  }
+    public func insert(_ value: Value, forKey key: Key) {
+        let entry = Entry(value: value)
+        wrapped.setObject(entry, forKey: WrappedKey(key))
+    }
+
+    public func value(forKey key: Key) -> Value? {
+        let entry = wrapped.object(forKey: WrappedKey(key))
+        return entry?.value
+    }
+
+    public func removeValue(forKey key: Key) {
+        wrapped.removeObject(forKey: WrappedKey(key))
+    }
 }
 
 private extension Cache {

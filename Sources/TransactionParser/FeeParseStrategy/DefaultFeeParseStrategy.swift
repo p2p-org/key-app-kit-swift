@@ -4,6 +4,7 @@
 
 import Foundation
 import SolanaSwift
+import Cache
 
 /// A default implementation for parsing transaction fee.
 public class DefaultFeeParseStrategy: FeeParseStrategy {
