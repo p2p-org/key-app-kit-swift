@@ -46,6 +46,10 @@ public class CryptoComparePricesAPI: SolanaPricesAPI {
         
     }
     
+    public func getCurrentPrices(coinIDs: [String], toFiat fiat: String) async throws -> [String: CurrentPrice?] {
+        try await getCurrentPrices(coins: coinIDs, toFiat: fiat)
+    }
+    
     public func getHistoricalPrice(of coinName: String, fiat: String, period: Period) async throws -> [PriceRecord] {
         var path = "/v2"
         switch period {

@@ -23,7 +23,7 @@ class TransferParseStrategyTests: XCTestCase {
     XCTAssertEqual(trx.destination?.pubkey, "3h1zGmCwsRJnVk5BuRNMLsPaQu1y2aqXqXDWYCgrp5UG")
     XCTAssertEqual(trx.authority, nil)
     XCTAssertEqual(trx.destinationAuthority, nil)
-    XCTAssertEqual(trx.amount, 0.01)
+    XCTAssertEqual(trx.rawAmount, 0.01)
   }
 
   func testTransferSOLPaidByP2P() async throws {
@@ -38,7 +38,7 @@ class TransferParseStrategyTests: XCTestCase {
     XCTAssertEqual(trx.destination?.pubkey, "3h1zGmCwsRJnVk5BuRNMLsPaQu1y2aqXqXDWYCgrp5UG")
     XCTAssertEqual(trx.authority, nil)
     XCTAssertEqual(trx.destinationAuthority, nil)
-    XCTAssertEqual(trx.amount, 0.00001)
+    XCTAssertEqual(trx.rawAmount, 0.00001)
   }
 
   func testTransferSPLToSOL() async throws {

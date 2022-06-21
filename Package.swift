@@ -13,6 +13,7 @@ let package = Package(
 
     ],
     products: [
+        .library(name: "Cache", targets: ["Cache"]),
         .library(
             name: "TransactionParser",
             targets: ["TransactionParser"]
@@ -37,9 +38,11 @@ let package = Package(
         .package(name: "Amplitude", url: "https://github.com/amplitude/Amplitude-iOS", from: "8.3.0")
     ],
     targets: [
+        .target(name: "Cache"),
         .target(
             name: "TransactionParser",
             dependencies: [
+                "Cache",
                 .product(name: "SolanaSwift", package: "solana-swift"),
             ]
         ),
@@ -74,7 +77,7 @@ let package = Package(
         // PricesService
         .target(
             name: "SolanaPricesAPIs",
-            dependencies: []
+            dependencies: ["Cache"]
         ),
         .testTarget(
             name: "SolanaPricesAPIsUnitTests",
