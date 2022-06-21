@@ -13,7 +13,7 @@ class CoinGeckoPricesAPITests: XCTestCase {
     }
     
     func testGetCoinByIdPrices() async throws {
-        let prices = try await api.getCurrentPrices(coins: ["bitcoin", "ethereum"], toFiat: "USD")
+        let prices = try await api.getCurrentPrices(coinIDs: ["bitcoin", "ethereum"], toFiat: "USD")
         XCTAssertEqual(prices["ETH"]??.value, 1055.31)
         XCTAssertEqual(prices["BTC"]??.value, 19725.28)
     }
@@ -39,7 +39,7 @@ public struct CoinGeckoMockNetworkManager: PricesNetworkManager {
         if urlString == "https://api.coingecko.com/api/v3/coins/list" {
             return "[{\"id\":\"ethereum\",\"symbol\":\"eth\",\"name\":\"ethereum\"},{\"id\":\"bitcoin\",\"symbol\":\"btc\",\"name\":\"bitcoin\"}]"
                 .data(using: .utf8)!
-        } else if urlString == "https://api.coingecko.com/api/v3/coins/markets/?vs_currency=USD&ids=ethereum,bitcoin" {
+        } else if urlString.starts(with: "https://api.coingecko.com/api/v3/coins/markets/?vs_currency=USD&ids=") {
             return "[{\"id\":\"bitcoin\",\"symbol\":\"btc\",\"name\":\"Bitcoin\",\"image\":\"https://assets.coingecko.com/coins/images/1/large/bitcoin.png?1547033579\",\"current_price\":19725.28,\"market_cap\":376470782585,\"market_cap_rank\":1,\"fully_diluted_valuation\":414540678517,\"total_volume\":39199469854,\"high_24h\":19803.59,\"low_24h\":17677.43,\"price_change_24h\":307.09,\"price_change_percentage_24h\":1.58146,\"market_cap_change_24h\":7058692631,\"market_cap_change_percentage_24h\":1.91079,\"circulating_supply\":19071437.0,\"total_supply\":21000000.0,\"max_supply\":21000000.0,\"ath\":69045,\"ath_change_percentage\":-71.44805,\"ath_date\":\"2021-11-10T14:24:11.849Z\",\"atl\":67.81,\"atl_change_percentage\":28972.28815,\"atl_date\":\"2013-07-06T00:00:00.000Z\",\"roi\":null,\"last_updated\":\"2022-06-19T11:25:52.765Z\"},{\"id\":\"ethereum\",\"symbol\":\"eth\",\"name\":\"Ethereum\",\"image\":\"https://assets.coingecko.com/coins/images/279/large/ethereum.png?1595348880\",\"current_price\":1055.31,\"market_cap\":127787895130,\"market_cap_rank\":2,\"fully_diluted_valuation\":null,\"total_volume\":24534182163,\"high_24h\":1057.74,\"low_24h\":893.4,\"price_change_24h\":45.16,\"price_change_percentage_24h\":4.47051,\"market_cap_change_24h\":5532235492,\"market_cap_change_percentage_24h\":4.52514,\"circulating_supply\":121228927.624,\"total_supply\":null,\"max_supply\":null,\"ath\":4878.26,\"ath_change_percentage\":-78.39179,\"ath_date\":\"2021-11-10T14:24:19.604Z\",\"atl\":0.432979,\"atl_change_percentage\":243354.06046,\"atl_date\":\"2015-10-20T00:00:00.000Z\",\"roi\":{\"times\":70.47431414085052,\"currency\":\"btc\",\"percentage\":7047.431414085052},\"last_updated\":\"2022-06-19T11:25:05.894Z\"}]"
                 .data(using: .utf8)!
         } else if urlString == "https://api.coingecko.com/api/v3/coins/bitcoin/market_chart?vs_currency=usd&days=30" {

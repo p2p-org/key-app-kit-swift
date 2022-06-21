@@ -4,11 +4,11 @@ import Cache
 /// Prices provider from cryptocompare.com
 public class CoinGeckoPricesAPI: SolanaPricesAPI {
     
-    private let cache = Cache<String, [Coin]>()
-    
     enum CacheKeys: String {
         case coinlist
     }
+    
+    private let cache = Cache<String, [Coin]>()
     
     private let endpoint = "https://api.coingecko.com/api/v3"
     
@@ -22,15 +22,17 @@ public class CoinGeckoPricesAPI: SolanaPricesAPI {
         var geckoCoinsResult: [Coin] = await cache.value(forKey: CacheKeys.coinlist.rawValue) ?? []
         if geckoCoinsResult.isEmpty {
             geckoCoinsResult = try await get(urlString: endpoint + "/coins/list")
+            await cache.insert(geckoCoinsResult, forKey: CacheKeys.coinlist.rawValue)
         }
-        
-        return try await getCurrentPrices(coinIDs: geckoCoinsResult.map { $0.id }, toFiat: fiat)
+        let ids = geckoCoinsResult.filter { coin in
+            coins.map{$0.lowercased()}.contains(coin.symbol.lowercased())
+        }.map { $0.id }
+        return try await getCurrentPrices(coinIDs: ids, toFiat: fiat)
     }
     
-    func getCurrentPrices(coinIDs: [String], toFiat fiat: String) async throws -> [String: CurrentPrice?] {
+    public func getCurrentPrices(coinIDs: [String], toFiat fiat: String) async throws -> [String: CurrentPrice?] {
         let param = coinIDs.joined(separator: ",")
         let pricesResult: [CoinMarketData] = try await get(urlString: endpoint + "/coins/markets/?vs_currency=\(fiat)&ids=\(param)")
-        
         return pricesResult.reduce(into: [String: CurrentPrice?](), { partialResult, data in
             partialResult[data.symbol.uppercased()] = .init(
                 value: data.current_price,
@@ -42,6 +44,7 @@ public class CoinGeckoPricesAPI: SolanaPricesAPI {
         var geckoCoinsResult: [Coin] = await cache.value(forKey: CacheKeys.coinlist.rawValue) ?? []
         if geckoCoinsResult.isEmpty {
             geckoCoinsResult = try await get(urlString: endpoint + "/coins/list")
+            await cache.insert(geckoCoinsResult, forKey: CacheKeys.coinlist.rawValue)
         }
         let geckoCoins = geckoCoinsResult.filter({ geckoCoin in
             geckoCoin.symbol.lowercased() == coinName.lowercased()
@@ -117,6 +120,8 @@ public class CoinGeckoPricesAPI: SolanaPricesAPI {
         let result: [String: [String: Double]]? = try await get(urlString: endpoint + "/simple/price?ids=usd&vs_currencies=\(toFiat)")
         return result?["usd"]?[toFiat]
     }
+    
+    // MARK: -
 
     struct Coin: Codable {
         var id: String
@@ -166,7 +171,5 @@ public class CoinGeckoPricesAPI: SolanaPricesAPI {
         enum CodingKeys: String, CodingKey {
             case prices
         }
-        
     }
-    
 }
