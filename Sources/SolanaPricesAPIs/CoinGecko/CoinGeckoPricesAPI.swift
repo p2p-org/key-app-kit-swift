@@ -24,9 +24,11 @@ public class CoinGeckoPricesAPI: SolanaPricesAPI {
             geckoCoinsResult = try await get(urlString: endpoint + "/coins/list")
         }
         
-        let param = geckoCoinsResult.filter { geckoCoin in
-            coins.contains { geckoCoin.symbol.lowercased() == $0.lowercased() }
-        }.map {$0.id }.joined(separator: ",")
+        return try await getCurrentPrices(coinIDs: geckoCoinsResult.map { $0.id }, toFiat: fiat)
+    }
+    
+    func getCurrentPrices(coinIDs: [String], toFiat fiat: String) async throws -> [String: CurrentPrice?] {
+        let param = coinIDs.joined(separator: ",")
         let pricesResult: [CoinMarketData] = try await get(urlString: endpoint + "/coins/markets/?vs_currency=\(fiat)&ids=\(param)")
         
         return pricesResult.reduce(into: [String: CurrentPrice?](), { partialResult, data in

@@ -13,6 +13,7 @@ let package = Package(
 
     ],
     products: [
+        .library(name: "Cache", targets: ["Cache"]),
         .library(
             name: "TransactionParser",
             targets: ["TransactionParser"]

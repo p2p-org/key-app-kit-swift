@@ -33,3 +33,10 @@ extension SolanaPricesAPI {
         return try JSONDecoder().decode(T.self, from: data)
     }
 }
+
+
+extension SolanaPricesAPI {
+    func getCurrentPrices(coinIDs: [String], toFiat fiat: String) async throws -> [String: CurrentPrice?] {
+        fatalError()
+    }
+}
