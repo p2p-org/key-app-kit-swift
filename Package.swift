@@ -77,7 +77,7 @@ let package = Package(
         // PricesService
         .target(
             name: "SolanaPricesAPIs",
-            dependencies: ["Cache"]
+            dependencies: ["Cache", .product(name: "SolanaSwift", package: "solana-swift"),]
         ),
         .testTarget(
             name: "SolanaPricesAPIsUnitTests",
