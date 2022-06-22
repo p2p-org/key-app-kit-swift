@@ -1,5 +1,6 @@
 import XCTest
 import SolanaPricesAPIs
+import SolanaSwift
 
 
 class CoinGeckoPricesAPITests: XCTestCase {
@@ -7,13 +8,11 @@ class CoinGeckoPricesAPITests: XCTestCase {
     let api = CoinGeckoPricesAPI(pricesNetworkManager: CoinGeckoMockNetworkManager())
 
     func testGetCoinPrices() async throws {
-        let prices = try await api.getCurrentPrices(coins: ["BTC", "ETH"], toFiat: "USD")
-        XCTAssertEqual(prices["ETH"]??.value, 1055.31)
-        XCTAssertEqual(prices["BTC"]??.value, 19725.28)
-    }
-    
-    func testGetCoinByIdPrices() async throws {
-        let prices = try await api.getCurrentPrices(coinIDs: ["bitcoin", "ethereum"], toFiat: "USD")
+        let btcTokenExtension = try! JSONDecoder().decode(TokenExtensions.self, from: #"{"coingeckoId": "bitcoin"}"#.data(using: .utf8)!)
+        let etcTokenExtension = try! JSONDecoder().decode(TokenExtensions.self, from: #"{"coingeckoId": "ethereum"}"#.data(using: .utf8)!)
+        let btc = Token(_tags: [], chainId: 0, address: "", symbol: "BTC", name: "Bitcoin", decimals: 18, logoURI: nil, extensions: btcTokenExtension)
+        let etc = Token(_tags: [], chainId: 0, address: "", symbol: "ETC", name: "Bitcoin", decimals: 18, logoURI: nil, extensions: etcTokenExtension)
+        let prices = try await api.getCurrentPrices(coins: [btc, etc], toFiat: "USD")
         XCTAssertEqual(prices["ETH"]??.value, 1055.31)
         XCTAssertEqual(prices["BTC"]??.value, 19725.28)
     }

@@ -1,5 +1,6 @@
 import Foundation
 import Cache
+import SolanaSwift
 
 /// Prices provider from cryptocompare.com
 public class CoinGeckoPricesAPI: SolanaPricesAPI {
@@ -18,20 +19,8 @@ public class CoinGeckoPricesAPI: SolanaPricesAPI {
         self.pricesNetworkManager = pricesNetworkManager
     }
     
-    public func getCurrentPrices(coins: [String], toFiat fiat: String) async throws -> [String : CurrentPrice?] {
-        var geckoCoinsResult: [Coin] = await cache.value(forKey: CacheKeys.coinlist.rawValue) ?? []
-        if geckoCoinsResult.isEmpty {
-            geckoCoinsResult = try await get(urlString: endpoint + "/coins/list")
-            await cache.insert(geckoCoinsResult, forKey: CacheKeys.coinlist.rawValue)
-        }
-        let ids = geckoCoinsResult.filter { coin in
-            coins.map{$0.lowercased()}.contains(coin.symbol.lowercased())
-        }.map { $0.id }
-        return try await getCurrentPrices(coinIDs: ids, toFiat: fiat)
-    }
-    
-    public func getCurrentPrices(coinIDs: [String], toFiat fiat: String) async throws -> [String: CurrentPrice?] {
-        let param = coinIDs.joined(separator: ",")
+    public func getCurrentPrices(coins: [Token], toFiat fiat: String) async throws -> [String: CurrentPrice?] {
+        let param = coins.compactMap {$0.extensions?.coingeckoId}.unique.joined(separator: ",")
         let pricesResult: [CoinMarketData] = try await get(urlString: endpoint + "/coins/markets/?vs_currency=\(fiat)&ids=\(param)")
         return pricesResult.reduce(into: [String: CurrentPrice?](), { partialResult, data in
             partialResult[data.symbol.uppercased()] = .init(

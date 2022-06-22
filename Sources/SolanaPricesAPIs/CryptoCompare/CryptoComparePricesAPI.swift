@@ -1,11 +1,5 @@
-//
-//  CryptoComparePricesFetcher.swift
-//  p2p_wallet
-//
-//  Created by Chung Tran on 04/02/2021.
-//
-
 import Foundation
+import SolanaSwift
 
 /// Prices provider from cryptocompare.com
 public class CryptoComparePricesAPI: SolanaPricesAPI {
@@ -27,12 +21,12 @@ public class CryptoComparePricesAPI: SolanaPricesAPI {
     }
     
     // MARK: - Methods
-    public func getCurrentPrices(coins: [String], toFiat fiat: String) async throws -> [String : CurrentPrice?] {
+    public func getCurrentPrices(coins: [Token], toFiat fiat: String) async throws -> [String: CurrentPrice?] {
         let chunk = coins.chunked(into: 30)
         return await withTaskGroup(of: [String: CurrentPrice?].self) { group in
             for part in chunk {
                 group.addTask { [weak self] in
-                    (try? await self?.getCurrentPrices(partialCoins: part, toFiat: fiat)) ?? [:]
+                    (try? await self?.getCurrentPrices(partialCoins: part.map {$0.symbol}, toFiat: fiat)) ?? [:]
                 }
             }
             var dictArray = [[String: CurrentPrice?]]()
@@ -44,10 +38,6 @@ public class CryptoComparePricesAPI: SolanaPricesAPI {
             return dictonary
         }
         
-    }
-    
-    public func getCurrentPrices(coinIDs: [String], toFiat fiat: String) async throws -> [String: CurrentPrice?] {
-        try await getCurrentPrices(coins: coinIDs, toFiat: fiat)
     }
     
     public func getHistoricalPrice(of coinName: String, fiat: String, period: Period) async throws -> [PriceRecord] {

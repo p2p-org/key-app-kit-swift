@@ -7,13 +7,18 @@
 
 import XCTest
 import SolanaPricesAPIs
+import SolanaSwift
 
 class CryptoComparePricesAPITests: XCTestCase {
 
     let api = CryptoComparePricesAPI(apikey: nil, pricesNetworkManager: MockNetworkManager())
 
     func testGetCoinPrices() async throws {
-        let prices = try await api.getCurrentPrices(coins: ["BTC", "ETH"], toFiat: "USD")
+        let btcTokenExtension = try! JSONDecoder().decode(TokenExtensions.self, from: #"{"coingeckoId": "bitcoin"}"#.data(using: .utf8)!)
+        let etcTokenExtension = try! JSONDecoder().decode(TokenExtensions.self, from: #"{"coingeckoId": "ethereum"}"#.data(using: .utf8)!)
+        let btc = Token(_tags: [], chainId: 0, address: "", symbol: "BTC", name: "Bitcoin", decimals: 18, logoURI: nil, extensions: btcTokenExtension)
+        let etc = Token(_tags: [], chainId: 0, address: "", symbol: "ETH", name: "Bitcoin", decimals: 18, logoURI: nil, extensions: etcTokenExtension)
+        let prices = try await api.getCurrentPrices(coins: [btc, etc], toFiat: "USD")
         XCTAssertEqual(prices["ETH"]??.value, 1796.09)
         XCTAssertEqual(prices["BTC"]??.value, 30231.69)
     }
