@@ -19,7 +19,7 @@ Pod::Spec.new do |s|
   s.source_files = 'Sources/SolanaPricesAPIs/**/*'
   s.swift_version = '5.5'
   s.dependency 'Cache'
-  s.dependency 'SolanaSwift'
+  s.dependency 'SolanaSwift', '~> 2.1.4'
 
   s.pod_target_xcconfig = {
     'SWIFT_OPTIMIZATION_LEVEL' => '-O'

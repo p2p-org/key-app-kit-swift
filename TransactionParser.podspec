@@ -24,4 +24,5 @@ Pod::Spec.new do |s|
   }
 
   s.dependency 'SolanaSwift', '~> 2.1.1'
+  s.dependency 'Cache'
 end
