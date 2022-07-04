@@ -23,6 +23,6 @@ Pod::Spec.new do |s|
     'SWIFT_OPTIMIZATION_LEVEL' => '-O'
   }
 
-  s.dependency 'SolanaSwift', '~> 2.1.1'
+  s.dependency 'SolanaSwift', '~> 2'
   s.dependency 'Cache'
 end
