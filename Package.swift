@@ -31,11 +31,15 @@ let package = Package(
         .library(
             name: "SolanaPricesAPIs",
             targets: ["SolanaPricesAPIs"]
+        ),
+        .library(
+            name: "JSBridge",
+            targets: ["JSBridge"]
         )
     ],
     dependencies: [
         .package(url: "https://github.com/p2p-org/solana-swift", from: "2.1.1"),
-        .package(name: "Amplitude", url: "https://github.com/amplitude/Amplitude-iOS", from: "8.3.0")
+        .package(name: "Amplitude", url: "https://github.com/amplitude/Amplitude-iOS", from: "8.3.0"),
     ],
     targets: [
         .target(name: "Cache"),
@@ -56,14 +60,11 @@ let package = Package(
             name: "NameService",
             dependencies: []
         ),
-        .target(
-            name: "JSBridge"
-        ),
         .testTarget(
             name: "NameServiceIntegrationTests",
             dependencies: [
                 "NameService",
-                .product(name: "SolanaSwift", package: "solana-swift")
+                .product(name: "SolanaSwift", package: "solana-swift"),
             ],
             path: "Tests/IntegrationTests/NameServiceIntegrationTests"
         ),
@@ -80,13 +81,22 @@ let package = Package(
         // PricesService
         .target(
             name: "SolanaPricesAPIs",
-            dependencies: ["Cache", .product(name: "SolanaSwift", package: "solana-swift"),]
+            dependencies: ["Cache", .product(name: "SolanaSwift", package: "solana-swift")]
         ),
         .testTarget(
             name: "SolanaPricesAPIsUnitTests",
             dependencies: ["SolanaPricesAPIs"],
             path: "Tests/UnitTests/SolanaPricesAPIsUnitTests"
             //      resources: [.process("./Resource")]
+        ),
+        
+        // JSBridge
+        .target(
+            name: "JSBridge"
+        ),
+        .testTarget(
+            name: "JSBridgeTests",
+            dependencies: ["JSBridge"]
         ),
     ]
 )
