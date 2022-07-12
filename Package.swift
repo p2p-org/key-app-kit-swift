@@ -39,7 +39,7 @@ let package = Package(
     ],
     dependencies: [
         .package(url: "https://github.com/p2p-org/solana-swift", from: "2.1.1"),
-        .package(name: "Amplitude", url: "https://github.com/amplitude/Amplitude-iOS", from: "8.3.0"),
+        .package(url: "https://github.com/amplitude/Amplitude-iOS", from: "8.3.0"),
     ],
     targets: [
         .target(name: "Cache"),
@@ -71,7 +71,7 @@ let package = Package(
         // AnalyticsManager
         .target(
             name: "AnalyticsManager",
-            dependencies: ["Amplitude"]
+            dependencies: [.product(name: "Amplitude", package: "Amplitude-iOS")]
         ),
         .testTarget(
             name: "AnalyticsManagerUnitTests",
