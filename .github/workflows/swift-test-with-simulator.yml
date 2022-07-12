@@ -1,14 +1,16 @@
-name: Swift
+name: Swift test with simulator
 
 on:
   push:
     branches: [ master ]
     paths:
+      - '.github/**/*'
       - 'Sources/**/*'
       - 'Tests/UnitTests/**/*'
   pull_request:
     branches: [ master ]
     paths:
+      - '.github/**/*'
       - 'Sources/**/*'
       - 'Tests/UnitTests/**/*'
 
@@ -17,7 +19,7 @@ jobs:
     runs-on: macos-12
     steps:
     - uses: actions/checkout@v3
-    - name: Build
-      run: swift build -v
     - name: Run tests
-      run: ./Tools/jsbridge-test-with-simulator.sh
+      run: |
+        cd Tests/SimulatorIntegration/
+        xcodebuild test -sdk iphoneos -scheme "JSBridgeTests" -destination "platform=iOS Simulator,name=IPhone 11"
