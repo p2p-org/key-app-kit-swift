@@ -99,6 +99,7 @@ public class JSBValue: JSBridge, CustomStringConvertible {
         return result
     }
 
+    /// Parse swift args to js args.
     internal func parseArgs<T: CustomStringConvertible>(_ args: [T]) throws -> String {
         try args
             .map { arg -> String in
@@ -141,14 +142,17 @@ public class JSBValue: JSBridge, CustomStringConvertible {
             .joined(separator: ", ")
     }
 
+    /// Get value from reference as String
     public func toString() async throws -> String? {
         try await currentContext?.evaluate("String(\(name))")
     }
     
+    /// Get value from reference as Int
     public func toInt() async throws -> Int? {
         try await currentContext?.evaluate("\(name)")
     }
     
+    /// Current context that contains this JSBValue
     private func getContext() async throws -> JSBContext {
         if let context = currentContext {
             return context
@@ -158,6 +162,7 @@ public class JSBValue: JSBridge, CustomStringConvertible {
 }
 
 internal extension String {
+    /// Make string be safed in js
     var safed: String {
         replacingOccurrences(of: "\"", with: "\\\"")
     }
