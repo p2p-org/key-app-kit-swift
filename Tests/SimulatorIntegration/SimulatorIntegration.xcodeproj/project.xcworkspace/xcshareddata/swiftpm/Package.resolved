@@ -6,8 +6,8 @@
         "repositoryURL": "https://github.com/amplitude/Amplitude-iOS",
         "state": {
           "branch": null,
-          "revision": "e135cfe3b4fc13fbf17e7e475b8d0053aa44eeec",
-          "version": "8.10.0"
+          "revision": "06afbb8b9b8da89fa1e7fc58c6342400b77a9ca1",
+          "version": "8.10.2"
         }
       },
       {
@@ -42,8 +42,8 @@
         "repositoryURL": "https://github.com/p2p-org/solana-swift",
         "state": {
           "branch": null,
-          "revision": "ffa9ff6910a5c7afb8b5a169d18485d7cb5b9fd9",
-          "version": "2.1.4"
+          "revision": "57a0934e1b8ec06b80da27bfaf05b70e788215b1",
+          "version": "2.2.2"
         }
       },
       {

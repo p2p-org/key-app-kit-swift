@@ -31,11 +31,15 @@ let package = Package(
         .library(
             name: "SolanaPricesAPIs",
             targets: ["SolanaPricesAPIs"]
+        ),
+        .library(
+            name: "JSBridge",
+            targets: ["JSBridge"]
         )
     ],
     dependencies: [
         .package(url: "https://github.com/p2p-org/solana-swift", from: "2.1.1"),
-        .package(name: "Amplitude", url: "https://github.com/amplitude/Amplitude-iOS", from: "8.3.0")
+        .package(name: "Amplitude", url: "https://github.com/amplitude/Amplitude-iOS", from: "8.3.0"),
     ],
     targets: [
         .target(name: "Cache"),
@@ -60,7 +64,7 @@ let package = Package(
             name: "NameServiceIntegrationTests",
             dependencies: [
                 "NameService",
-                .product(name: "SolanaSwift", package: "solana-swift")
+                .product(name: "SolanaSwift", package: "solana-swift"),
             ],
             path: "Tests/IntegrationTests/NameServiceIntegrationTests"
         ),
@@ -77,7 +81,7 @@ let package = Package(
         // PricesService
         .target(
             name: "SolanaPricesAPIs",
-            dependencies: ["Cache", .product(name: "SolanaSwift", package: "solana-swift"),]
+            dependencies: ["Cache", .product(name: "SolanaSwift", package: "solana-swift")]
         ),
         .testTarget(
             name: "SolanaPricesAPIsUnitTests",
@@ -85,10 +89,16 @@ let package = Package(
             path: "Tests/UnitTests/SolanaPricesAPIsUnitTests"
             //      resources: [.process("./Resource")]
         ),
+        
+        // JSBridge
+        .target(
+            name: "JSBridge"
+        ),
+        .testTarget(name: "JSBridgeTests", dependencies: ["JSBridge"])
     ]
 )
 
 #if swift(>=5.6)
     // For generating docs purpose
-    package.dependencies.append(.package(url: "https://github.com/apple/swift-docc-plugin", from: "1.0.0"))
+    // package.dependencies.append(.package(url: "https://github.com/apple/swift-docc-plugin", from: "1.0.0"))
 #endif
