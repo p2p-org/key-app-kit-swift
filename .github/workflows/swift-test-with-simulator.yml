@@ -22,4 +22,5 @@ jobs:
     - name: Run tests
       run: |
         cd Tests/SimulatorIntegration/
+        pwd
         xcodebuild test -sdk iphoneos -scheme "JSBridgeTests" -destination "platform=iOS Simulator,name=IPhone 11"
