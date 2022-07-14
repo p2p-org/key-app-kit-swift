@@ -1,6 +1,6 @@
 Pod::Spec.new do |s|
   s.name             = 'NameService'
-  s.version          = '1.0.0'
+  s.version          = '1.0.1'
   s.summary          = 'Name service of P2P Validator on Solana.'
 
   s.description      = <<-DESC
