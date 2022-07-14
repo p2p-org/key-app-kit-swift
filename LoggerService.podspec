@@ -1,10 +1,10 @@
 Pod::Spec.new do |s|
-  s.name             = 'KeyAppKitLogger'
-  s.version          = '1.0.5'
+  s.name             = 'LoggerService'
+  s.version          = '1.0.7'
   s.summary          = 'Logger for p2p wallet.'
 
   s.description      = <<-DESC
-KeyAppKitLogger for p2p wallet.
+  LoggerService for p2p wallet.
                        DESC
 
   s.homepage         = 'https://github.com/p2p-org/key-app-kit-swift'
@@ -16,7 +16,7 @@ KeyAppKitLogger for p2p wallet.
 
   s.ios.deployment_target = '13.0'
 
-  s.source_files = 'Sources/KeyAppKitLogger/**/*'
+  s.source_files = 'Sources/LoggerService/**/*'
   s.swift_version = '5.5'
 
   s.pod_target_xcconfig = {

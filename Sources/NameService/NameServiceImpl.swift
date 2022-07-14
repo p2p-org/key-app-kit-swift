@@ -3,6 +3,7 @@
 // found in the LICENSE file.
 
 import Foundation
+import LoggerService
 
 public class NameServiceImpl: NameService {
     private let endpoint: String
@@ -54,7 +55,7 @@ public class NameServiceImpl: NameService {
         urlRequest.setValue("application/json", forHTTPHeaderField: "Content-Type")
         urlRequest.httpBody = try JSONEncoder().encode(params)
         try Task.checkCancellation()
-        let (data, _) = try await URLSession.shared.data(from: urlRequest)
+        let (data, response) = try await URLSession.shared.data(from: urlRequest)
         try Task.checkCancellation()
         let stringResponse = String(data: data, encoding: .utf8)
         if let stringResponse = stringResponse,
@@ -62,9 +63,6 @@ public class NameServiceImpl: NameService {
         {
             throw NameServiceError.invalidStatusCode(500) // server error
         }
-        #if DEBUG
-            print(String(describing: stringResponse))
-        #endif
         return try JSONDecoder().decode(PostResponse.self, from: data)
     }
 
@@ -78,11 +76,13 @@ public class NameServiceImpl: NameService {
 
     private func request<T: Decodable>(url: String) async throws -> T {
         guard let url = URL(string: url) else {
+            Logger.log(event: "NameService: invalidURL", message: nil, logLevel: .error)
             throw NameServiceError.invalidURL
         }
         try Task.checkCancellation()
         let (data, response) = try await URLSession.shared.data(from: url)
         guard let response = response as? HTTPURLResponse else {
+            Logger.log(event: "NameService: request Invalid response code", message: nil, logLevel: .error)
             throw NameServiceError.invalidResponseCode
         }
         switch response.statusCode {
@@ -90,6 +90,11 @@ public class NameServiceImpl: NameService {
             try Task.checkCancellation()
             return try JSONDecoder().decode(T.self, from: data)
         default:
+            Logger.log(
+                event: "NameService: response code: \(response.statusCode)",
+                message: String(data: data, encoding: .utf8),
+                logLevel: .error
+            )
             try Task.checkCancellation()
             throw NameServiceError.invalidStatusCode(response.statusCode)
         }

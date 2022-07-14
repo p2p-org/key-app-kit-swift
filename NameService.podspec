@@ -22,6 +22,6 @@ Pod::Spec.new do |s|
   s.pod_target_xcconfig = {
     'SWIFT_OPTIMIZATION_LEVEL' => '-O'
   }
-  s.dependency "KeyAppKitLogger"
+  s.dependency "LoggerService"
 
 end
