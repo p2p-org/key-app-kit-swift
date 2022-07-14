@@ -9,4 +9,5 @@ enum JSBError: Error {
     case invalidArgument(String)
     case jsError(Any)
     case floatingNumericIsNotSupport
+    case pageIsNotReady
 }

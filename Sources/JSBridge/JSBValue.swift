@@ -5,7 +5,7 @@
 import Foundation
 
 public class JSBValue: JSBridge, CustomStringConvertible {
-    let name: String
+    public let name: String
     weak var currentContext: JSBContext?
 
     public init(in context: JSBContext, name: String? = nil) {
@@ -28,7 +28,7 @@ public class JSBValue: JSBridge, CustomStringConvertible {
         self.init(in: context, name: name)
         try await currentContext?.evaluate("\(self.name) = \"\(string.safed)\"")
     }
-    
+
     public convenience init(number: Int, in context: JSBContext, name: String? = nil) async throws {
         self.init(in: context, name: name)
         try await currentContext?.evaluate("\(self.name) = \(number)")
@@ -89,6 +89,8 @@ public class JSBValue: JSBridge, CustomStringConvertible {
                      );
                  0;
                 """
+                
+                print(script)
 
                 await context.wkWebView.evaluateJavaScript(script) { _, error in
                     guard let error = error else { return }
@@ -146,12 +148,17 @@ public class JSBValue: JSBridge, CustomStringConvertible {
     public func toString() async throws -> String? {
         try await currentContext?.evaluate("String(\(name))")
     }
-    
+
     /// Get value from reference as Int
     public func toInt() async throws -> Int? {
         try await currentContext?.evaluate("\(name)")
     }
-    
+
+    /// Get value from reference as Dictionary
+    public func toDictionary() async throws -> [String: Any]? {
+        try await currentContext?.evaluate("\(name)")
+    }
+
     /// Current context that contains this JSBValue
     private func getContext() async throws -> JSBContext {
         if let context = currentContext {

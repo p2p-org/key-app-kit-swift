@@ -14,35 +14,50 @@ let package = Package(
     ],
     products: [
         .library(name: "Cache", targets: ["Cache"]),
+        
         .library(
             name: "TransactionParser",
             targets: ["TransactionParser"]
         ),
+        
         .library(
             name: "NameService",
             targets: ["NameService"]
         ),
+        
         // Analytics manager for wallet
         .library(
             name: "AnalyticsManager",
             targets: ["AnalyticsManager"]
         ),
+        
         // Price service for wallet
         .library(
             name: "SolanaPricesAPIs",
             targets: ["SolanaPricesAPIs"]
         ),
+        
+        // JSBridge
         .library(
             name: "JSBridge",
             targets: ["JSBridge"]
-        )
+        ),
+        
+        // Tkey
+        .library(
+            name: "TKey",
+            targets: ["TKey"]
+        ),
     ],
     dependencies: [
         .package(url: "https://github.com/p2p-org/solana-swift", from: "2.1.1"),
         .package(url: "https://github.com/amplitude/Amplitude-iOS", from: "8.3.0"),
     ],
     targets: [
+        // Cache
         .target(name: "Cache"),
+
+        // Transaction Parser
         .target(
             name: "TransactionParser",
             dependencies: [
@@ -56,6 +71,8 @@ let package = Package(
             path: "Tests/UnitTests/TransactionParserUnitTests",
             resources: [.process("./Resource")]
         ),
+
+        // Name Service
         .target(
             name: "NameService",
             dependencies: []
@@ -68,6 +85,7 @@ let package = Package(
             ],
             path: "Tests/IntegrationTests/NameServiceIntegrationTests"
         ),
+
         // AnalyticsManager
         .target(
             name: "AnalyticsManager",
@@ -78,6 +96,7 @@ let package = Package(
             dependencies: ["AnalyticsManager"],
             path: "Tests/UnitTests/AnalyticsManagerUnitTests"
         ),
+
         // PricesService
         .target(
             name: "SolanaPricesAPIs",
@@ -89,12 +108,23 @@ let package = Package(
             path: "Tests/UnitTests/SolanaPricesAPIsUnitTests"
             //      resources: [.process("./Resource")]
         ),
-        
+
         // JSBridge
         .target(
             name: "JSBridge"
         ),
-        .testTarget(name: "JSBridgeTests", dependencies: ["JSBridge"])
+        .testTarget(name: "JSBridgeTests", dependencies: ["JSBridge"]),
+
+        // TKey
+        .target(
+            name: "TKey",
+            dependencies: ["JSBridge"],
+            resources: [
+                .process("Resource/bundle.js"),
+                .process("Resource/bundle.js.map"),
+                .process("Resource/index.html")
+            ]
+        ),
     ]
 )
 
