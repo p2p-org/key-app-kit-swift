@@ -15,6 +15,10 @@ let package = Package(
     products: [
         .library(name: "Cache", targets: ["Cache"]),
         .library(
+            name: "KeyAppKitLogger",
+            targets: ["KeyAppKitLogger"]
+        ),
+        .library(
             name: "TransactionParser",
             targets: ["TransactionParser"]
         ),
@@ -43,6 +47,7 @@ let package = Package(
     ],
     targets: [
         .target(name: "Cache"),
+        .target(name: "KeyAppKitLogger"),
         .target(
             name: "TransactionParser",
             dependencies: [
@@ -58,7 +63,7 @@ let package = Package(
         ),
         .target(
             name: "NameService",
-            dependencies: []
+            dependencies: ["KeyAppKitLogger"]
         ),
         .testTarget(
             name: "NameServiceIntegrationTests",

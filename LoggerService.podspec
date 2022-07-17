@@ -1,10 +1,10 @@
 Pod::Spec.new do |s|
-  s.name             = 'NameService'
-  s.version          = '1.0.0'
-  s.summary          = 'Name service of P2P Validator on Solana.'
+  s.name             = 'LoggerService'
+  s.version          = '1.0.7'
+  s.summary          = 'Logger for p2p wallet.'
 
   s.description      = <<-DESC
-  Name service of P2P Validator on Solana.
+  LoggerService for p2p wallet.
                        DESC
 
   s.homepage         = 'https://github.com/p2p-org/key-app-kit-swift'
@@ -16,12 +16,10 @@ Pod::Spec.new do |s|
 
   s.ios.deployment_target = '13.0'
 
-  s.source_files = 'Sources/NameService/**/*'
+  s.source_files = 'Sources/LoggerService/**/*'
   s.swift_version = '5.5'
 
   s.pod_target_xcconfig = {
     'SWIFT_OPTIMIZATION_LEVEL' => '-O'
   }
-  s.dependency "LoggerService"
-
 end
