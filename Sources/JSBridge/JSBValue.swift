@@ -89,8 +89,6 @@ public class JSBValue: JSBridge, CustomStringConvertible {
                      );
                  0;
                 """
-                
-                print(script)
 
                 await context.wkWebView.evaluateJavaScript(script) { _, error in
                     guard let error = error else { return }

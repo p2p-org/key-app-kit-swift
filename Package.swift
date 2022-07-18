@@ -46,7 +46,7 @@ let package = Package(
         // Tkey
         .library(
             name: "TKey",
-            targets: ["TKey"]
+            targets: ["TKeyFacade"]
         ),
     ],
     dependencies: [
@@ -117,7 +117,7 @@ let package = Package(
 
         // TKey
         .target(
-            name: "TKey",
+            name: "TKeyFacade",
             dependencies: ["JSBridge"],
             resources: [
                 .process("Resource/bundle.js"),

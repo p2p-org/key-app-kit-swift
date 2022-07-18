@@ -6,7 +6,7 @@ import Foundation
 import JSBridge
 import WebKit
 
-public class TKeyJS: TKey {
+public class TKeyJS: TKeyFacade {
     enum Error: Swift.Error {
         case canNotFindJSScript
         case facadeIsNotReady

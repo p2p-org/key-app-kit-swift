@@ -2,7 +2,7 @@
 // Use of this source code is governed by a MIT-style license that can be
 // found in the LICENSE file.
 
-public protocol TKey {
+public protocol TKeyFacade {
     func signUp(tokenID: TokenID) async throws -> SignUpResult
     func signIn(tokenID: TokenID, deviceShare: String) async throws -> SignInResult
     func signIn(tokenID: TokenID, withCustomShare: String) async throws -> SignInResult
