@@ -45,8 +45,8 @@ let package = Package(
         
         // Tkey
         .library(
-            name: "TKey",
-            targets: ["TKeyFacade"]
+            name: "Onboarding",
+            targets: ["Onboarding"]
         ),
     ],
     dependencies: [
@@ -117,7 +117,7 @@ let package = Package(
 
         // TKey
         .target(
-            name: "TKeyFacade",
+            name: "Onboarding",
             dependencies: ["JSBridge"],
             resources: [
                 .process("Resource/bundle.js"),
@@ -125,6 +125,7 @@ let package = Package(
                 .process("Resource/index.html")
             ]
         ),
+        .testTarget(name: "OnboardingTests", dependencies: ["Onboarding"])
     ]
 )
 
