@@ -16,35 +16,51 @@ public class TKeyJSFacade: TKeyFacade {
     private let kLibrary: String = "p2pWeb3Auth"
 
     private let context: JSBContext
-    private var facade: JSBValue?
-    
-    public init(wkWebView: WKWebView) {
+    private var facadeClass: JSBValue?
+
+    public init(wkWebView: WKWebView? = nil) {
         context = JSBContext(wkWebView: wkWebView)
     }
 
     public func initialize() async throws {
-        guard let scriptPath = Bundle.module.path(forResource: "index", ofType: "html") else {
-            fatalError(Error.canNotFindJSScript.localizedDescription)
-        }
-
+        let scriptPath = getSDKPath()
         let request = URLRequest(url: URL(fileURLWithPath: scriptPath))
         try await context.load(request: request)
-
-        facade = JSBValue(in: context, name: "tkeyFacade")
-        try await context.evaluate("\(facade!.name) = new \(kLibrary).IosFacade();")
+        facadeClass = try await context.this.valueForKey("\(kLibrary).IosFacade")
+    }
+    
+    private func getSDKPath() -> String {
+        #if SWIFT_PACKAGE
+            guard let scriptPath = Bundle.module.path(forResource: "index", ofType: "html") else {
+                fatalError(Error.canNotFindJSScript.localizedDescription)
+            }
+        #else
+            guard let scriptPath = Bundle(for: TKeyJSFacade.self).path(forResource: "index", ofType: "html") else {
+                fatalError(Error.canNotFindJSScript.localizedDescription)
+            }
+        #endif
+        
+        return scriptPath
+    }
+    
+    private func getFacade(configuration: [String: Any]) async throws -> JSBValue {
+        let library = try getLibrary()
+        return try await library.invokeNew(withArguments: [configuration])
     }
 
     public func signUp(tokenID: TokenID) async throws -> SignUpResult {
-        let facade = try getFacade()
+        let facade = try await getFacade(configuration: ["type": "signup", "useNewEth": false])
+        throw Error.invalidReturnValue
+        
         let value = try await facade.invokeAsyncMethod("triggerSilentSignup", withArguments: [tokenID.value])
-        print(try await value.toDictionary())
+        
         guard
             let result = try await value.toDictionary(),
             let privateSOL = result["privateSOL"] as? String,
             let reconstructedETH = result["reconstructedETH"] as? String,
             let deviceShare = result["deviceShare"] as? String
         else { throw Error.invalidReturnValue }
-
+        
         return .init(
             privateSOL: privateSOL,
             reconstructedETH: reconstructedETH,
@@ -53,7 +69,7 @@ public class TKeyJSFacade: TKeyFacade {
     }
 
     public func signIn(tokenID: TokenID, deviceShare: String) async throws -> SignInResult {
-        let facade = try getFacade()
+        let facade = try await getFacade(configuration: [:])
         let value = try await facade.invokeAsyncMethod(
             "triggerSignInNoCustom",
             withArguments: [tokenID.value, deviceShare]
@@ -71,7 +87,7 @@ public class TKeyJSFacade: TKeyFacade {
     }
 
     public func signIn(tokenID: TokenID, withCustomShare _: String) async throws -> SignInResult {
-        let facade = try getFacade()
+        let facade = try await getFacade(configuration: [:])
         let value = try await facade.invokeAsyncMethod(
             "triggerSignInNoDevice",
             withArguments: [tokenID.value]
@@ -87,9 +103,11 @@ public class TKeyJSFacade: TKeyFacade {
             reconstructedETH: reconstructedETH
         )
     }
-
-    private func getFacade() throws -> JSBValue {
-        guard let facade = facade else { throw Error.facadeIsNotReady }
-        return facade
+    
+    func getLibrary() throws -> JSBValue {
+        guard let library = facadeClass else {
+            throw Error.facadeIsNotReady
+        }
+        return library
     }
 }

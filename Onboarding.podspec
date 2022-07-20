@@ -18,7 +18,7 @@ Pod::Spec.new do |s|
 
   s.source_files = 'Sources/Onboarding/**/*'
   s.swift_version = '5.5'
-
+  s.resources = "Sources/Onboarding/Resource/**/*"
   s.dependency 'JSBridge'
 
   s.pod_target_xcconfig = {

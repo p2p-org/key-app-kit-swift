@@ -4,12 +4,15 @@
 
 import Foundation
 
-public typealias OnboardingStateMachine = StateMachine<OnboardingState>
+public typealias CreateWalletStateMachine = StateMachine<CreateWalletState>
 
-public enum OnboardingState: Codable, State, Equatable {
-    public typealias Event = OnboardingEvent
-    public private(set) static var initialState: OnboardingState = .socialSignIn
+public enum CreateWalletState: Codable, State, Equatable {
+    public typealias Event = CreateWalletEvent
+    public typealias Provider = TKeyFacade
 
+    public private(set) static var initialState: CreateWalletState = .socialSignIn
+
+    // States
     case socialSignIn
     case socialSignInUnhandleableError
 
@@ -18,24 +21,32 @@ public enum OnboardingState: Codable, State, Equatable {
     case enterPincode(solPrivateKey: String, ethPublicKey: String, deviceShare: String, phoneNumberShare: String)
 
     // Final state
-    case finish(solPrivateKey: String, ethPublicKey: String, deviceShare: String, phoneNumberShare: String, pincode: String)
-    
-    public func accept(currentState: OnboardingState, event: OnboardingEvent) async throws -> OnboardingState {
+    case finish(
+        solPrivateKey: String,
+        ethPublicKey: String,
+        deviceShare: String,
+        phoneNumberShare: String,
+        pincode: String
+    )
+
+    public func accept(
+        currentState: CreateWalletState, event: CreateWalletEvent,
+        provider: TKeyFacade
+    ) async throws -> CreateWalletState {
         switch currentState {
         case .socialSignIn:
-            if case let .signIn(tokenID, provider) = event {
-                print("Login into torus with \(tokenID) from \(provider)")
+            if case let .signIn(tokenID, _) = event {
+                let result = try await provider.signUp(tokenID: .init(value: tokenID, provider: .google))
                 return .enterPhoneNumber(
-                    solPrivateKey: "fakeSolPrivateKey",
-                    ethPublicKey: "fakeEthPublicKey",
-                    deviceShare: "someDeviceToken"
+                    solPrivateKey: result.privateSOL,
+                    ethPublicKey: result.reconstructedETH,
+                    deviceShare: result.deviceShare
                 )
             }
         case .socialSignInUnhandleableError:
-            break
+            return currentState
         case let .enterPhoneNumber(solPrivateKey: solPrivateKey, ethPublicKey: ethPublicKey, deviceShare: deviceShare):
             if case let .enterPhoneNumber(phoneNumber) = event {
-                print("Send sms to phone number: \(phoneNumber)")
                 return .verifyPhoneNumber(
                     solPrivateKey: solPrivateKey,
                     ethPublicKey: ethPublicKey,
@@ -50,7 +61,6 @@ public enum OnboardingState: Codable, State, Equatable {
             phoneNumber: phoneNumber
         ):
             if case let .enterSmsConfirmationCode(code) = event {
-                print("Enter sms confirmation code: \(code)")
                 return .enterPincode(
                     solPrivateKey: solPrivateKey,
                     ethPublicKey: ethPublicKey,
@@ -65,7 +75,6 @@ public enum OnboardingState: Codable, State, Equatable {
             phoneNumberShare: phoneNumberShare
         ):
             if case let .enterPincode(pincode) = event {
-                print("Enter pincode: \(pincode)")
                 return .finish(
                     solPrivateKey: solPrivateKey,
                     ethPublicKey: ethPublicKey,
@@ -86,8 +95,8 @@ public enum SignInProvider {
     case google
 }
 
-public enum OnboardingEvent {
-    case signIn(tokenID: String, type: SignInProvider)
+public enum CreateWalletEvent {
+    case signIn(tokenID: String, authProvider: SignInProvider)
     case enterPhoneNumber(phoneNumber: String)
     case enterSmsConfirmationCode(code: String)
     case enterPincode(pincode: String)

@@ -2,25 +2,35 @@
 // Use of this source code is governed by a MIT-style license that can be
 // found in the LICENSE file.
 
+import Combine
 import Foundation
 
-public protocol State {
+public protocol State: Equatable {
     associatedtype Event
+    associatedtype Provider
+
     static var initialState: Self { get }
 
-    func accept(currentState: Self, event: Event) async throws -> Self
+    func accept(currentState: Self, event: Event, provider: Provider) async throws -> Self
 }
 
 public actor StateMachine<S: State> {
-    private(set) var currentState: S
+    private nonisolated let stateSubject: CurrentValueSubject<S, Never>
 
-    init(initialState: S?) {
-        currentState = initialState ?? S.initialState
+    public nonisolated var currentState: S { stateSubject.value }
+    public nonisolated var stateStream: AnyPublisher<S, Never> { stateSubject.eraseToAnyPublisher() }
+
+    private let provider: S.Provider
+
+    public init(initialState: S? = nil, provider: S.Provider) {
+        self.provider = provider
+        stateSubject = .init(initialState ?? S.initialState)
     }
 
-    func accept(event: S.Event) async throws -> S {
-        let state = try await currentState.accept(currentState: currentState, event: event)
-        currentState = state
+    @discardableResult
+    public func accept(event: S.Event) async throws -> S {
+        let state = try await currentState.accept(currentState: stateSubject.value, event: event, provider: provider)
+        stateSubject.send(state)
         return state
     }
 }
