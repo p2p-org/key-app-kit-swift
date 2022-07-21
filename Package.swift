@@ -14,6 +14,7 @@ let package = Package(
     ],
     products: [
         .library(name: "Cache", targets: ["Cache"]),
+        
         .library(
             name: "KeyAppKitLogger",
             targets: ["KeyAppKitLogger"]
@@ -22,37 +23,54 @@ let package = Package(
             name: "TransactionParser",
             targets: ["TransactionParser"]
         ),
+        
         .library(
             name: "NameService",
             targets: ["NameService"]
         ),
+        
         // Analytics manager for wallet
         .library(
             name: "AnalyticsManager",
             targets: ["AnalyticsManager"]
         ),
+        
         // Price service for wallet
         .library(
             name: "SolanaPricesAPIs",
             targets: ["SolanaPricesAPIs"]
         ),
+        
+        // JSBridge
         .library(
             name: "JSBridge",
             targets: ["JSBridge"]
         ),
+        
         // Countries
         .library(
             name: "CountriesAPI",
             targets: ["CountriesAPI"]
-        )
+        ),
+        
+        // Tkey
+        .library(
+            name: "Onboarding",
+            targets: ["Onboarding"]
+        ),
     ],
     dependencies: [
         .package(url: "https://github.com/p2p-org/solana-swift", from: "2.1.1"),
-        .package(name: "Amplitude", url: "https://github.com/amplitude/Amplitude-iOS", from: "8.3.0"),
+        .package(url: "https://github.com/amplitude/Amplitude-iOS", from: "8.3.0"),
     ],
     targets: [
+        // Cache
         .target(name: "Cache"),
+        
+        // KeyAppKitLogger
         .target(name: "KeyAppKitLogger"),
+        
+        // Transaction Parser
         .target(
             name: "TransactionParser",
             dependencies: [
@@ -66,6 +84,8 @@ let package = Package(
             path: "Tests/UnitTests/TransactionParserUnitTests",
             resources: [.process("./Resource")]
         ),
+
+        // Name Service
         .target(
             name: "NameService",
             dependencies: ["KeyAppKitLogger"]
@@ -78,16 +98,18 @@ let package = Package(
             ],
             path: "Tests/IntegrationTests/NameServiceIntegrationTests"
         ),
+
         // AnalyticsManager
         .target(
             name: "AnalyticsManager",
-            dependencies: ["Amplitude"]
+            dependencies: [.product(name: "Amplitude", package: "Amplitude-iOS")]
         ),
         .testTarget(
             name: "AnalyticsManagerUnitTests",
             dependencies: ["AnalyticsManager"],
             path: "Tests/UnitTests/AnalyticsManagerUnitTests"
         ),
+
         // PricesService
         .target(
             name: "SolanaPricesAPIs",
@@ -99,7 +121,7 @@ let package = Package(
             path: "Tests/UnitTests/SolanaPricesAPIsUnitTests"
             //      resources: [.process("./Resource")]
         ),
-        
+
         // JSBridge
         .target(
             name: "JSBridge"
@@ -119,6 +141,18 @@ let package = Package(
             path: "Tests/UnitTests/CountriesAPIUnitTests"
             //      resources: [.process("./Resource")]
         ),
+
+        // TKey
+        .target(
+            name: "Onboarding",
+            dependencies: ["JSBridge"],
+            resources: [
+                .process("Resource/bundle.js"),
+                .process("Resource/bundle.js.map"),
+                .process("Resource/index.html")
+            ]
+        ),
+        .testTarget(name: "OnboardingTests", dependencies: ["Onboarding"])
     ]
 )
 

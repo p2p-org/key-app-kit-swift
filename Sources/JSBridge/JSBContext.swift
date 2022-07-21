@@ -7,12 +7,11 @@ import WebKit
 
 /// A class for managing communication between Swift and Javascript in WKWebview
 public class JSBContext: NSObject {
-    
     /// An id that indicates current unused local variable.
     ///
     /// The local variable will be used for temporary or permanent js data storage.
     internal var variableId: Int = 0
-    
+
     /// A dispatch table for callback from async js functions.
     internal var promiseDispatchTable: PromiseDispatchTable = .init()
 
@@ -20,7 +19,7 @@ public class JSBContext: NSObject {
 
     /// A local variable prefix.
     private static let kJsbValueName = "__localBridgeVariable"
-    
+
     /// A WKWebview channel for returning values from JS `Promise`.
     internal static let kPromiseCallback = "promiseCallback"
 
@@ -29,6 +28,7 @@ public class JSBContext: NSObject {
 
         super.init()
 
+        wkWebView?.navigationDelegate = self
         let contentController = self.wkWebView.configuration.userContentController
         contentController.add(self, name: JSBContext.kPromiseCallback)
     }
@@ -40,7 +40,7 @@ public class JSBContext: NSObject {
     }
 
     /// Evaluate raw js script.
-    @MainActor func evaluate(_ script: String) async throws {
+    @MainActor public func evaluate(_ script: String) async throws {
         let _: Any? = try await withCheckedThrowingContinuation { continuation in
             wkWebView.evaluateJavaScript(script) { _, error in
                 if let error = error {
@@ -53,7 +53,7 @@ public class JSBContext: NSObject {
     }
 
     /// Evaluate raw js script that can return value.
-    @MainActor func evaluate<T>(_ script: String) async throws -> T? {
+    @MainActor public func evaluate<T>(_ script: String) async throws -> T? {
         try await withCheckedThrowingContinuation { continuation in
             wkWebView.evaluateJavaScript(script) { result, error in
                 if let error = error {
@@ -62,6 +62,15 @@ public class JSBContext: NSObject {
                 }
                 continuation.resume(returning: result as? T)
             }
+        }
+    }
+
+    var loadContinuation: CheckedContinuation<Void, Never>?
+    public func load(request: URLRequest) async throws {
+        if loadContinuation != nil { throw JSBError.pageIsNotReady }
+        await withCheckedContinuation { (continuation: CheckedContinuation<Void, Never>) in
+            loadContinuation = continuation
+            Task { await wkWebView.load(request) }
         }
     }
 
@@ -79,5 +88,12 @@ extension JSBContext: WKScriptMessageHandler {
             Task { await promiseDispatchTable.resolveWithError(for: Int64(id), error: JSBError.jsError(error)) }
         }
         Task { await promiseDispatchTable.resolve(for: Int64(id)) }
+    }
+}
+
+extension JSBContext: WKNavigationDelegate {
+    public func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {
+        loadContinuation?.resume()
+        loadContinuation = nil
     }
 }
