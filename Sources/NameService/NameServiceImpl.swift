@@ -3,7 +3,7 @@
 // found in the LICENSE file.
 
 import Foundation
-import LoggerService
+import KeyAppKitLogger
 
 public class NameServiceImpl: NameService {
     private let endpoint: String
