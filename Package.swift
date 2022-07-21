@@ -39,6 +39,11 @@ let package = Package(
         .library(
             name: "JSBridge",
             targets: ["JSBridge"]
+        ),
+        // Countries
+        .library(
+            name: "CountriesAPI",
+            targets: ["CountriesAPI"]
         )
     ],
     dependencies: [
@@ -99,7 +104,21 @@ let package = Package(
         .target(
             name: "JSBridge"
         ),
-        .testTarget(name: "JSBridgeTests", dependencies: ["JSBridge"])
+        .testTarget(name: "JSBridgeTests", dependencies: ["JSBridge"]),
+        
+        // Countries
+        .target(
+            name: "CountriesAPI",
+            resources: [
+                .process("Resources/countries.json")
+            ]
+        ),
+        .testTarget(
+            name: "CountriesAPIUnitTests",
+            dependencies: ["CountriesAPI"],
+            path: "Tests/UnitTests/CountriesAPIUnitTests"
+            //      resources: [.process("./Resource")]
+        ),
     ]
 )
 
