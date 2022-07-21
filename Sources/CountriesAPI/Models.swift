@@ -1,7 +1,7 @@
 import Foundation
 
 // MARK: - Country
-public struct Country: Codable {
+public struct Country: Codable, Hashable {
     public let name, dialCode, code: String
     public let emoji: String?
 
