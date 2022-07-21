@@ -7,11 +7,11 @@ import XCTest
 
 class OnboardingStateMachineTests: XCTestCase {
     func testGeneralFlow() async throws {
-        let stateMachine = StateMachine<OnboardingState>(initialState: .socialSignIn)
+        let stateMachine = CreateWalletStateMachine(provider: TKeyMockupFacade())
 
         // Sign in with apple
-        var nextState = try await stateMachine.accept(event: .signIn(tokenID: "SomeTokenID", type: .apple))
-        print("Current state: \(await stateMachine.currentState)")
+        var nextState = try await stateMachine.accept(event: .signIn(tokenID: "SomeTokenID", authProvider: .apple))
+        print("Current state: \(stateMachine.currentState)")
 
         switch nextState {
         case .enterPhoneNumber: break
@@ -20,15 +20,15 @@ class OnboardingStateMachineTests: XCTestCase {
 
         // Enter phone number
         nextState = try await stateMachine.accept(event: .enterPhoneNumber(phoneNumber: "999999999"))
-        print("Current state: \(await stateMachine.currentState)")
+        print("Current state: \(stateMachine.currentState)")
 
         // Enter verify code
         nextState = try await stateMachine.accept(event: .enterSmsConfirmationCode(code: "1234"))
-        print("Current state: \(await stateMachine.currentState)")
+        print("Current state: \(stateMachine.currentState)")
 
         // Enter pincode
         nextState = try await stateMachine.accept(event: .enterPincode(pincode: "1234"))
-        print("Current state: \(await stateMachine.currentState)")
+        print("Current state: \(stateMachine.currentState)")
         
         switch nextState {
         case .finish: break
