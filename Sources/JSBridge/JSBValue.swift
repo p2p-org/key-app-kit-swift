@@ -5,7 +5,7 @@
 import Foundation
 
 public class JSBValue: JSBridge, CustomStringConvertible {
-    let name: String
+    public let name: String
     weak var currentContext: JSBContext?
 
     public init(in context: JSBContext, name: String? = nil) {
@@ -28,10 +28,15 @@ public class JSBValue: JSBridge, CustomStringConvertible {
         self.init(in: context, name: name)
         try await currentContext?.evaluate("\(self.name) = \"\(string.safed)\"")
     }
-    
+
     public convenience init(number: Int, in context: JSBContext, name: String? = nil) async throws {
         self.init(in: context, name: name)
         try await currentContext?.evaluate("\(self.name) = \(number)")
+    }
+
+    public convenience init(dictionary: [String: Any], in context: JSBContext, name: String? = nil) async throws {
+        self.init(in: context, name: name)
+        try await currentContext?.evaluate("\(self.name) = \"\(parse(dictionary))\"")
     }
 
     public var description: String { "JSBValue(\(name))" }
@@ -68,6 +73,7 @@ public class JSBValue: JSBridge, CustomStringConvertible {
                 let id = await context.promiseDispatchTable.register(continuation: continuation)
 
                 let script = """
+                 var \(result.name);
                 \(name)
                      .\(method)(\(try parseArgs(args)))
                      .then((value) => {
@@ -90,68 +96,85 @@ public class JSBValue: JSBridge, CustomStringConvertible {
                  0;
                 """
 
+                print(script)
+
                 await context.wkWebView.evaluateJavaScript(script) { _, error in
                     guard let error = error else { return }
+                    print(error)
                     Task { await context.promiseDispatchTable.resolveWithError(for: id, error: error) }
                 }
             }
         }
         return result
     }
+    
+    public func invokeNew<T: CustomStringConvertible>(withArguments args: [T]) async throws -> JSBValue {
+        let context = try await getContext()
+        let result = JSBValue(in: context)
+        try await context.evaluate("\(result.name) = new \(name)(\(try parseArgs(args)));")
+        return result
+    }
 
     /// Parse swift args to js args.
     internal func parseArgs<T: CustomStringConvertible>(_ args: [T]) throws -> String {
         try args
-            .map { arg -> String in
-                if let arg = arg as? String {
-                    return "\"\(arg.safed)\""
-                }
-
-                if let arg = arg as? Int {
-                    return String(arg)
-                }
-
-                if arg is Double {
-                    throw JSBError.floatingNumericIsNotSupport
-                }
-
-                if arg is Float {
-                    throw JSBError.floatingNumericIsNotSupport
-                }
-
-                if let arg = arg as? [String: Any] {
-                    return String(
-                        data: try JSONSerialization.data(withJSONObject: arg, options: .sortedKeys),
-                        encoding: .utf8
-                    )!
-                }
-
-                if let arg = arg as? [Any] {
-                    return String(
-                        data: try JSONSerialization.data(withJSONObject: arg, options: .sortedKeys),
-                        encoding: .utf8
-                    )!
-                }
-
-                if let arg = arg as? JSBValue {
-                    return arg.name
-                }
-
-                throw JSBError.invalidArgument(arg.description)
-            }
+            .map(parse)
             .joined(separator: ", ")
+    }
+
+    internal func parse<T: CustomStringConvertible>(_ arg: T) throws -> String {
+        if let arg = arg as? String {
+            return "\"\(arg.safed)\""
+        }
+
+        if let arg = arg as? Int {
+            return String(arg)
+        }
+
+        if arg is Double {
+            throw JSBError.floatingNumericIsNotSupport
+        }
+
+        if arg is Float {
+            throw JSBError.floatingNumericIsNotSupport
+        }
+
+        if let arg = arg as? [String: Any] {
+            return String(
+                data: try JSONSerialization.data(withJSONObject: arg, options: .sortedKeys),
+                encoding: .utf8
+            )!
+        }
+
+        if let arg = arg as? [Any] {
+            return String(
+                data: try JSONSerialization.data(withJSONObject: arg, options: .sortedKeys),
+                encoding: .utf8
+            )!
+        }
+
+        if let arg = arg as? JSBValue {
+            return arg.name
+        }
+
+        throw JSBError.invalidArgument(arg.description)
     }
 
     /// Get value from reference as String
     public func toString() async throws -> String? {
         try await currentContext?.evaluate("String(\(name))")
     }
-    
+
     /// Get value from reference as Int
     public func toInt() async throws -> Int? {
         try await currentContext?.evaluate("\(name)")
     }
-    
+
+    /// Get value from reference as Dictionary
+    public func toDictionary() async throws -> [String: Any]? {
+        try await currentContext?.evaluate("\(name)")
+    }
+
     /// Current context that contains this JSBValue
     private func getContext() async throws -> JSBContext {
         if let context = currentContext {

@@ -37,4 +37,7 @@ public protocol JSBridge {
         _ method: String,
         withArguments args: [T]
     ) async throws -> JSBValue
+    
+    /// Invoke initialize. [new object]
+    func invokeNew<T: CustomStringConvertible>(withArguments args: [T]) async throws -> JSBValue
 }
