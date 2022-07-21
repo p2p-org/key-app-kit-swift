@@ -1,5 +1,5 @@
 Pod::Spec.new do |s|
-  s.name             = 'LoggerService'
+  s.name             = 'KeyAppKitLogger'
   s.version          = '1.0.7'
   s.summary          = 'Logger for p2p wallet.'
 
