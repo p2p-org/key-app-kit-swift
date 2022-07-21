@@ -16,7 +16,7 @@ Pod::Spec.new do |s|
 
   s.ios.deployment_target = '13.0'
 
-  s.source_files = 'Sources/LoggerService/**/*'
+  s.source_files = 'Sources/KeyAppKitLogger/**/*'
   s.swift_version = '5.5'
 
   s.pod_target_xcconfig = {
