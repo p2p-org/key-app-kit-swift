@@ -7,17 +7,17 @@ public enum KeyAppKitLoggerLogLevel: String {
     case debug
 }
 
-public protocol KeyAppKitLogger {
+public protocol KeyAppKitLoggerType {
     func log(event: String, data: String?, logLevel: KeyAppKitLoggerLogLevel)
 }
 
 public class Logger {
     
-    private static var loggers: [KeyAppKitLogger] = []
+    private static var loggers: [KeyAppKitLoggerType] = []
     
     // MARK: -
     
-    public static func setLoggers(_ loggers: [KeyAppKitLogger]) {
+    public static func setLoggers(_ loggers: [KeyAppKitLoggerType]) {
         self.loggers = loggers
     }
     
