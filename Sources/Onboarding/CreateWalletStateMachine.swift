@@ -28,21 +28,16 @@ public enum CreateWalletState: Codable, State, Equatable {
         phoneNumberShare: String,
         pincode: String
     )
+    case finishWithoutResult
 
     public func accept(
-        currentState: CreateWalletState, event: CreateWalletEvent,
+        currentState: CreateWalletState,
+        event: CreateWalletEvent,
         provider: TKeyFacade
     ) async throws -> CreateWalletState {
         switch currentState {
         case .socialSignIn:
-            if case let .signIn(tokenID, _) = event {
-                let result = try await provider.signUp(tokenID: .init(value: tokenID, provider: .google))
-                return .enterPhoneNumber(
-                    solPrivateKey: result.privateSOL,
-                    ethPublicKey: result.reconstructedETH,
-                    deviceShare: result.deviceShare
-                )
-            }
+            return try await socialSignInHandler(event: event, provider: provider)
         case .socialSignInUnhandleableError:
             return currentState
         case let .enterPhoneNumber(solPrivateKey: solPrivateKey, ethPublicKey: ethPublicKey, deviceShare: deviceShare):
@@ -83,21 +78,40 @@ public enum CreateWalletState: Codable, State, Equatable {
                     pincode: pincode
                 )
             }
-        case .finish: return currentState
+        default: throw StateMachineError.invalidEvent
         }
-
         throw StateMachineError.invalidEvent
+    }
+
+    internal func socialSignInHandler(event: Event, provider: Provider) async throws -> Self {
+        switch event {
+        case let .signIn(tokenID, authProvider):
+            let result = try await provider.signUp(tokenID: .init(value: tokenID, provider: authProvider.rawValue))
+            return .enterPhoneNumber(
+                solPrivateKey: result.privateSOL,
+                ethPublicKey: result.reconstructedETH,
+                deviceShare: result.deviceShare
+            )
+        case .signInBack:
+            return .finishWithoutResult
+        default:
+            throw StateMachineError.invalidEvent
+        }
     }
 }
 
-public enum SignInProvider {
+public enum SignInProvider: String {
     case apple
     case google
 }
 
 public enum CreateWalletEvent {
+    // Sign in step
     case signIn(tokenID: String, authProvider: SignInProvider)
+    case signInBack
+
     case enterPhoneNumber(phoneNumber: String)
     case enterSmsConfirmationCode(code: String)
+
     case enterPincode(pincode: String)
 }

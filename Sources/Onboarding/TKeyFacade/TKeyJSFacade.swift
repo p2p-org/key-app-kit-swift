@@ -50,8 +50,6 @@ public class TKeyJSFacade: TKeyFacade {
 
     public func signUp(tokenID: TokenID) async throws -> SignUpResult {
         let facade = try await getFacade(configuration: ["type": "signup", "useNewEth": false])
-        throw Error.invalidReturnValue
-        
         let value = try await facade.invokeAsyncMethod("triggerSilentSignup", withArguments: [tokenID.value])
         
         guard

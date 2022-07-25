@@ -6,16 +6,11 @@ import Foundation
 
 import Foundation
 
-public enum Provider {
-    case google
-    case apple
-}
-
 public struct TokenID {
     public let value: String
-    public let provider: Provider
+    public let provider: String
     
-    public init(value: String, provider: Provider) {
+    public init(value: String, provider: String) {
         self.value = value
         self.provider = provider
     }
