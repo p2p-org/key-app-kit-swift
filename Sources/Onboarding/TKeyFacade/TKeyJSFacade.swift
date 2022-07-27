@@ -52,12 +52,18 @@ public class TKeyJSFacade: TKeyFacade {
         let facade = try await getFacade(configuration: ["type": "signup", "useNewEth": false])
         let value = try await facade.invokeAsyncMethod("triggerSilentSignup", withArguments: [tokenID.value])
         
+        guard let result = try await value.toDictionary() else {
+            throw Error.invalidReturnValue
+        }
+        
         guard
-            let result = try await value.toDictionary(),
             let privateSOL = result["privateSOL"] as? String,
             let reconstructedETH = result["reconstructedETH"] as? String,
             let deviceShare = result["deviceShare"] as? String
-        else { throw Error.invalidReturnValue }
+        else {
+            print(result)
+            throw Error.invalidReturnValue
+        }
         
         return .init(
             privateSOL: privateSOL,
