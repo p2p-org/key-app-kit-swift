@@ -85,9 +85,10 @@ extension JSBContext: WKScriptMessageHandler {
 
         if let error = message["error"] {
             //  Throw error to caller
-            Task { await promiseDispatchTable.resolveWithError(for: Int64(id), error: JSBError.jsError(error)) }
+            Task { try await promiseDispatchTable.resolveWithError(for: Int64(id), error: JSBError.jsError(error)) }
+        } else {
+            Task { try await promiseDispatchTable.resolve(for: Int64(id)) }
         }
-        Task { await promiseDispatchTable.resolve(for: Int64(id)) }
     }
 }
 

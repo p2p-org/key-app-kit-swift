@@ -22,14 +22,26 @@ actor PromiseDispatchTable {
     }
 
     /// Resume continuation by id and free it.
-    func resolve(for id: PromiseID) {
-        promiseDispatchTable[id]?.resume(returning: ())
+    func resolve(for id: PromiseID) throws {
+        guard let continuation = promiseDispatchTable[id] else {
+            throw PromiseDispatchTableError.promiseIsResolved
+        }
+        
+        continuation.resume(returning: ())
         promiseDispatchTable.removeValue(forKey: id)
     }
 
     /// Resume continuation with error by id and free it.
-    func resolveWithError(for id: PromiseID, error: Error) {
-        promiseDispatchTable[id]?.resume(throwing: error)
+    func resolveWithError(for id: PromiseID, error: Error) throws {
+        guard let continuation = promiseDispatchTable[id] else {
+            throw PromiseDispatchTableError.promiseIsResolved
+        }
+        
+        continuation.resume(throwing: error)
         promiseDispatchTable.removeValue(forKey: id)
     }
+}
+
+enum PromiseDispatchTableError: Error {
+    case promiseIsResolved
 }

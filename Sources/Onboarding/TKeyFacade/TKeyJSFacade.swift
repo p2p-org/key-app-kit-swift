@@ -28,7 +28,7 @@ public class TKeyJSFacade: TKeyFacade {
         try await context.load(request: request)
         facadeClass = try await context.this.valueForKey("\(kLibrary).IosFacade")
     }
-    
+
     private func getSDKPath() -> String {
         #if SWIFT_PACKAGE
             guard let scriptPath = Bundle.module.path(forResource: "index", ofType: "html") else {
@@ -39,37 +39,44 @@ public class TKeyJSFacade: TKeyFacade {
                 fatalError(Error.canNotFindJSScript.localizedDescription)
             }
         #endif
-        
+
         return scriptPath
     }
-    
+
     private func getFacade(configuration: [String: Any]) async throws -> JSBValue {
         let library = try getLibrary()
         return try await library.invokeNew(withArguments: [configuration])
     }
 
     public func signUp(tokenID: TokenID) async throws -> SignUpResult {
-        let facade = try await getFacade(configuration: ["type": "signup", "useNewEth": false])
-        let value = try await facade.invokeAsyncMethod("triggerSilentSignup", withArguments: [tokenID.value])
-        
-        guard let result = try await value.toDictionary() else {
-            throw Error.invalidReturnValue
+        do {
+            let facade = try await getFacade(configuration: ["type": "signup", "useNewEth": true])
+            let value = try await facade.invokeAsyncMethod("triggerSilentSignup", withArguments: [tokenID.value])
+
+            guard let result = try await value.toDictionary() else {
+                throw Error.invalidReturnValue
+            }
+
+            guard
+                let privateSOL = result["privateSOL"] as? String,
+                let reconstructedETH = result["reconstructedETH"] as? String,
+                let deviceShare = result["deviceShare"] as? String
+            else {
+                print(result)
+                throw Error.invalidReturnValue
+            }
+
+            return .init(
+                privateSOL: privateSOL,
+                reconstructedETH: reconstructedETH,
+                deviceShare: deviceShare
+            )
+        } catch JSBError.jsError(let error) {
+            let parsedError = parseFacadeJSError(error: error)
+            throw parsedError ?? JSBError.jsError(error)
+        } catch {
+            throw error
         }
-        
-        guard
-            let privateSOL = result["privateSOL"] as? String,
-            let reconstructedETH = result["reconstructedETH"] as? String,
-            let deviceShare = result["deviceShare"] as? String
-        else {
-            print(result)
-            throw Error.invalidReturnValue
-        }
-        
-        return .init(
-            privateSOL: privateSOL,
-            reconstructedETH: reconstructedETH,
-            deviceShare: deviceShare
-        )
     }
 
     public func signIn(tokenID: TokenID, deviceShare: String) async throws -> SignInResult {
@@ -107,11 +114,20 @@ public class TKeyJSFacade: TKeyFacade {
             reconstructedETH: reconstructedETH
         )
     }
-    
+
     func getLibrary() throws -> JSBValue {
         guard let library = facadeClass else {
             throw Error.facadeIsNotReady
         }
         return library
+    }
+    
+    internal func parseFacadeJSError(error: Any) -> TKeyFacadeError? {
+        guard
+            let errorStr = error as? String,
+            let error = try? errorStr.data(using: .utf8)
+        else { return nil }
+
+        return try? JSONDecoder().decode(TKeyFacadeError.self, from: error)
     }
 }

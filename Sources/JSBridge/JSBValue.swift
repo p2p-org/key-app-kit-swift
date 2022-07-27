@@ -90,7 +90,7 @@ public class JSBValue: JSBridge, CustomStringConvertible {
                                 .webkit
                                 .messageHandlers
                                 .\(JSBContext.kPromiseCallback)
-                                .postMessage({id: \(id), error: error.toString()})
+                                .postMessage({id: \(id), error: JSON.stringify(error)})
                          }
                      );
                  0;
@@ -100,8 +100,7 @@ public class JSBValue: JSBridge, CustomStringConvertible {
 
                 await context.wkWebView.evaluateJavaScript(script) { _, error in
                     guard let error = error else { return }
-                    print(error)
-                    Task { await context.promiseDispatchTable.resolveWithError(for: id, error: error) }
+                    Task { try await context.promiseDispatchTable.resolveWithError(for: id, error: error) }
                 }
             }
         }

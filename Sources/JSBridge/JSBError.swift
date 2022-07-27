@@ -4,7 +4,7 @@
 
 import Foundation
 
-enum JSBError: Error {
+public enum JSBError: Error {
     case invalidContext
     case invalidArgument(String)
     case jsError(Any)

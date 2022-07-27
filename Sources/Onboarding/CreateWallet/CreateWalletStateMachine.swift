@@ -6,9 +6,21 @@ import Foundation
 
 public typealias CreateWalletStateMachine = StateMachine<CreateWalletState>
 
-public struct Transition {
-    let currentState: CreateWalletState
-    let event: CreateWalletState.Event
+public enum SignInProvider: String, Codable {
+    case apple
+    case google
+}
+
+public enum CreateWalletEvent {
+    // Sign in step
+    case signIn(tokenID: String, authProvider: SignInProvider, email: String)
+    case signInBack
+    case signInRerouteToRestore(authProvider: SignInProvider, email: String)
+
+    case enterPhoneNumber(phoneNumber: String)
+    case enterSmsConfirmationCode(code: String)
+
+    case enterPincode(pincode: String)
 }
 
 public enum CreateWalletState: Codable, State, Equatable {
@@ -19,13 +31,13 @@ public enum CreateWalletState: Codable, State, Equatable {
 
     // States
     case socialSignIn
-    case socialSignInAccountWasUsed(provider: SignInProvider)
+    case socialSignInAccountWasUsed(provider: SignInProvider, usedEmail: String)
     case socialSignInUnhandleableError
 
     case enterPhoneNumber(solPrivateKey: String, ethPublicKey: String, deviceShare: String)
     case verifyPhoneNumber(solPrivateKey: String, ethPublicKey: String, deviceShare: String, phoneNumber: String)
     case enterPincode(solPrivateKey: String, ethPublicKey: String, deviceShare: String, phoneNumberShare: String)
-    
+
     // Special state
     // case retry(lastState: Self, event: Event)
 
@@ -38,6 +50,7 @@ public enum CreateWalletState: Codable, State, Equatable {
         pincode: String
     )
     case finishWithoutResult
+    case finishWithRerouteToRestore(signInProvider: SignInProvider, email: String)
 
     public func accept(
         currentState: CreateWalletState,
@@ -47,6 +60,12 @@ public enum CreateWalletState: Codable, State, Equatable {
         switch currentState {
         case .socialSignIn:
             return try await socialSignInHandler(currentState: currentState, event: event, provider: provider)
+        case .socialSignInAccountWasUsed:
+            return try await socialSignInAccountWasUsedHandler(
+                currentState: currentState,
+                event: event,
+                provider: provider
+            )
         case .socialSignInUnhandleableError:
             return currentState
         case let .enterPhoneNumber(solPrivateKey: solPrivateKey, ethPublicKey: ethPublicKey, deviceShare: deviceShare):
@@ -91,44 +110,25 @@ public enum CreateWalletState: Codable, State, Equatable {
         }
         throw StateMachineError.invalidEvent
     }
+}
 
-    internal func socialSignInHandler(currentState: Self, event: Event, provider: Provider) async throws -> Self {
-        switch event {
-        case let .signIn(tokenID, authProvider):
-            do {
-                let result = try await provider.signUp(tokenID: .init(value: tokenID, provider: authProvider.rawValue))
-                return .enterPhoneNumber(
-                    solPrivateKey: result.privateSOL,
-                    ethPublicKey: result.reconstructedETH,
-                    deviceShare: result.deviceShare
-                )
-            } catch {
-                // TODO: handle error
-                // return .socialSignInAccountWasUsed
-                // return .retry(state: currentState, event: event)
-                throw error
-                // return currentState
-            }
-        case .signInBack:
-            return .finishWithoutResult
-        default:
-            throw StateMachineError.invalidEvent
+public extension CreateWalletState {
+    var step: Float {
+        switch self {
+        case .socialSignIn:
+            return 1.0
+        case .socialSignInAccountWasUsed:
+            return 1.1
+        case .socialSignInUnhandleableError:
+            return 1.2
+        case .enterPhoneNumber:
+            return 2.0
+        case .verifyPhoneNumber:
+            return 2.1
+        case .enterPincode:
+            return 3.0
+        case .finish, .finishWithoutResult, .finishWithRerouteToRestore:
+            return 4.0
         }
     }
-}
-
-public enum SignInProvider: String, Codable {
-    case apple
-    case google
-}
-
-public enum CreateWalletEvent {
-    // Sign in step
-    case signIn(tokenID: String, authProvider: SignInProvider)
-    case signInBack
-
-    case enterPhoneNumber(phoneNumber: String)
-    case enterSmsConfirmationCode(code: String)
-
-    case enterPincode(pincode: String)
 }
