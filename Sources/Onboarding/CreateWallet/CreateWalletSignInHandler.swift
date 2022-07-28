@@ -16,12 +16,14 @@ extension CreateWalletState {
                     deviceShare: result.deviceShare
                 )
             } catch let error as TKeyFacadeError {
-                if error.code == 1009 {
-                    return .socialSignInAccountWasUsed(provider: authProvider, usedEmail: email)
+                switch error.code {
+                case 1009:
+                    return .socialSignInAccountWasUsed(signInProvider: authProvider, usedEmail: email)
+                // case 1666:
+                //     return .socialSignInTryAgain(signInProvider: authProvider, usedEmail: email)
+                default:
+                    throw error
                 }
-                throw error
-            } catch {
-                throw error
             }
         case .signInBack:
             return .finishWithoutResult

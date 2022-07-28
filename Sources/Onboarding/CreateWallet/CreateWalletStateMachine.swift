@@ -31,8 +31,9 @@ public enum CreateWalletState: Codable, State, Equatable {
 
     // States
     case socialSignIn
-    case socialSignInAccountWasUsed(provider: SignInProvider, usedEmail: String)
+    case socialSignInAccountWasUsed(signInProvider: SignInProvider, usedEmail: String)
     case socialSignInUnhandleableError
+    case socialSignInTryAgain(signInProvider: SignInProvider, usedEmail: String)
 
     case enterPhoneNumber(solPrivateKey: String, ethPublicKey: String, deviceShare: String)
     case verifyPhoneNumber(solPrivateKey: String, ethPublicKey: String, deviceShare: String, phoneNumber: String)
@@ -121,6 +122,8 @@ public extension CreateWalletState {
             return 1.1
         case .socialSignInUnhandleableError:
             return 1.2
+        case .socialSignInTryAgain:
+            return 1.3
         case .enterPhoneNumber:
             return 2.0
         case .verifyPhoneNumber:
