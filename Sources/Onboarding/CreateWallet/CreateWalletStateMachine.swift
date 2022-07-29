@@ -32,15 +32,11 @@ public enum CreateWalletState: Codable, State, Equatable {
     // States
     case socialSignIn
     case socialSignInAccountWasUsed(signInProvider: SignInProvider, usedEmail: String)
-    case socialSignInUnhandleableError
     case socialSignInTryAgain(signInProvider: SignInProvider, usedEmail: String)
 
     case enterPhoneNumber(solPrivateKey: String, ethPublicKey: String, deviceShare: String)
     case verifyPhoneNumber(solPrivateKey: String, ethPublicKey: String, deviceShare: String, phoneNumber: String)
     case enterPincode(solPrivateKey: String, ethPublicKey: String, deviceShare: String, phoneNumberShare: String)
-
-    // Special state
-    // case retry(lastState: Self, event: Event)
 
     // Final state
     case finish(
@@ -61,14 +57,39 @@ public enum CreateWalletState: Codable, State, Equatable {
         switch currentState {
         case .socialSignIn:
             return try await socialSignInHandler(currentState: currentState, event: event, provider: provider)
+
         case .socialSignInAccountWasUsed:
             return try await socialSignInAccountWasUsedHandler(
                 currentState: currentState,
                 event: event,
                 provider: provider
             )
-        case .socialSignInUnhandleableError:
-            return currentState
+
+        case .socialSignInTryAgain:
+            switch event {
+            case let .signIn(tokenID, authProvider, email):
+                do {
+                    let result = try await provider
+                        .signUp(tokenID: .init(value: tokenID, provider: authProvider.rawValue))
+                    return .enterPhoneNumber(
+                        solPrivateKey: result.privateSOL,
+                        ethPublicKey: result.reconstructedETH,
+                        deviceShare: result.deviceShare
+                    )
+                } catch let error as TKeyFacadeError {
+                    switch error.code {
+                    case 1009:
+                        return .socialSignInAccountWasUsed(signInProvider: authProvider, usedEmail: email)
+                    default:
+                        throw error
+                    }
+                }
+            case let .signInBack:
+                return .finishWithoutResult
+            default:
+                throw StateMachineError.invalidEvent
+            }
+
         case let .enterPhoneNumber(solPrivateKey: solPrivateKey, ethPublicKey: ethPublicKey, deviceShare: deviceShare):
             if case let .enterPhoneNumber(phoneNumber) = event {
                 return .verifyPhoneNumber(
@@ -78,6 +99,7 @@ public enum CreateWalletState: Codable, State, Equatable {
                     phoneNumber: phoneNumber
                 )
             }
+
         case let .verifyPhoneNumber(
             solPrivateKey: solPrivateKey,
             ethPublicKey: ethPublicKey,
@@ -92,6 +114,7 @@ public enum CreateWalletState: Codable, State, Equatable {
                     phoneNumberShare: phoneNumber
                 )
             }
+
         case let .enterPincode(
             solPrivateKey: solPrivateKey,
             ethPublicKey: ethPublicKey,
@@ -107,8 +130,10 @@ public enum CreateWalletState: Codable, State, Equatable {
                     pincode: pincode
                 )
             }
+
         default: throw StateMachineError.invalidEvent
         }
+
         throw StateMachineError.invalidEvent
     }
 }
@@ -120,10 +145,8 @@ public extension CreateWalletState {
             return 1.0
         case .socialSignInAccountWasUsed:
             return 1.1
-        case .socialSignInUnhandleableError:
-            return 1.2
         case .socialSignInTryAgain:
-            return 1.3
+            return 1.2
         case .enterPhoneNumber:
             return 2.0
         case .verifyPhoneNumber:

@@ -19,8 +19,8 @@ extension CreateWalletState {
                 switch error.code {
                 case 1009:
                     return .socialSignInAccountWasUsed(signInProvider: authProvider, usedEmail: email)
-                // case 1666:
-                //     return .socialSignInTryAgain(signInProvider: authProvider, usedEmail: email)
+                case 1666:
+                    return .socialSignInTryAgain(signInProvider: authProvider, usedEmail: email)
                 default:
                     throw error
                 }
