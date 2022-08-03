@@ -30,6 +30,6 @@ enum BindingPhoneNumberState: Codable, State, Equatable {
         event _: BindingPhoneNumberEvent,
         provider _: SomePhoneNumberProvider
     ) async throws -> BindingPhoneNumberState {
-        <#code#>
+        .enterPhoneNumber
     }
 }

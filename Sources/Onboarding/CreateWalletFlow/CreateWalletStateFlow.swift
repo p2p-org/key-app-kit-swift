@@ -6,6 +6,6 @@ import Foundation
 
 public typealias CreateWalletStateMachine = StateMachine<CreateWalletState>
 
-class CreateWalletFlow {
-    let rootStateMachine: CreateWalletStateMachine
-}
+// class CreateWalletFlow {
+//     let rootStateMachine: CreateWalletStateMachine
+// }
