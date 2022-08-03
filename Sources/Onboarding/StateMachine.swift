@@ -14,6 +14,17 @@ public protocol State: Equatable {
     func accept(currentState: Self, event: Event, provider: Provider) async throws -> Self
 }
 
+public struct AnyEvent<E> {
+
+}
+
+// public protocol StateMachine {
+//     associatedtype S: State
+//
+//     @discardableResult
+//     func accept(event: S.Event) async throws -> S
+// }
+
 public actor StateMachine<S: State> {
     private nonisolated let stateSubject: CurrentValueSubject<S, Never>
 

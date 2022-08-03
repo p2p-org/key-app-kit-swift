@@ -4,8 +4,6 @@
 
 import Foundation
 
-public typealias CreateWalletStateMachine = StateMachine<CreateWalletState>
-
 public enum SignInProvider: String, Codable {
     case apple
     case google
