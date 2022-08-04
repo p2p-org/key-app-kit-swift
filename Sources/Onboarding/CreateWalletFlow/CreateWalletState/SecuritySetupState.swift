@@ -37,3 +37,14 @@ public enum SecuritySetupState: Codable, State, Equatable {
         }
     }
 }
+
+extension SecuritySetupState: Step {
+    public var step: Float {
+        switch self {
+        case .setupPincode:
+            return 1
+        case .finish(_):
+            return 2
+        }
+    }
+}

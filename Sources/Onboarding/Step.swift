@@ -4,6 +4,6 @@
 
 import Foundation
 
-protocol Step {
+public protocol Step {
     var step: Float { get }
 }

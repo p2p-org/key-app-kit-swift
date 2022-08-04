@@ -48,3 +48,16 @@ public enum BindingPhoneNumberState: Codable, State, Equatable {
         }
     }
 }
+
+extension BindingPhoneNumberState: Step {
+    public var step: Float {
+        switch self {
+        case .enterPhoneNumber(initialPhoneNumber: let initialPhoneNumber):
+            return 1
+        case .enterOTP(phoneNumber: let phoneNumber):
+            return 2
+        case .finish(_):
+            return 3
+        }
+    }
+}

@@ -16,14 +16,23 @@ public enum SocialSignInResult: Codable, Equatable {
 }
 
 public enum SocialSignInEvent {
-    case signIn(tokenID: String, authProvider: SocialProvider, email: String)
+    case signIn(socialProvider: SocialProvider)
     case signInBack
     case restore(authProvider: SocialProvider, email: String)
 }
 
+public protocol SocialAuthService {
+    func auth(type: SocialProvider) async throws -> (tokenID: String, email: String)
+}
+
+public struct SocialSignInContainer {
+    let tKeyFacade: TKeyFacade
+    let authService: SocialAuthService
+}
+
 public enum SocialSignInState: Codable, State, Equatable {
     public typealias Event = SocialSignInEvent
-    public typealias Provider = TKeyFacade
+    public typealias Provider = SocialSignInContainer
 
     case socialSelection
     case socialSignInAccountWasUsed(signInProvider: SocialProvider, usedEmail: String)
@@ -35,7 +44,7 @@ public enum SocialSignInState: Codable, State, Equatable {
     public func accept(
         currentState: SocialSignInState,
         event: SocialSignInEvent,
-        provider: TKeyFacade
+        provider: SocialSignInContainer
     ) async throws -> SocialSignInState {
         switch currentState {
         case .socialSelection:
@@ -58,9 +67,12 @@ public enum SocialSignInState: Codable, State, Equatable {
         provider: Provider
     ) async throws -> Self {
         switch event {
-        case let .signIn(tokenID, authProvider, email):
+        case let .signIn(socialProvider):
+            let (tokenID, email) = try await provider.authService.auth(type: socialProvider)
             do {
-                let result = try await provider.signUp(tokenID: .init(value: tokenID, provider: authProvider.rawValue))
+                let result = try await provider.tKeyFacade
+                    .signUp(tokenID: .init(value: tokenID, provider: socialProvider.rawValue))
+                
                 return .finish(
                     .successful(solPrivateKey: result.privateSOL,
                                 ethPublicKey: result.reconstructedETH,
@@ -69,9 +81,9 @@ public enum SocialSignInState: Codable, State, Equatable {
             } catch let error as TKeyFacadeError {
                 switch error.code {
                 case 1009:
-                    return .socialSignInAccountWasUsed(signInProvider: authProvider, usedEmail: email)
+                    return .socialSignInAccountWasUsed(signInProvider: socialProvider, usedEmail: email)
                 case 1666:
-                    return .socialSignInTryAgain(signInProvider: authProvider, usedEmail: email)
+                    return .socialSignInTryAgain(signInProvider: socialProvider, usedEmail: email)
                 default:
                     throw error
                 }
@@ -88,10 +100,13 @@ public enum SocialSignInState: Codable, State, Equatable {
         provider: Provider
     ) async throws -> Self {
         switch event {
-        case let .signIn(tokenID, authProvider, email):
+        case let .signIn(socialProvider):
+            let (tokenID, email) = try await provider.authService.auth(type: socialProvider)
             do {
                 let result = try await provider
-                    .signUp(tokenID: .init(value: tokenID, provider: authProvider.rawValue))
+                    .tKeyFacade
+                    .signUp(tokenID: .init(value: tokenID, provider: socialProvider.rawValue))
+
                 return .finish(
                     .successful(solPrivateKey: result.privateSOL,
                                 ethPublicKey: result.reconstructedETH,
@@ -100,7 +115,7 @@ public enum SocialSignInState: Codable, State, Equatable {
             } catch let error as TKeyFacadeError {
                 switch error.code {
                 case 1009:
-                    return .socialSignInAccountWasUsed(signInProvider: authProvider, usedEmail: email)
+                    return .socialSignInAccountWasUsed(signInProvider: socialProvider, usedEmail: email)
                 default:
                     throw error
                 }
@@ -128,7 +143,7 @@ public enum SocialSignInState: Codable, State, Equatable {
 }
 
 extension SocialSignInState: Step {
-    var step: Float {
+    public var step: Float {
         switch self {
         case .socialSelection:
             return 1
@@ -140,6 +155,4 @@ extension SocialSignInState: Step {
             return 4
         }
     }
-    
-    
 }

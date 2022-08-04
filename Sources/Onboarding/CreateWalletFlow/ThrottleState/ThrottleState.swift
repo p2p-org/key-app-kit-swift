@@ -23,7 +23,7 @@ enum ThrottleState: Codable, State, Equatable {
     public typealias Event = ThrottleEvent
     public typealias Provider = ThrottleConfiguration
 
-    public private(set) static var initialState: ThrottleState = .cold(count: 0, start: Date.now)
+    public private(set) static var initialState: ThrottleState = .cold(count: 0, start: Date())
 
     case cold(count: Int, start: Date)
     case overheat(until: Date)
@@ -37,17 +37,17 @@ enum ThrottleState: Codable, State, Equatable {
         case let .cold(count, start):
             switch event {
             case .cooling:
-                if start.addingTimeInterval(provider.interval) > Date.now {
-                    return .cold(count: 0, start: Date.now)
+                if start.addingTimeInterval(provider.interval) > Date() {
+                    return .cold(count: 0, start: Date())
                 } else {
                     return currentState
                 }
             case .heat:
-                if start.addingTimeInterval(provider.interval) > Date.now {
-                    return .cold(count: 1, start: Date.now)
+                if start.addingTimeInterval(provider.interval) > Date() {
+                    return .cold(count: 1, start: Date())
                 } else {
                     if count + 1 > provider.maxCount {
-                        return .overheat(until: Date.now.addingTimeInterval(provider.interval))
+                        return .overheat(until: Date().addingTimeInterval(provider.interval))
                     } else {
                         return .cold(count: count + 1, start: start)
                     }
@@ -56,14 +56,14 @@ enum ThrottleState: Codable, State, Equatable {
         case let .overheat(until):
             switch event {
             case .cooling:
-                if Date.now > until {
-                    return .cold(count: 0, start: Date.now)
+                if Date() > until {
+                    return .cold(count: 0, start: Date())
                 } else {
                     throw ThrottleError.overheating(until: until)
                 }
             case .heat:
-                if Date.now > until {
-                    return .cold(count: 1, start: Date.now)
+                if Date() > until {
+                    return .cold(count: 1, start: Date())
                 } else {
                     throw ThrottleError.overheating(until: until)
                 }

@@ -23,9 +23,19 @@ public enum CreateWalletFlowEvent {
     case securitySetup(SecuritySetupEvent)
 }
 
+public struct CreateWalletFlowContainer {
+    let authService: SocialAuthService
+    let tkeyFacade: TKeyFacade
+
+    public init(authService: SocialAuthService, tkeyFacade: TKeyFacade) {
+        self.authService = authService
+        self.tkeyFacade = tkeyFacade
+    }
+}
+
 public enum CreateWalletFlowState: Codable, State, Equatable {
     public typealias Event = CreateWalletFlowEvent
-    public typealias Provider = TKeyFacade
+    public typealias Provider = CreateWalletFlowContainer
 
     public private(set) static var initialState: CreateWalletFlowState = .socialSignIn(.socialSelection)
 
@@ -40,7 +50,7 @@ public enum CreateWalletFlowState: Codable, State, Equatable {
     public func accept(
         currentState: CreateWalletFlowState,
         event: CreateWalletFlowEvent,
-        provider: TKeyFacade
+        provider: CreateWalletFlowContainer
     ) async throws -> CreateWalletFlowState {
         switch currentState {
         case let .socialSignIn(innerState):
@@ -49,7 +59,7 @@ public enum CreateWalletFlowState: Codable, State, Equatable {
                 let nextInnerState = try await innerState.accept(
                     currentState: innerState,
                     event: event,
-                    provider: provider
+                    provider: .init(tKeyFacade: provider.tkeyFacade, authService: provider.authService)
                 )
                 if case let .finish(result) = nextInnerState {
                     switch result {
@@ -124,6 +134,21 @@ public enum CreateWalletFlowState: Codable, State, Equatable {
             }
 
         default: throw StateMachineError.invalidEvent
+        }
+    }
+}
+
+extension CreateWalletFlowState: Step {
+    public var step: Float {
+        switch self {
+        case .socialSignIn:
+            return 1
+        case .bindingPhoneNumber:
+            return 2
+        case .securitySetup:
+            return 3
+        case .finish:
+            return 4
         }
     }
 }
