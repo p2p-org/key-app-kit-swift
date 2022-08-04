@@ -4,4 +4,6 @@
 
 import Foundation
 
-public typealias CreateWalletStateMachine = StateMachine<CreateWalletFlowState>
+protocol Step {
+    var step: Float { get }
+}
