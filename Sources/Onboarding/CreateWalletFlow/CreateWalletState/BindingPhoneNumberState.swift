@@ -11,6 +11,7 @@ public enum BindingPhoneNumberResult: Codable {
 public enum BindingPhoneNumberEvent {
     case enterPhoneNumber(phoneNumber: String)
     case enterOTP(opt: String)
+    case back
 }
 
 public enum BindingPhoneNumberState: Codable, State, Equatable {
@@ -36,10 +37,12 @@ public enum BindingPhoneNumberState: Codable, State, Equatable {
             default:
                 throw StateMachineError.invalidEvent
             }
-        case .enterOTP:
+        case .enterOTP(let phoneNumber):
             switch event {
             case .enterOTP:
                 return .finish(.success)
+            case .back:
+                return .enterPhoneNumber(initialPhoneNumber: phoneNumber)
             default:
                 throw StateMachineError.invalidEvent
             }
