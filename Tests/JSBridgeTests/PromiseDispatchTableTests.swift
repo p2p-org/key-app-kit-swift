@@ -21,7 +21,7 @@ class PromiseDispatchTableTests: XCTestCase {
                 XCTAssertEqual(r, 1, "Dispatch table should register continuation")
 
                 try await Task.sleep(nanoseconds: 5000)
-                await dispatchTable.resolve(for: id)
+                try await dispatchTable.resolve(for: id)
             }
         }
 
@@ -44,7 +44,7 @@ class PromiseDispatchTableTests: XCTestCase {
                     XCTAssertEqual(r, 1, "Dispatch table should register continuation")
 
                     try await Task.sleep(nanoseconds: 5000)
-                    await dispatchTable.resolveWithError(for: id, error: JSBError.jsError("SomeError"))
+                    try await dispatchTable.resolveWithError(for: id, error: JSBError.jsError("SomeError"))
                 }
             }
         } catch let e {

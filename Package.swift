@@ -6,7 +6,7 @@ import PackageDescription
 let package = Package(
     name: "KeyAppKit",
     platforms: [
-        .macOS(.v10_15),
+        .macOS(.v12),
         .iOS(.v13),
         .tvOS(.v13),
         .watchOS(.v6),
@@ -147,7 +147,6 @@ let package = Package(
             name: "Onboarding",
             dependencies: ["JSBridge"],
             resources: [
-                .process("Resource/bundle.js"),
                 .process("Resource/bundle.js.map"),
                 .process("Resource/index.html")
             ]
