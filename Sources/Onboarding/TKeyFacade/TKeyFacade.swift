@@ -12,5 +12,5 @@ struct TKeyFacadeError: Error, Codable {
     let name: String
     let code: Int
     let message: String
-    let original: String
+    let original: String?
 }
