@@ -25,11 +25,13 @@ public enum CreateWalletFlowEvent {
 
 public struct CreateWalletFlowContainer {
     let authService: SocialAuthService
-    let tkeyFacade: TKeyFacade
+    let apiGatewayClient: APIGatewayClient
+    let tKeyFacade: TKeyFacade
 
-    public init(authService: SocialAuthService, tkeyFacade: TKeyFacade) {
+    public init(authService: SocialAuthService, apiGatewayClient: APIGatewayClient, tKeyFacade: TKeyFacade) {
         self.authService = authService
-        self.tkeyFacade = tkeyFacade
+        self.apiGatewayClient = apiGatewayClient
+        self.tKeyFacade = tKeyFacade
     }
 }
 
@@ -56,11 +58,11 @@ public enum CreateWalletFlowState: Codable, State, Equatable {
         case let .socialSignIn(innerState):
             switch event {
             case let .socialSignInEvent(event):
-                let nextInnerState = try await innerState.accept(
-                    currentState: innerState,
-                    event: event,
-                    provider: .init(tKeyFacade: provider.tkeyFacade, authService: provider.authService)
+                let nextInnerState = try await innerState <- (
+                    event,
+                    .init(tKeyFacade: provider.tKeyFacade, authService: provider.authService)
                 )
+
                 if case let .finish(result) = nextInnerState {
                     switch result {
                     case let .successful(solPrivateKey, ethPublicKey, deviceShare):
@@ -68,7 +70,15 @@ public enum CreateWalletFlowState: Codable, State, Equatable {
                             solPrivateKey: solPrivateKey,
                             ethPublicKey: ethPublicKey,
                             deviceShare: deviceShare,
-                            BindingPhoneNumberState.initialState
+                            .enterPhoneNumber(
+                                initialPhoneNumber: nil,
+                                data: .init(
+                                    solanaPublicKey: solPrivateKey,
+                                    ethereumId: ethPublicKey,
+                                    share: deviceShare,
+                                    payload: ""
+                                )
+                            )
                         )
                     case .breakProcess:
                         return .finish(.breakProcess)
@@ -84,7 +94,8 @@ public enum CreateWalletFlowState: Codable, State, Equatable {
         case let .bindingPhoneNumber(solPrivateKey, ethPublicKey, deviceShare, innerState):
             switch event {
             case let .bindingPhoneNumberEvent(event):
-                let nextInnerState = try await innerState.accept(currentState: innerState, event: event, provider: ())
+                let nextInnerState = try await innerState <- (event, provider.apiGatewayClient)
+
                 if case let .finish(result) = nextInnerState {
                     switch result {
                     case .success:
@@ -110,7 +121,8 @@ public enum CreateWalletFlowState: Codable, State, Equatable {
         case let .securitySetup(solPrivateKey, ethPublicKey, deviceShare, innerState):
             switch event {
             case let .securitySetup(event):
-                let nextInnerState = try await innerState.accept(currentState: innerState, event: event, provider: ())
+                let nextInnerState = try await innerState <- (event, ())
+
                 if case let .finish(result) = nextInnerState {
                     switch result {
                     case .success:

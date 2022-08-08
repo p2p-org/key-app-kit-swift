@@ -14,17 +14,6 @@ public protocol State: Equatable {
     func accept(currentState: Self, event: Event, provider: Provider) async throws -> Self
 }
 
-public struct AnyEvent<E> {
-
-}
-
-// public protocol StateMachine {
-//     associatedtype S: State
-//
-//     @discardableResult
-//     func accept(event: S.Event) async throws -> S
-// }
-
 public actor StateMachine<S: State> {
     private nonisolated let stateSubject: CurrentValueSubject<S, Never>
 
@@ -46,6 +35,39 @@ public actor StateMachine<S: State> {
     }
 }
 
+public struct HierarchyStateMachine<S: State> {
+    private let callback: (S.Event) async throws -> Void
+
+    public init(callback: @escaping (S.Event) async throws -> Void) {
+        self.callback = callback
+    }
+
+    func accept(event: S.Event) async throws {
+        try await callback(event)
+    }
+}
+
 public enum StateMachineError: Error {
     case invalidEvent
+}
+
+// Fancy custom operator 😇
+infix operator <-
+
+public extension StateMachine {
+    static public func <- (lhs: inout StateMachine, rhs: S.Event) async throws -> S {
+        try await lhs.accept(event: rhs)
+    }
+}
+
+extension HierarchyStateMachine {
+    public static func <- (lhs: HierarchyStateMachine, rhs: S.Event) async throws {
+        try await lhs.accept(event: rhs)
+    }
+}
+
+public extension State {
+    static func <- (lhs: Self, rhs: (event: Event, provider: Provider)) async throws -> Self {
+        try await lhs.accept(currentState: lhs, event: rhs.event, provider: rhs.provider)
+    }
 }
