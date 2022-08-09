@@ -173,6 +173,11 @@ public class JSBValue: JSBridge, CustomStringConvertible {
     public func toDictionary() async throws -> [String: Any]? {
         try await currentContext?.evaluate("\(name)")
     }
+    
+    /// Get value from reference as Dictionary
+    public func toJSON() async throws -> String? {
+        try await currentContext?.evaluate("JSON.stringify(\(name))")
+    }
 
     /// Current context that contains this JSBValue
     private func getContext() async throws -> JSBContext {
