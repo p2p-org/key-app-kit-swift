@@ -80,20 +80,12 @@ public class TKeyJSFacade: TKeyFacade {
             ])
             let value = try await facade.invokeAsyncMethod("triggerSilentSignup", withArguments: [tokenID.value])
             
-            guard let rawResult = try await value.toString() else {
-                throw Error.invalidReturnValue
-            }
-            
-            guard let result = try JSONSerialization.jsonObject(with: rawResult.data(using: .utf8)!) as? [String: Any] else {
-                throw Error.invalidReturnValue
-            }
-            
             guard
-                let privateSOL = result["privateSOL"] as? String,
-                let reconstructedETH = result["reconstructedETH"] as? String,
-                let deviceShare = result["deviceShare"] as? String
+                let privateSOL = try await value.valueForKey("privateSOL").toString(),
+                let reconstructedETH = try await value.valueForKey("ethPublic").toString(),
+                let deviceShare = try await value.valueForKey("deviceShare").toJSON(),
+                let customShare = try await value.valueForKey("customShare").toJSON()
             else {
-                print(result)
                 throw Error.invalidReturnValue
             }
             
