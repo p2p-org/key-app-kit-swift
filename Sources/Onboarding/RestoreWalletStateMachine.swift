@@ -10,7 +10,11 @@ public enum RestoreWalletState: Codable, State, Equatable {
     public typealias Event = RestoreWalletEvent
     public typealias Provider = TKeyFacade
     public static var initialState: RestoreWalletState = .signIn
-    
+
+    public static func createInitialState(provider: Provider) async -> RestoreWalletState {
+        return RestoreWalletState.initialState
+    }
+
     public func accept(
         currentState: RestoreWalletState,
         event: RestoreWalletEvent,

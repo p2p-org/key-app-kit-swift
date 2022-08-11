@@ -27,11 +27,13 @@ public struct CreateWalletFlowContainer {
     let authService: SocialAuthService
     let apiGatewayClient: APIGatewayClient
     let tKeyFacade: TKeyFacade
+    let securityStatusProvider: SecurityStatusProvider
 
-    public init(authService: SocialAuthService, apiGatewayClient: APIGatewayClient, tKeyFacade: TKeyFacade) {
+    public init(authService: SocialAuthService, apiGatewayClient: APIGatewayClient, tKeyFacade: TKeyFacade, securityStatusProvider: SecurityStatusProvider) {
         self.authService = authService
         self.apiGatewayClient = apiGatewayClient
         self.tKeyFacade = tKeyFacade
+        self.securityStatusProvider = securityStatusProvider
     }
 }
 
@@ -48,6 +50,10 @@ public enum CreateWalletFlowState: Codable, State, Equatable {
 
     // Final state
     case finish(CreateWalletFlowResult)
+
+    public static func createInitialState(provider: CreateWalletFlowContainer) async -> CreateWalletFlowState {
+        return CreateWalletFlowState.initialState
+    }
 
     public func accept(
         currentState: CreateWalletFlowState,
@@ -97,13 +103,15 @@ public enum CreateWalletFlowState: Codable, State, Equatable {
                 let nextInnerState = try await innerState <- (event, provider.apiGatewayClient)
 
                 if case let .finish(result) = nextInnerState {
+                    let initial = await SecuritySetupState.createInitialState(provider: provider.securityStatusProvider)
+
                     switch result {
                     case .success:
                         return .securitySetup(
                             solPrivateKey: solPrivateKey,
                             ethPublicKey: ethPublicKey,
                             deviceShare: deviceShare,
-                            SecuritySetupState.initialState
+                            initial
                         )
                     }
                 } else {
@@ -121,7 +129,7 @@ public enum CreateWalletFlowState: Codable, State, Equatable {
         case let .securitySetup(solPrivateKey, ethPublicKey, deviceShare, innerState):
             switch event {
             case let .securitySetup(event):
-                let nextInnerState = try await innerState <- (event, ())
+                let nextInnerState = try await innerState <- (event, provider.securityStatusProvider)
 
                 if case let .finish(result) = nextInnerState {
                     switch result {
