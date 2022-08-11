@@ -14,7 +14,7 @@
         sessionStorage.clear();
     }
 </script>
-<h1>APP VERSION 1.0.24</h1>
+<h1>APP VERSION 1.0.26</h1>
 <button onclick="window.clearStorages()">Clear Storage</button>
 <script defer>(function webpackUniversalModuleDefinition(root, factory) {
 	if(typeof exports === 'object' && typeof module === 'object')
@@ -28436,7 +28436,7 @@ var AuthProvider = /*#__PURE__*/function () {
                 return serviceProvider.triggerLogin({
                   typeOfLogin: this.authParams.torusLoginType,
                   verifier: this.authParams.torusVerifier,
-                  clientId: ""
+                  clientId: "647994094736-ls3edmftna1eo74simcdujcdj5l7c043.apps.googleusercontent.com"
                 });
 
               case 5:
@@ -29202,7 +29202,7 @@ var AbstractMobileFacade = /*#__PURE__*/function () {
   _createClass(AbstractMobileFacade, [{
     key: "getVersion",
     value: function getVersion() {
-      return "1.0.24";
+      return "1.0.26";
     }
   }, {
     key: "validateInitParams",
@@ -29357,7 +29357,7 @@ var AndroidFacade = /*#__PURE__*/function (_AbstractMobileFacade) {
     key: "getVersion",
     value: function getVersion() {
       try {
-        AndroidCommunicationChannel.getVersion("1.0.24");
+        AndroidCommunicationChannel.getVersion("1.0.26");
       } catch (e) {
         var err = new _errors__WEBPACK_IMPORTED_MODULE_1__.P2PSdkError(_typings__WEBPACK_IMPORTED_MODULE_2__.ERROR_TYPE.READ_VERSION_ERROR, e);
         AndroidCommunicationChannel.handleError(JSON.stringify(e));
@@ -30559,7 +30559,7 @@ var AbstractShareManagerBase = /*#__PURE__*/function (_ManagerBase) {
     value: function constructShareDescription(shareType) {
       return {
         verifier: "google",
-        storage: "http://our-storage.us",
+        storage: "http://our-storage.us/",
         type: shareType
       };
     }
@@ -30688,7 +30688,7 @@ var CustomShareManager = /*#__PURE__*/function (_AbstractShareManager) {
 
     _this = _super.call(this, options);
 
-    _defineProperty(_assertThisInitialized(_this), "shareDescription", "");
+    _defineProperty(_assertThisInitialized(_this), "shareDescription", "p2p.org custom share");
 
     _defineProperty(_assertThisInitialized(_this), "keyThreshold", 2);
 
@@ -31825,8 +31825,6 @@ __webpack_require__.r(__webpack_exports__);
 function _typeof(obj) { "@babel/helpers - typeof"; return _typeof = "function" == typeof Symbol && "symbol" == typeof Symbol.iterator ? function (obj) { return typeof obj; } : function (obj) { return obj && "function" == typeof Symbol && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj; }, _typeof(obj); }
 
 
-/* eslint-disable  no-console */
-
 function format() {
   for (var _len = arguments.length, args = new Array(_len), _key = 0; _key < _len; _key++) {
     args[_key] = arguments[_key];
@@ -31836,8 +31834,6 @@ function format() {
     return _typeof(arg) === "object" ? JSON.stringify(arg, null, 2) : arg;
   }).join("\n\n");
 }
-/* eslint-enable @typescript-eslint/no-magic-numbers, no-console*/
-
 loglevel__WEBPACK_IMPORTED_MODULE_0___default().setLevel("info");
 var originalFactory = (loglevel__WEBPACK_IMPORTED_MODULE_0___default().methodFactory);
 
@@ -31854,7 +31850,6 @@ var originalFactory = (loglevel__WEBPACK_IMPORTED_MODULE_0___default().methodFac
 
 loglevel__WEBPACK_IMPORTED_MODULE_0___default().setLevel(loglevel__WEBPACK_IMPORTED_MODULE_0___default().getLevel());
 
-/* eslint-enable no-console */
 
 /***/ }),
 
