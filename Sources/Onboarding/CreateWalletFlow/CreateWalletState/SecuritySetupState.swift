@@ -17,7 +17,7 @@ public enum SecuritySetupEvent {
 
 public enum SecuritySetupState: Codable, State, Equatable {
     public typealias Event = SecuritySetupEvent
-    public typealias Provider = None
+    public typealias Provider = SecurityStatusProvider
 
     case setProtectionLevel
     case createPincode
@@ -25,6 +25,13 @@ public enum SecuritySetupState: Codable, State, Equatable {
     case finish(_ result: SecuritySetupResult)
 
     public private(set) static var initialState: SecuritySetupState = .setProtectionLevel
+
+    public static func createInitialState(provider: Provider) async -> SecuritySetupState {
+        if !provider.isBiometryAvailable {
+            SecuritySetupState.initialState = .createPincode
+        }
+        return SecuritySetupState.initialState
+    }
 
     public func accept(
         currentState: SecuritySetupState,
@@ -41,7 +48,6 @@ public enum SecuritySetupState: Codable, State, Equatable {
             default:
                 throw StateMachineError.invalidEvent
             }
-
         case .createPincode:
             switch event {
             case let .confirmPincode(pincode):
@@ -51,8 +57,7 @@ public enum SecuritySetupState: Codable, State, Equatable {
             default:
                 throw StateMachineError.invalidEvent
             }
-
-        case let .confirmPincode(pincode):
+        case .confirmPincode:
             switch event {
             case .back:
                 return .createPincode
