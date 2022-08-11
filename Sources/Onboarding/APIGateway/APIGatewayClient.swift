@@ -183,7 +183,7 @@ public class APIGatewayClientImplMock: APIGatewayClient {
         debugPrint("SMSServiceImplMock confirm isConfirmed: \(code == code && phone == self.phone)")
 
         if
-            let exep = APIGatewayError(rawValue: -(Int(code) ?? 0)),
+            let exep = APIGatewayError(rawValue: -(Int(otpCode) ?? 0)),
             exep.rawValue != APIGatewayError.invalidOTP.rawValue
         {
             throw exep
