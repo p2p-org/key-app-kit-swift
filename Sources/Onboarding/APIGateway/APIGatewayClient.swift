@@ -146,7 +146,6 @@ public class APIGatewayClientImpl: APIGatewayClient {
 
 public class APIGatewayClientImplMock: APIGatewayClient {
     private var code = "000000"
-    private var phone: String?
 
     public init() {}
 
@@ -166,8 +165,6 @@ public class APIGatewayClientImplMock: APIGatewayClient {
         {
             throw exep
         }
-
-        self.phone = phone
     }
 
     public func confirmRegisterWallet(
@@ -180,7 +177,7 @@ public class APIGatewayClientImplMock: APIGatewayClient {
         timestampDevice _: Date
     ) async throws {
         sleep(4)
-        debugPrint("SMSServiceImplMock confirm isConfirmed: \(code == code && phone == self.phone)")
+        debugPrint("SMSServiceImplMock confirm isConfirmed: \(code == code)")
 
         if
             let exep = APIGatewayError(rawValue: -(Int(otpCode) ?? 0)),
@@ -189,10 +186,7 @@ public class APIGatewayClientImplMock: APIGatewayClient {
             throw exep
         }
 
-        guard
-            otpCode == code,
-            phone == self.phone
-        else {
+        guard otpCode == code else {
             throw APIGatewayError.invalidOTP
         }
     }
