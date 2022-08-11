@@ -10,7 +10,7 @@ public enum SocialProvider: String, Codable {
 }
 
 public enum SocialSignInResult: Codable, Equatable {
-    case successful(solPrivateKey: String, ethPublicKey: String, deviceShare: String)
+    case successful(email: String, solPrivateKey: String, ethPublicKey: String, deviceShare: String)
     case breakProcess
     case switchToRestoreFlow(authProvider: SocialProvider, email: String)
 }
@@ -33,14 +33,14 @@ public struct SocialSignInContainer {
 public enum SocialSignInState: Codable, State, Equatable {
     public typealias Event = SocialSignInEvent
     public typealias Provider = SocialSignInContainer
-
+    
     case socialSelection
     case socialSignInAccountWasUsed(signInProvider: SocialProvider, usedEmail: String)
     case socialSignInTryAgain(signInProvider: SocialProvider, usedEmail: String)
     case finish(SocialSignInResult)
-
+    
     public static var initialState: SocialSignInState = .socialSelection
-
+    
     public static func createInitialState(provider: SocialSignInContainer) async -> SocialSignInState {
         return SocialSignInState.initialState
     }
@@ -65,7 +65,7 @@ public enum SocialSignInState: Codable, State, Equatable {
             throw StateMachineError.invalidEvent
         }
     }
-
+    
     internal func socialSelectionEventHandler(
         currentState _: Self, event: Event,
         provider: Provider
@@ -78,9 +78,12 @@ public enum SocialSignInState: Codable, State, Equatable {
                     .signUp(tokenID: .init(value: tokenID, provider: socialProvider.rawValue))
                 
                 return .finish(
-                    .successful(solPrivateKey: result.privateSOL,
-                                ethPublicKey: result.reconstructedETH,
-                                deviceShare: result.deviceShare)
+                    .successful(
+                        email: email,
+                        solPrivateKey: result.privateSOL,
+                        ethPublicKey: result.reconstructedETH,
+                        deviceShare: result.deviceShare
+                    )
                 )
             } catch let error as TKeyFacadeError {
                 switch error.code {
@@ -98,7 +101,7 @@ public enum SocialSignInState: Codable, State, Equatable {
             throw StateMachineError.invalidEvent
         }
     }
-
+    
     internal func socialTryAgainEventHandler(
         currentState _: Self, event: Event,
         provider: Provider
@@ -110,11 +113,14 @@ public enum SocialSignInState: Codable, State, Equatable {
                 let result = try await provider
                     .tKeyFacade
                     .signUp(tokenID: .init(value: tokenID, provider: socialProvider.rawValue))
-
+                
                 return .finish(
-                    .successful(solPrivateKey: result.privateSOL,
-                                ethPublicKey: result.reconstructedETH,
-                                deviceShare: result.deviceShare)
+                    .successful(
+                        email: email,
+                        solPrivateKey: result.privateSOL,
+                        ethPublicKey: result.reconstructedETH,
+                        deviceShare: result.deviceShare
+                    )
                 )
             } catch let error as TKeyFacadeError {
                 switch error.code {
@@ -130,7 +136,7 @@ public enum SocialSignInState: Codable, State, Equatable {
             throw StateMachineError.invalidEvent
         }
     }
-
+    
     internal func socialSignInAccountWasUsedHandler(
         currentState: Self, event: Event,
         provider: Provider
@@ -146,7 +152,9 @@ public enum SocialSignInState: Codable, State, Equatable {
     }
 }
 
-extension SocialSignInState: Step {
+extension SocialSignInState: Step, Continuable {
+    public var continuable: Bool { false }
+    
     public var step: Float {
         switch self {
         case .socialSelection:

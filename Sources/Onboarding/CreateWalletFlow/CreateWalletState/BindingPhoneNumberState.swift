@@ -96,7 +96,9 @@ public enum BindingPhoneNumberState: Codable, State, Equatable {
     }
 }
 
-extension BindingPhoneNumberState: Step {
+extension BindingPhoneNumberState: Step, Continuable {
+    public var continuable: Bool { true }
+    
     public var step: Float {
         switch self {
         case let .enterPhoneNumber(initialPhoneNumber: initialPhoneNumber):

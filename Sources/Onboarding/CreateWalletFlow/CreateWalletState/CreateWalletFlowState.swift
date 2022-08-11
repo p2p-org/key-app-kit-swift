@@ -4,14 +4,16 @@
 
 import Foundation
 
+public struct OnboardingWallet: Codable, Equatable {
+    public let solPrivateKey: String
+    public let deviceShare: String
+    
+    public let pincode: String
+    public let useBiometric: Bool
+}
+
 public enum CreateWalletFlowResult: Codable, Equatable {
-    case newWallet(
-        solPrivateKey: String,
-        ethPublicKey: String,
-        deviceShare: String,
-        phoneNumberShare: String,
-        pincode: String
-    )
+    case newWallet(OnboardingWallet)
     case breakProcess
     case switchToRestoreFlow(socialProvider: SocialProvider, email: String)
 }
@@ -28,8 +30,13 @@ public struct CreateWalletFlowContainer {
     let apiGatewayClient: APIGatewayClient
     let tKeyFacade: TKeyFacade
     let securityStatusProvider: SecurityStatusProvider
-
-    public init(authService: SocialAuthService, apiGatewayClient: APIGatewayClient, tKeyFacade: TKeyFacade, securityStatusProvider: SecurityStatusProvider) {
+    
+    public init(
+        authService: SocialAuthService,
+        apiGatewayClient: APIGatewayClient,
+        tKeyFacade: TKeyFacade,
+        securityStatusProvider: SecurityStatusProvider
+    ) {
         self.authService = authService
         self.apiGatewayClient = apiGatewayClient
         self.tKeyFacade = tKeyFacade
@@ -40,21 +47,21 @@ public struct CreateWalletFlowContainer {
 public enum CreateWalletFlowState: Codable, State, Equatable {
     public typealias Event = CreateWalletFlowEvent
     public typealias Provider = CreateWalletFlowContainer
-
+    
     public private(set) static var initialState: CreateWalletFlowState = .socialSignIn(.socialSelection)
-
+    
     // States
     case socialSignIn(SocialSignInState)
-    case bindingPhoneNumber(solPrivateKey: String, ethPublicKey: String, deviceShare: String, BindingPhoneNumberState)
-    case securitySetup(solPrivateKey: String, ethPublicKey: String, deviceShare: String, SecuritySetupState)
-
+    case bindingPhoneNumber(email: String, solPrivateKey: String, ethPublicKey: String, deviceShare: String, BindingPhoneNumberState)
+    case securitySetup(email: String, solPrivateKey: String, ethPublicKey: String, deviceShare: String, SecuritySetupState)
+    
     // Final state
     case finish(CreateWalletFlowResult)
-
+    
     public static func createInitialState(provider: CreateWalletFlowContainer) async -> CreateWalletFlowState {
-        return CreateWalletFlowState.initialState
+        CreateWalletFlowState.initialState
     }
-
+    
     public func accept(
         currentState: CreateWalletFlowState,
         event: CreateWalletFlowEvent,
@@ -68,11 +75,12 @@ public enum CreateWalletFlowState: Codable, State, Equatable {
                     event,
                     .init(tKeyFacade: provider.tKeyFacade, authService: provider.authService)
                 )
-
+                
                 if case let .finish(result) = nextInnerState {
                     switch result {
-                    case let .successful(solPrivateKey, ethPublicKey, deviceShare):
+                    case let .successful(email, solPrivateKey, ethPublicKey, deviceShare):
                         return .bindingPhoneNumber(
+                            email: email,
                             solPrivateKey: solPrivateKey,
                             ethPublicKey: ethPublicKey,
                             deviceShare: deviceShare,
@@ -97,17 +105,18 @@ public enum CreateWalletFlowState: Codable, State, Equatable {
             default:
                 throw StateMachineError.invalidEvent
             }
-        case let .bindingPhoneNumber(solPrivateKey, ethPublicKey, deviceShare, innerState):
+        case let .bindingPhoneNumber(email, solPrivateKey, ethPublicKey, deviceShare, innerState):
             switch event {
             case let .bindingPhoneNumberEvent(event):
                 let nextInnerState = try await innerState <- (event, provider.apiGatewayClient)
-
+                
                 if case let .finish(result) = nextInnerState {
                     let initial = await SecuritySetupState.createInitialState(provider: provider.securityStatusProvider)
-
+                    
                     switch result {
                     case .success:
                         return .securitySetup(
+                            email: email,
                             solPrivateKey: solPrivateKey,
                             ethPublicKey: ethPublicKey,
                             deviceShare: deviceShare,
@@ -116,6 +125,7 @@ public enum CreateWalletFlowState: Codable, State, Equatable {
                     }
                 } else {
                     return .bindingPhoneNumber(
+                        email: email,
                         solPrivateKey: solPrivateKey,
                         ethPublicKey: ethPublicKey,
                         deviceShare: deviceShare,
@@ -125,24 +135,29 @@ public enum CreateWalletFlowState: Codable, State, Equatable {
             default:
                 throw StateMachineError.invalidEvent
             }
-
-        case let .securitySetup(solPrivateKey, ethPublicKey, deviceShare, innerState):
+        
+        case let .securitySetup(email, solPrivateKey, ethPublicKey, deviceShare, innerState):
             switch event {
             case let .securitySetup(event):
                 let nextInnerState = try await innerState <- (event, provider.securityStatusProvider)
-
+                
                 if case let .finish(result) = nextInnerState {
                     switch result {
-                    case .success:
-                        return .securitySetup(
-                            solPrivateKey: solPrivateKey,
-                            ethPublicKey: ethPublicKey,
-                            deviceShare: deviceShare,
-                            SecuritySetupState.initialState
+                    case let .success(pincode, withBiometric):
+                        return .finish(
+                            .newWallet(
+                                .init(
+                                    solPrivateKey: solPrivateKey,
+                                    deviceShare: deviceShare,
+                                    pincode: pincode ?? "000000",
+                                    useBiometric: withBiometric
+                                )
+                            )
                         )
                     }
                 } else {
                     return .securitySetup(
+                        email: email,
                         solPrivateKey: solPrivateKey,
                         ethPublicKey: ethPublicKey,
                         deviceShare: deviceShare,
@@ -152,23 +167,37 @@ public enum CreateWalletFlowState: Codable, State, Equatable {
             default:
                 throw StateMachineError.invalidEvent
             }
-
+        
         default: throw StateMachineError.invalidEvent
         }
     }
 }
 
-extension CreateWalletFlowState: Step {
+extension CreateWalletFlowState: Step, Continuable {
+    public var continuable: Bool {
+        switch self {
+        case .socialSignIn(let innerState):
+            return innerState.continuable
+        case .bindingPhoneNumber(_, _, _, _, let innerState):
+            return innerState.continuable
+        case .securitySetup(_, _, _, _, let innerState):
+            return innerState.continuable
+        case .finish(_):
+            return false
+        }
+    }
+    
+    
     public var step: Float {
         switch self {
-        case .socialSignIn:
-            return 1
-        case .bindingPhoneNumber:
-            return 2
-        case .securitySetup:
-            return 3
+        case let .socialSignIn(innerState):
+            return 1 * 100 + innerState.step
+        case let .bindingPhoneNumber(_, _, _, _, innerState):
+            return 2 * 100 + innerState.step
+        case let .securitySetup(_, _, _, _, innerState):
+            return 3 * 100 + innerState.step
         case .finish:
-            return 4
+            return 4 * 100
         }
     }
 }

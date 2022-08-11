@@ -75,7 +75,16 @@ public enum SecuritySetupState: Codable, State, Equatable {
     }
 }
 
-extension SecuritySetupState: Step {
+extension SecuritySetupState: Step, Continuable {
+    public var continuable: Bool {
+        switch self {
+        case .confirmPincode(pincode: let pincode):
+            return false
+        default:
+            return true
+        }
+    }
+    
     public var step: Float {
         switch self {
         case .setProtectionLevel:
