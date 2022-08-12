@@ -36,6 +36,7 @@ public enum SocialSignInState: Codable, State, Equatable {
     
     case socialSelection
     case socialSignInAccountWasUsed(signInProvider: SocialProvider, usedEmail: String)
+    @available(*, deprecated, message: "This case is deprecated")
     case socialSignInTryAgain(signInProvider: SocialProvider, usedEmail: String)
     case finish(SocialSignInResult)
     
@@ -89,8 +90,8 @@ public enum SocialSignInState: Codable, State, Equatable {
                 switch error.code {
                 case 1009:
                     return .socialSignInAccountWasUsed(signInProvider: socialProvider, usedEmail: email)
-                case 1666:
-                    return .socialSignInTryAgain(signInProvider: socialProvider, usedEmail: email)
+//                case 1666:
+//                    return .socialSignInTryAgain(signInProvider: socialProvider, usedEmail: email)
                 default:
                     throw error
                 }
