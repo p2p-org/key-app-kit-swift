@@ -43,7 +43,7 @@ public enum SocialSignInState: Codable, State, Equatable {
     public static var initialState: SocialSignInState = .socialSelection
     
     public static func createInitialState(provider: SocialSignInContainer) async -> SocialSignInState {
-        return SocialSignInState.initialState
+        SocialSignInState.initialState
     }
     
     public func accept(
@@ -75,6 +75,7 @@ public enum SocialSignInState: Codable, State, Equatable {
         case let .signIn(socialProvider):
             let (tokenID, email) = try await provider.authService.auth(type: socialProvider)
             do {
+                try await provider.tKeyFacade.initialize()
                 let result = try await provider.tKeyFacade
                     .signUp(tokenID: .init(value: tokenID, provider: socialProvider.rawValue))
                 
@@ -90,8 +91,8 @@ public enum SocialSignInState: Codable, State, Equatable {
                 switch error.code {
                 case 1009:
                     return .socialSignInAccountWasUsed(signInProvider: socialProvider, usedEmail: email)
-//                case 1666:
-//                    return .socialSignInTryAgain(signInProvider: socialProvider, usedEmail: email)
+               // case 1666:
+               //     return .socialSignInTryAgain(signInProvider: socialProvider, usedEmail: email)
                 default:
                     throw error
                 }
