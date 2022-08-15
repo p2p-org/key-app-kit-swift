@@ -36,7 +36,17 @@ public class TKeyJSFacade: TKeyFacade {
         context = JSBContext(wkWebView: wkWebView)
     }
     
+    private var ready: Bool = false
+    
     public func initialize() async throws {
+        guard ready == false else { return }
+        defer { ready = true }
+        
+        let records = await WKWebsiteDataStore.default().fetchDataRecords(ofTypes: WKWebsiteDataStore.allWebsiteDataTypes())
+        for record in records {
+            await WKWebsiteDataStore.default().removeData(ofTypes: record.dataTypes, for: [record])
+        }
+        
         let scriptPath = getSDKPath()
         let request = URLRequest(url: URL(fileURLWithPath: scriptPath))
         try await context.load(request: request)
@@ -152,5 +162,16 @@ public class TKeyJSFacade: TKeyFacade {
         else { return nil }
         
         return try? JSONDecoder().decode(TKeyFacadeError.self, from: error)
+    }
+}
+
+extension WKWebsiteDataStore {
+    func fetchDataRecords(ofTypes dataTypes: Set<String>) async -> [WKWebsiteDataRecord] {
+        await withCheckedContinuation { continuation in
+            fetchDataRecords(ofTypes: dataTypes) { records in
+                continuation.resume(returning: records)
+            }
+            
+        }
     }
 }
