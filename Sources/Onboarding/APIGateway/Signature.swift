@@ -4,6 +4,7 @@
 
 import Foundation
 import TweetNacl
+import SolanaSwift
 
 protocol Signature: BorshSerializable {
     func sign(secretKey: Data) throws -> Data
