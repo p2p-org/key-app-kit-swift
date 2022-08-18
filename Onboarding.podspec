@@ -20,6 +20,10 @@ Pod::Spec.new do |s|
   s.swift_version = '5.5'
   s.resources = "Sources/Onboarding/Resource/**/*"
   s.dependency 'JSBridge'
+  s.dependency 'TweetNacl', '~> 1.0.2'
+  s.dependency 'SolanaSwift', '~> 2'
+  s.dependency 'secp256k1.swift', '~> 0.1.0'
+  s.dependency 'CryptoSwift', '~> 1.4.1'
 
   s.pod_target_xcconfig = {
     'SWIFT_OPTIMIZATION_LEVEL' => '-O'
