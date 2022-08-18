@@ -4,8 +4,6 @@
 
 import Foundation
 
-import Foundation
-
 public struct TokenID {
     public let value: String
     public let provider: String
