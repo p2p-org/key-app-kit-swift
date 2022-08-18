@@ -134,11 +134,29 @@ public class TKeyJSFacade: TKeyFacade {
         )
     }
 
-    public func signIn(tokenID: TokenID, withCustomShare _: String) async throws -> SignInResult {
+    public func signIn(tokenID: TokenID, customShare: String) async throws -> SignInResult {
         let facade = try await getFacade(configuration: [:])
         let value = try await facade.invokeAsyncMethod(
             "triggerSignInNoDevice",
-            withArguments: [tokenID.value]
+            withArguments: [tokenID.value, customShare]
+        )
+        guard
+            let result = try await value.toDictionary(),
+            let privateSOL = result["privateSOL"] as? String,
+            let reconstructedETH = result["reconstructedETH"] as? String
+        else { throw Error.invalidReturnValue }
+
+        return .init(
+            privateSOL: privateSOL,
+            reconstructedETH: reconstructedETH
+        )
+    }
+
+    public func signIn(deviceShare: String, customShare: String) async throws -> SignInResult {
+        let facade = try await getFacade(configuration: [:])
+        let value = try await facade.invokeAsyncMethod(
+            "triggerSignInNoTorus",
+            withArguments: [deviceShare, customShare, ]
         )
         guard
             let result = try await value.toDictionary(),

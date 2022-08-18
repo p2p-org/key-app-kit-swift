@@ -25,7 +25,11 @@ public class TKeyMockupFacade: TKeyFacade {
         .init(privateSOL: "somePrivateKey", reconstructedETH: "someEthPublicKey")
     }
 
-    public func signIn(tokenID _: TokenID, withCustomShare _: String) async throws -> SignInResult {
-        .init(privateSOL: "somePrivateKey", reconstructedETH: "someCustomShare")
+    public func signIn(tokenID: TokenID, customShare: String) async throws -> SignInResult {
+        .init(privateSOL: "somePrivateKey", reconstructedETH: "someEthPublicKey")
+    }
+
+    public func signIn(deviceShare: String, customShare: String) async throws -> SignInResult {
+        .init(privateSOL: "somePrivateKey", reconstructedETH: "someEthPublicKey")
     }
 }

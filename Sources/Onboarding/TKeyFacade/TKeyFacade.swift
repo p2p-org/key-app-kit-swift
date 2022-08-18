@@ -7,7 +7,8 @@ public protocol TKeyFacade {
     
     func signUp(tokenID: TokenID) async throws -> SignUpResult
     func signIn(tokenID: TokenID, deviceShare: String) async throws -> SignInResult
-    func signIn(tokenID: TokenID, withCustomShare: String) async throws -> SignInResult
+    func signIn(tokenID: TokenID, customShare: String) async throws -> SignInResult
+    func signIn(deviceShare: String, customShare: String) async throws -> SignInResult
 }
 
 struct TKeyFacadeError: Error, Codable {

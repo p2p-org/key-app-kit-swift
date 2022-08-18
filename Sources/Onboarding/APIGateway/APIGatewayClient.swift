@@ -39,7 +39,7 @@ public enum APIGatewayChannel: String, Codable {
     case call
 }
 
-public struct RestoreWalletResult: Codable {
+public struct RestoreWalletResult: Codable, Equatable {
     let solanaPublicKey: String
     let ethereumId: String
     let encryptedShare: String
