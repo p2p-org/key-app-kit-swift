@@ -78,7 +78,7 @@ public enum CreateWalletFlowState: Codable, State, Equatable {
                 
                 if case let .finish(result) = nextInnerState {
                     switch result {
-                    case let .successful(email, solPrivateKey, ethPublicKey, deviceShare):
+                    case let .successful(email, solPrivateKey, ethPublicKey, deviceShare, customShare, metaData):
                         return .bindingPhoneNumber(
                             email: email,
                             solPrivateKey: solPrivateKey,
@@ -89,8 +89,8 @@ public enum CreateWalletFlowState: Codable, State, Equatable {
                                 data: .init(
                                     solanaPublicKey: solPrivateKey,
                                     ethereumId: ethPublicKey,
-                                    share: deviceShare,
-                                    payload: ""
+                                    customShare: customShare,
+                                    payload: metaData
                                 )
                             )
                         )

@@ -62,6 +62,8 @@ let package = Package(
     dependencies: [
         .package(url: "https://github.com/p2p-org/solana-swift", from: "2.1.1"),
         .package(url: "https://github.com/amplitude/Amplitude-iOS", from: "8.3.0"),
+        .package(url: "https://github.com/bitmark-inc/tweetnacl-swiftwrap.git", from: "1.0.2"),
+        .package(url: "https://github.com/krzyzanowskim/CryptoSwift.git", .upToNextMajor(from: "1.5.1"))
     ],
     targets: [
         // Cache
@@ -145,7 +147,13 @@ let package = Package(
         // TKey
         .target(
             name: "Onboarding",
-            dependencies: ["JSBridge"],
+            dependencies: [
+                "JSBridge",
+                .product(name: "TweetNacl", package: "tweetnacl-swiftwrap"),
+                .product(name: "SolanaSwift", package: "solana-swift"),
+                .product(name: "CryptoSwift", package: "CryptoSwift"),
+                
+            ],
             resources: [
                 .process("Resource/bundle.js.map"),
                 .process("Resource/index.html")
@@ -157,5 +165,5 @@ let package = Package(
 
 #if swift(>=5.6)
     // For generating docs purpose
-    // package.dependencies.append(.package(url: "https://github.com/apple/swift-docc-plugin", from: "1.0.0"))
+    package.dependencies.append(.package(url: "https://github.com/apple/swift-docc-plugin", from: "1.0.0"))
 #endif

@@ -10,7 +10,14 @@ public enum SocialProvider: String, Codable {
 }
 
 public enum SocialSignInResult: Codable, Equatable {
-    case successful(email: String, solPrivateKey: String, ethPublicKey: String, deviceShare: String)
+    case successful(
+        email: String,
+        solPrivateKey: String,
+        ethPublicKey: String,
+        deviceShare: String,
+        customShare: String,
+        metadata: String
+    )
     case breakProcess
     case switchToRestoreFlow(authProvider: SocialProvider, email: String)
 }
@@ -84,7 +91,9 @@ public enum SocialSignInState: Codable, State, Equatable {
                         email: email,
                         solPrivateKey: result.privateSOL,
                         ethPublicKey: result.reconstructedETH,
-                        deviceShare: result.deviceShare
+                        deviceShare: result.deviceShare,
+                        customShare: result.customShare,
+                        metadata: result.metaData
                     )
                 )
             } catch let error as TKeyFacadeError {
@@ -121,7 +130,9 @@ public enum SocialSignInState: Codable, State, Equatable {
                         email: email,
                         solPrivateKey: result.privateSOL,
                         ethPublicKey: result.reconstructedETH,
-                        deviceShare: result.deviceShare
+                        deviceShare: result.deviceShare,
+                        customShare: result.customShare,
+                        metadata: result.metaData
                     )
                 )
             } catch let error as TKeyFacadeError {

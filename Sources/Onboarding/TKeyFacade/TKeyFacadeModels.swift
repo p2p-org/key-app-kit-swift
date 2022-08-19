@@ -22,6 +22,10 @@ public struct SignUpResult: Codable {
     public let privateSOL: String
     public let reconstructedETH: String
     public let deviceShare: String
+    public let customShare: String
+    
+    /// Ecies meta data
+    public let metaData: String
 }
 
 public struct SignInResult: Codable {
