@@ -5,19 +5,19 @@
 import Foundation
 import SolanaSwift
 
-public struct ICloudAccount {
+public struct ICloudAccount: Codable, Hashable {
     public let name: String?
     internal let phrase: String
     public let derivablePath: DerivablePath
     public let publicKey: String
-    
+
     public init(name: String?, phrase: String, derivablePath: DerivablePath, publicKey: String) {
         self.name = name
         self.phrase = phrase
         self.derivablePath = derivablePath
         self.publicKey = publicKey
     }
-    
+
     init(name: String?, phrase: String, derivablePath: DerivablePath) async throws {
         self.name = name
         self.phrase = phrase
@@ -30,8 +30,23 @@ public struct ICloudAccount {
         )
         publicKey = account.publicKey.base58EncodedString
     }
+
+    public func hash(into hasher: inout Hasher) {
+        hasher.combine(name)
+        hasher.combine(phrase)
+        hasher.combine(derivablePath)
+        hasher.combine(publicKey)
+    }
+
+    public static func == (lhs: ICloudAccount, rhs: ICloudAccount) -> Bool {
+        if lhs.name != rhs.name { return false }
+        if lhs.phrase != rhs.phrase { return false }
+        if lhs.derivablePath != rhs.derivablePath { return false }
+        if lhs.publicKey != rhs.publicKey { return false }
+        return true
+    }
 }
 
-protocol ICloudAccountProvider {
+public protocol ICloudAccountProvider {
     func getAll() async throws -> [(name: String?, phrase: String, derivablePath: DerivablePath)]
 }

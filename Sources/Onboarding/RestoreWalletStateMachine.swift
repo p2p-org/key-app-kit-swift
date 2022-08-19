@@ -3,6 +3,7 @@
 // found in the LICENSE file.
 
 import Foundation
+import SolanaSwift
 
 public typealias RestoreWalletStateMachine = StateMachine<RestoreWalletState>
 
@@ -12,19 +13,22 @@ public struct RestoreWalletFlowContainer {
     let authService: SocialAuthService
     let apiGatewayClient: APIGatewayClient
     let securityStatusProvider: SecurityStatusProvider
+    let icloudAccountProvider: ICloudAccountProvider
 
     public init(
         tKeyFacade: TKeyFacade,
         deviceShare: String?,
         authService: SocialAuthService,
         apiGatewayClient: APIGatewayClient,
-        securityStatusProvider: SecurityStatusProvider
+        securityStatusProvider: SecurityStatusProvider,
+        icloudAccountProvider: ICloudAccountProvider
     ) {
         self.tKeyFacade = tKeyFacade
         self.deviceShare = deviceShare
         self.authService = authService
         self.apiGatewayClient = apiGatewayClient
         self.securityStatusProvider = securityStatusProvider
+        self.icloudAccountProvider = icloudAccountProvider
     }
 }
 
@@ -33,7 +37,7 @@ public enum RestoreWalletState: Codable, State, Equatable {
     public typealias Provider = RestoreWalletFlowContainer
     public static var initialState: RestoreWalletState = .restore
 
-    public static func createInitialState(provider: Provider) async -> RestoreWalletState {
+    public static func createInitialState(provider _: Provider) async -> RestoreWalletState {
         RestoreWalletState.initialState = .restore
         return RestoreWalletState.initialState
     }
@@ -48,14 +52,27 @@ public enum RestoreWalletState: Codable, State, Equatable {
 
             switch event {
             case .signInWithKeychain:
-                return .signInKeychain
+                let rawAccounts = try await provider.icloudAccountProvider.getAll()
+                var accounts: [ICloudAccount] = []
+                for rawAccount in rawAccounts {
+                    accounts
+                        .append(try await .init(
+                            name: rawAccount.name,
+                            phrase: rawAccount.phrase,
+                            derivablePath: rawAccount.derivablePath
+                        ))
+                }
+                return .signInKeychain(accounts: accounts)
 
             case .signInWithSeed:
                 return .signInSeed
 
             case let .signIn(socialProvider, deviceShare):
                 let (tokenID, _) = try await provider.authService.auth(type: socialProvider)
-                let result = try await provider.tKeyFacade.signIn(tokenID: TokenID(value: tokenID, provider: socialProvider.rawValue), deviceShare: deviceShare)
+                let result = try await provider.tKeyFacade.signIn(
+                    tokenID: TokenID(value: tokenID, provider: socialProvider.rawValue),
+                    deviceShare: deviceShare
+                )
                 return .restoredData(solPrivateKey: result.privateSOL, ethPublicKey: result.reconstructedETH)
 
             case .enterPhone:
@@ -64,22 +81,32 @@ public enum RestoreWalletState: Codable, State, Equatable {
             default:
                 throw StateMachineError.invalidEvent
             }
-            
+
         case .enterPhone:
             switch event {
-            case .enterPhoneNumber(let phoneNumber):
-                try await provider.apiGatewayClient.restoreWallet(solPrivateKey: Data(), phone: phoneNumber, channel: .sms, timestampDevice: Date())
+            case let .enterPhoneNumber(phoneNumber):
+                try await provider.apiGatewayClient.restoreWallet(
+                    solPrivateKey: Data(),
+                    phone: phoneNumber,
+                    channel: .sms,
+                    timestampDevice: Date()
+                )
 
                 return .enterOTP(phoneNumber: phoneNumber)
 
             default:
                 throw StateMachineError.invalidEvent
             }
-            
-        case .enterOTP(let phoneNumber):
+
+        case let .enterOTP(phoneNumber):
             switch event {
             case let .enterOTP(otp):
-                let result = try await provider.apiGatewayClient.confirmRestoreWallet(solanaPrivateKey: Data(), phone: phoneNumber, otpCode: otp, timestampDevice: Date())
+                let result = try await provider.apiGatewayClient.confirmRestoreWallet(
+                    solanaPrivateKey: Data(),
+                    phone: phoneNumber,
+                    otpCode: otp,
+                    timestampDevice: Date()
+                )
 
                 return .social(result: result)
             case .resendOTP:
@@ -92,7 +119,10 @@ public enum RestoreWalletState: Codable, State, Equatable {
             switch event {
             case let .signIn(socialProvider, customShare):
                 let (tokenID, _) = try await provider.authService.auth(type: socialProvider)
-                let result = try await provider.tKeyFacade.signIn(tokenID: TokenID(value: tokenID, provider: socialProvider.rawValue), customShare: result.encryptedShare)
+                let result = try await provider.tKeyFacade.signIn(
+                    tokenID: TokenID(value: tokenID, provider: socialProvider.rawValue),
+                    customShare: result.encryptedShare
+                )
                 return .restoredData(solPrivateKey: result.privateSOL, ethPublicKey: result.reconstructedETH)
 
             default:
@@ -102,7 +132,13 @@ public enum RestoreWalletState: Codable, State, Equatable {
         case let .restoredData(solPrivateKey, ethPublicKey):
             let initial = await SecuritySetupState.createInitialState(provider: provider.securityStatusProvider)
 
-            return .securitySetup(email: "", solPrivateKey: solPrivateKey, ethPublicKey: ethPublicKey, deviceShare: provider.deviceShare ?? "", initial)
+            return .securitySetup(
+                email: "",
+                solPrivateKey: solPrivateKey,
+                ethPublicKey: ethPublicKey,
+                deviceShare: provider.deviceShare ?? "",
+                initial
+            )
 
         case let .securitySetup(email, solPrivateKey, ethPublicKey, deviceShare, innerState):
             switch event {
@@ -111,7 +147,7 @@ public enum RestoreWalletState: Codable, State, Equatable {
 
                 if case let .finish(result) = nextInnerState {
                     switch result {
-                    case let .success(_, _):
+                    case let .success:
                         return .restoredData(solPrivateKey: solPrivateKey, ethPublicKey: ethPublicKey)
                     }
                 } else {
@@ -128,8 +164,25 @@ public enum RestoreWalletState: Codable, State, Equatable {
             }
 
         case .signInKeychain:
-            throw StateMachineError.invalidEvent
-
+            switch event {
+            case let .restoreICloudAccount(account):
+                let account = try await Account(
+                    phrase: account.phrase.components(separatedBy: " "),
+                    network: .mainnetBeta,
+                    derivablePath: account.derivablePath
+                )
+                return .securitySetup(
+                    email: "",
+                    solPrivateKey: Base58.encode(account.secretKey),
+                    ethPublicKey: "",
+                    deviceShare: "",
+                    await SecuritySetupState.createInitialState(provider: provider.securityStatusProvider)
+                )
+            case let .back:
+                return .restore
+            default:
+                throw StateMachineError.invalidEvent
+            }
         case .signInSeed:
             throw StateMachineError.invalidEvent
         }
@@ -137,7 +190,7 @@ public enum RestoreWalletState: Codable, State, Equatable {
 
     case restore
 
-    case signInKeychain
+    case signInKeychain(accounts: [ICloudAccount])
     case signInSeed
 
     case enterPhone
@@ -145,13 +198,23 @@ public enum RestoreWalletState: Codable, State, Equatable {
 
     case social(result: RestoreWalletResult)
 
-    case securitySetup(email: String, solPrivateKey: String, ethPublicKey: String, deviceShare: String, SecuritySetupState)
+    case securitySetup(
+        email: String,
+        solPrivateKey: String,
+        ethPublicKey: String,
+        deviceShare: String,
+        SecuritySetupState
+    )
 
     case restoredData(solPrivateKey: String, ethPublicKey: String)
 }
 
 public enum RestoreWalletEvent {
+    case back
+    
+    // Icloud flow
     case signInWithKeychain
+    case restoreICloudAccount(account: ICloudAccount)
 
     case signInWithSeed
 
@@ -164,5 +227,4 @@ public enum RestoreWalletEvent {
     case resendOTP
 
     case securitySetup(SecuritySetupEvent)
-
 }
