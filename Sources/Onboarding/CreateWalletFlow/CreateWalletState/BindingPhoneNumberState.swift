@@ -10,6 +10,7 @@ public typealias BindingPhoneNumberChannel = APIGatewayChannel
 
 public enum BindingPhoneNumberResult: Codable {
     case success
+    case breakProcess
 }
 
 public enum BindingPhoneNumberEvent {
@@ -32,6 +33,7 @@ public enum BindingPhoneNumberState: Codable, State, Equatable {
 
     case enterPhoneNumber(initialPhoneNumber: String?, data: BindingPhoneNumberData)
     case enterOTP(channel: BindingPhoneNumberChannel, phoneNumber: String, data: BindingPhoneNumberData)
+    case broken
     case finish(_ result: BindingPhoneNumberResult)
 
     public static var initialState: BindingPhoneNumberState = .enterPhoneNumber(
@@ -70,6 +72,8 @@ public enum BindingPhoneNumberState: Codable, State, Equatable {
                     switch error._code {
                     // case -32056:
                     //     return .finish(.success)
+                    case -32058, -32700, -32600, -32601, -32602, -32603, -32052:
+                        return .broken
                     default:
                         throw error
                     }
@@ -106,6 +110,8 @@ public enum BindingPhoneNumberState: Codable, State, Equatable {
                     switch error._code {
                     // case -32056:
                     //     return .finish(.success)
+                    case -32058, -32700, -32600, -32601, -32602, -32603, -32052:
+                        return .broken
                     default:
                         throw error
                     }
@@ -136,6 +142,13 @@ public enum BindingPhoneNumberState: Codable, State, Equatable {
             default:
                 throw StateMachineError.invalidEvent
             }
+        case .broken:
+            switch event {
+            case .back:
+                return .finish(.breakProcess)
+            default:
+                throw StateMachineError.invalidEvent
+            }
         default:
             throw StateMachineError.invalidEvent
         }
@@ -151,8 +164,10 @@ extension BindingPhoneNumberState: Step, Continuable {
             return 1
         case .enterOTP:
             return 2
-        case .finish:
+        case .broken:
             return 3
+        case .finish:
+            return 4
         }
     }
 }

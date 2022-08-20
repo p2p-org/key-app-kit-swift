@@ -5,6 +5,7 @@
 import Foundation
 import JSBridge
 import WebKit
+import SolanaSwift
 
 public class TKeyMockupFacade: TKeyFacade {
     public init() {}
@@ -12,8 +13,8 @@ public class TKeyMockupFacade: TKeyFacade {
     public func initialize() async throws {}
 
     public func signUp(tokenID _: TokenID) async throws -> SignUpResult {
-        .init(
-            privateSOL: "somePrivateKey",
+        return .init(
+            privateSOL: Mnemonic().phrase.joined(separator: " "),
             reconstructedETH: "someEthPublicKey",
             deviceShare: "someDeviceShare",
             customShare: "someCustomShare",

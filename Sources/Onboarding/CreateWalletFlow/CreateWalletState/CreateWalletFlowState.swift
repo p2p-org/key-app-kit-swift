@@ -122,6 +122,8 @@ public enum CreateWalletFlowState: Codable, State, Equatable {
                             deviceShare: deviceShare,
                             initial
                         )
+                    case .breakProcess:
+                        return .finish(.breakProcess)
                     }
                 } else {
                     return .bindingPhoneNumber(
