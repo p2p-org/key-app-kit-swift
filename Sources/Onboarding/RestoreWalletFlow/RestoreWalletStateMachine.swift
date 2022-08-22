@@ -6,6 +6,11 @@ import Foundation
 import SolanaSwift
 import TweetNacl
 
+public enum RestoreWalletFlowResult: Codable, Equatable {
+    case successful(solPrivateKey: String, ethPublicKey: String)
+    case breakProcess
+}
+
 public typealias RestoreWalletStateMachine = StateMachine<RestoreWalletState>
 
 public struct RestoreWalletFlowContainer {
@@ -59,7 +64,7 @@ public enum RestoreWalletState: Codable, State, Equatable {
         SecuritySetupState
     )
 
-    case restoredData(solPrivateKey: String, ethPublicKey: String)
+    case finished(RestoreWalletFlowResult)
 
     public func accept(
         currentState: RestoreWalletState,
@@ -96,11 +101,30 @@ public enum RestoreWalletState: Codable, State, Equatable {
 
             case let .restoreSocial(event):
                 switch event {
-                case .signIn(let socialProvider, let deviceShare):
-                    return .restoreSocial(.signIn(socialProvider: socialProvider, deviceShare: deviceShare), option: .first(socialProvider: socialProvider, deviceShare: deviceShare))
+                case let .signInDevice(socialProvider, deviceShare):
+                    let event = RestoreSocialEvent.signInDevice(socialProvider: socialProvider, deviceShare: deviceShare)
+                    let innerState = RestoreSocialState.signIn(deviceShare: deviceShare)
+                    let nextInnerState = try await innerState <- (
+                        event,
+                        .init(option: .first(deviceShare: deviceShare), tKeyFacade: provider.tKeyFacade, authService: provider.authService)
+                    )
+
+                    if case let .finish(result) = nextInnerState {
+                        switch result {
+                        case let .successful(solPrivateKey, ethPublicKey):
+                            let initial = await SecuritySetupState.createInitialState(provider: provider.securityStatusProvider)
+                            return .securitySetup(email: "", solPrivateKey: solPrivateKey, ethPublicKey: ethPublicKey, deviceShare: "", initial)
+                        }
+                    } else {
+                        return .restoreSocial(nextInnerState, option: .first(deviceShare: deviceShare))
+                    }
+
                 default:
                     throw StateMachineError.invalidEvent
                 }
+
+            case .back:
+                return .finished(.breakProcess)
 
             default:
                 throw StateMachineError.invalidEvent
@@ -117,7 +141,8 @@ public enum RestoreWalletState: Codable, State, Equatable {
                 if case let .finish(result) = nextInnerState {
                     switch result {
                     case let .successful(solPrivateKey, ethPublicKey):
-                        return .restoredData(solPrivateKey: solPrivateKey, ethPublicKey: ethPublicKey)
+                        let initial = await SecuritySetupState.createInitialState(provider: provider.securityStatusProvider)
+                        return .securitySetup(email: "", solPrivateKey: solPrivateKey, ethPublicKey: ethPublicKey, deviceShare: "", initial)
                     }
                 } else {
                     return .restoreSocial(nextInnerState, option: option)
@@ -137,7 +162,8 @@ public enum RestoreWalletState: Codable, State, Equatable {
                 if case let .finish(result) = nextInnerState {
                     switch result {
                     case let .successful(solPrivateKey, ethPublicKey):
-                        return .restoredData(solPrivateKey: solPrivateKey, ethPublicKey: ethPublicKey)
+                        let initial = await SecuritySetupState.createInitialState(provider: provider.securityStatusProvider)
+                        return .securitySetup(email: "", solPrivateKey: solPrivateKey, ethPublicKey: ethPublicKey, deviceShare: "", initial)
                     case let .requireSocial(result):
                         return .restoreSocial(.social(result: result), option: .second(result: result))
                     }
@@ -149,17 +175,6 @@ public enum RestoreWalletState: Codable, State, Equatable {
                 throw StateMachineError.invalidEvent
             }
 
-        case let .restoredData(solPrivateKey, ethPublicKey):
-            let initial = await SecuritySetupState.createInitialState(provider: provider.securityStatusProvider)
-
-            return .securitySetup(
-                email: "",
-                solPrivateKey: solPrivateKey,
-                ethPublicKey: ethPublicKey,
-                deviceShare: provider.deviceShare ?? "",
-                initial
-            )
-
         case let .securitySetup(email, solPrivateKey, ethPublicKey, deviceShare, innerState):
             switch event {
             case let .securitySetup(event):
@@ -168,7 +183,7 @@ public enum RestoreWalletState: Codable, State, Equatable {
                 if case let .finish(result) = nextInnerState {
                     switch result {
                     case let .success:
-                        return .restoredData(solPrivateKey: solPrivateKey, ethPublicKey: ethPublicKey)
+                        return .finished(.successful(solPrivateKey: solPrivateKey, ethPublicKey: ethPublicKey))
                     }
                 } else {
                     return .securitySetup(
@@ -205,6 +220,9 @@ public enum RestoreWalletState: Codable, State, Equatable {
             }
         case .signInSeed:
             throw StateMachineError.invalidEvent
+
+        case let .finished(result):
+            throw StateMachineError.invalidEvent
         }
     }
 }
@@ -239,7 +257,7 @@ extension RestoreWalletState: Step, Continuable {
             return restoreCustomState.continuable
         case let .securitySetup(_, _, _, _, securitySetupState):
             return securitySetupState.continuable
-        case .restoredData:
+        case .finished:
             return false
         }
     }
@@ -258,7 +276,7 @@ extension RestoreWalletState: Step, Continuable {
             return 5 * 100 + restoreCustomState.step
         case let .securitySetup(_, _, _, _, securitySetupState):
             return 6 * 100 + securitySetupState.step
-        case .restoredData:
+        case .finished:
             return 7 * 100
         }
     }
