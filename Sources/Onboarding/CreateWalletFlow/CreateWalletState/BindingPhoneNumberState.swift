@@ -13,10 +13,17 @@ public enum BindingPhoneNumberResult: Codable {
     case breakProcess
 }
 
+public enum BindingPhoneBlockReason: Codable {
+    case blockEnterPhoneNumber
+    case blockEnterOTP
+}
+
 public enum BindingPhoneNumberEvent {
     case enterPhoneNumber(phoneNumber: String, channel: BindingPhoneNumberChannel)
     case enterOTP(opt: String)
     case resendOTP
+    case blockFinish
+    case home
     case back
 }
 
@@ -33,6 +40,7 @@ public enum BindingPhoneNumberState: Codable, State, Equatable {
 
     case enterPhoneNumber(initialPhoneNumber: String?, data: BindingPhoneNumberData)
     case enterOTP(channel: BindingPhoneNumberChannel, phoneNumber: String, data: BindingPhoneNumberData)
+    case block(until: Date, reason: BindingPhoneBlockReason, phoneNumber: String, data: BindingPhoneNumberData)
     case broken
     case finish(_ result: BindingPhoneNumberResult)
 
@@ -74,6 +82,13 @@ public enum BindingPhoneNumberState: Codable, State, Equatable {
                     //     return .finish(.success)
                     case -32058, -32700, -32600, -32601, -32602, -32603, -32052:
                         return .broken
+                    case -32053:
+                        return .block(
+                            until: Date() + (60 * 10),
+                            reason: .blockEnterPhoneNumber,
+                            phoneNumber: phoneNumber,
+                            data: data
+                        )
                     default:
                         throw error
                     }
@@ -112,6 +127,13 @@ public enum BindingPhoneNumberState: Codable, State, Equatable {
                     //     return .finish(.success)
                     case -32058, -32700, -32600, -32601, -32602, -32603, -32052:
                         return .broken
+                    case -32053:
+                        return .block(
+                            until: Date() + (60 * 10),
+                            reason: .blockEnterOTP,
+                            phoneNumber: phoneNumber,
+                            data: data
+                        )
                     default:
                         throw error
                     }
@@ -149,6 +171,26 @@ public enum BindingPhoneNumberState: Codable, State, Equatable {
             default:
                 throw StateMachineError.invalidEvent
             }
+        case let .block(until, reason, phoneNumber, data):
+            switch event {
+            case .home:
+                return .finish(.breakProcess)
+            case .blockFinish:
+                guard Date() > until else { throw StateMachineError.invalidEvent }
+                switch reason {
+                case .blockEnterPhoneNumber:
+                    return .enterPhoneNumber(
+                        initialPhoneNumber: nil,
+                        data: data
+                    )
+                case .blockEnterOTP:
+                    return .enterPhoneNumber(
+                        initialPhoneNumber: phoneNumber,
+                        data: data
+                    )
+                }
+            default: throw StateMachineError.invalidEvent
+            }
         default:
             throw StateMachineError.invalidEvent
         }
@@ -164,10 +206,12 @@ extension BindingPhoneNumberState: Step, Continuable {
             return 1
         case .enterOTP:
             return 2
-        case .broken:
+        case .block:
             return 3
-        case .finish:
+        case .broken:
             return 4
+        case .finish:
+            return 5
         }
     }
 }
