@@ -4,6 +4,7 @@
 
 import Foundation
 import SolanaSwift
+import TweetNacl
 
 public typealias RestoreWalletStateMachine = StateMachine<RestoreWalletState>
 
@@ -42,6 +43,24 @@ public enum RestoreWalletState: Codable, State, Equatable {
         return RestoreWalletState.initialState
     }
 
+    case restore
+
+    case signInKeychain(accounts: [ICloudAccount])
+    case signInSeed
+
+    case restoreSocial(RestoreSocialState, option: RestoreSocialContainer.Option)
+    case restoreCustom(RestoreCustomState)
+
+    case securitySetup(
+        email: String,
+        solPrivateKey: String,
+        ethPublicKey: String,
+        deviceShare: String,
+        SecuritySetupState
+    )
+
+    case restoredData(solPrivateKey: String, ethPublicKey: String)
+
     public func accept(
         currentState: RestoreWalletState,
         event: RestoreWalletEvent,
@@ -67,63 +86,64 @@ public enum RestoreWalletState: Codable, State, Equatable {
             case .signInWithSeed:
                 return .signInSeed
 
-            case let .signIn(socialProvider, deviceShare):
-                let (tokenID, _) = try await provider.authService.auth(type: socialProvider)
-                let result = try await provider.tKeyFacade.signIn(
-                    tokenID: TokenID(value: tokenID, provider: socialProvider.rawValue),
-                    deviceShare: deviceShare
-                )
-                return .restoredData(solPrivateKey: result.privateSOL, ethPublicKey: result.reconstructedETH)
+            case let .restoreCustom(event):
+                switch event {
+                case .enterPhone:
+                    return .restoreCustom(.enterPhone)
+                default:
+                    throw StateMachineError.invalidEvent
+                }
 
-            case .enterPhone:
-                return .enterPhone
-
-            default:
-                throw StateMachineError.invalidEvent
-            }
-
-        case .enterPhone:
-            switch event {
-            case let .enterPhoneNumber(phoneNumber):
-                try await provider.apiGatewayClient.restoreWallet(
-                    solPrivateKey: Data(),
-                    phone: phoneNumber,
-                    channel: .sms,
-                    timestampDevice: Date()
-                )
-
-                return .enterOTP(phoneNumber: phoneNumber)
+            case let .restoreSocial(event):
+                switch event {
+                case .signIn(let socialProvider, let deviceShare):
+                    return .restoreSocial(.signIn(socialProvider: socialProvider, deviceShare: deviceShare), option: .first(socialProvider: socialProvider, deviceShare: deviceShare))
+                default:
+                    throw StateMachineError.invalidEvent
+                }
 
             default:
                 throw StateMachineError.invalidEvent
             }
 
-        case let .enterOTP(phoneNumber):
+        case let .restoreSocial(innerState, option):
             switch event {
-            case let .enterOTP(otp):
-                let result = try await provider.apiGatewayClient.confirmRestoreWallet(
-                    solanaPrivateKey: Data(),
-                    phone: phoneNumber,
-                    otpCode: otp,
-                    timestampDevice: Date()
+            case let .restoreSocial(event):
+                let nextInnerState = try await innerState <- (
+                    event,
+                    .init(option: option, tKeyFacade: provider.tKeyFacade, authService: provider.authService)
                 )
 
-                return .social(result: result)
-            case .resendOTP:
-                return currentState
+                if case let .finish(result) = nextInnerState {
+                    switch result {
+                    case let .successful(solPrivateKey, ethPublicKey):
+                        return .restoredData(solPrivateKey: solPrivateKey, ethPublicKey: ethPublicKey)
+                    }
+                } else {
+                    return .restoreSocial(nextInnerState, option: option)
+                }
             default:
                 throw StateMachineError.invalidEvent
             }
 
-        case let .social(result):
+        case let .restoreCustom(innerState):
             switch event {
-            case let .signIn(socialProvider, customShare):
-                let (tokenID, _) = try await provider.authService.auth(type: socialProvider)
-                let result = try await provider.tKeyFacade.signIn(
-                    tokenID: TokenID(value: tokenID, provider: socialProvider.rawValue),
-                    customShare: result.encryptedShare
+            case let .restoreCustom(event):
+                let nextInnerState = try await innerState <- (
+                    event,
+                    .init(tKeyFacade: provider.tKeyFacade, apiGatewayClient: provider.apiGatewayClient, deviceShare: provider.deviceShare)
                 )
-                return .restoredData(solPrivateKey: result.privateSOL, ethPublicKey: result.reconstructedETH)
+
+                if case let .finish(result) = nextInnerState {
+                    switch result {
+                    case let .successful(solPrivateKey, ethPublicKey):
+                        return .restoredData(solPrivateKey: solPrivateKey, ethPublicKey: ethPublicKey)
+                    case let .requireSocial(result):
+                        return .restoreSocial(.social(result: result), option: .second(result: result))
+                    }
+                } else {
+                    return .restoreCustom(nextInnerState)
+                }
 
             default:
                 throw StateMachineError.invalidEvent
@@ -187,44 +207,60 @@ public enum RestoreWalletState: Codable, State, Equatable {
             throw StateMachineError.invalidEvent
         }
     }
-
-    case restore
-
-    case signInKeychain(accounts: [ICloudAccount])
-    case signInSeed
-
-    case enterPhone
-    case enterOTP(phoneNumber: String)
-
-    case social(result: RestoreWalletResult)
-
-    case securitySetup(
-        email: String,
-        solPrivateKey: String,
-        ethPublicKey: String,
-        deviceShare: String,
-        SecuritySetupState
-    )
-
-    case restoredData(solPrivateKey: String, ethPublicKey: String)
 }
 
 public enum RestoreWalletEvent {
     case back
-    
+
     // Icloud flow
     case signInWithKeychain
     case restoreICloudAccount(account: ICloudAccount)
 
     case signInWithSeed
 
-    case signIn(socialProvider: SocialProvider, deviceShare: String)
-    case signIn(socialProvider: SocialProvider, customShare: String)
-
-    case enterPhone
-    case enterPhoneNumber(phoneNumber: String)
-    case enterOTP(opt: String)
-    case resendOTP
+    case restoreSocial(RestoreSocialEvent)
+    case restoreCustom(RestoreCustomEvent)
 
     case securitySetup(SecuritySetupEvent)
 }
+
+extension RestoreWalletState: Step, Continuable {
+    public var continuable: Bool {
+        switch self {
+        case .restore:
+            return false
+        case .signInKeychain:
+            return false
+        case .signInSeed:
+            return false
+        case let .restoreSocial(restoreSocialState, _):
+            return restoreSocialState.continuable
+        case let .restoreCustom(restoreCustomState):
+            return restoreCustomState.continuable
+        case let .securitySetup(_, _, _, _, securitySetupState):
+            return securitySetupState.continuable
+        case .restoredData:
+            return false
+        }
+    }
+
+    public var step: Float {
+        switch self {
+        case .restore:
+            return 1 * 100
+        case .signInKeychain:
+            return 2 * 100
+        case .signInSeed:
+            return 3 * 100
+        case let .restoreSocial(restoreSocialState, _):
+            return 4 * 100 + restoreSocialState.step
+        case let .restoreCustom(restoreCustomState):
+            return 5 * 100 + restoreCustomState.step
+        case let .securitySetup(_, _, _, _, securitySetupState):
+            return 6 * 100 + securitySetupState.step
+        case .restoredData:
+            return 7 * 100
+        }
+    }
+}
+

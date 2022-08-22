@@ -4,11 +4,6 @@
 
 import Foundation
 
-public enum SocialProvider: String, Codable {
-    case apple
-    case google
-}
-
 public enum SocialSignInResult: Codable, Equatable {
     case successful(
         email: String,
@@ -26,10 +21,6 @@ public enum SocialSignInEvent {
     case signIn(socialProvider: SocialProvider)
     case signInBack
     case restore(authProvider: SocialProvider, email: String)
-}
-
-public protocol SocialAuthService {
-    func auth(type: SocialProvider) async throws -> (tokenID: String, email: String)
 }
 
 public struct SocialSignInContainer {
