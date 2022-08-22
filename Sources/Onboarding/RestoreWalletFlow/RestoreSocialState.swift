@@ -12,13 +12,13 @@ public enum RestoreSocialResult: Codable, Equatable {
 }
 
 public enum RestoreSocialEvent {
-    case signIn(socialProvider: SocialProvider, deviceShare: String)
-    case signIn(socialProvider: SocialProvider, customShare: String)
+    case signInDevice(socialProvider: SocialProvider, deviceShare: String)
+    case signInCustom(socialProvider: SocialProvider)
 }
 
 public struct RestoreSocialContainer {
     public enum Option: Equatable, Codable {
-        case first(socialProvider: SocialProvider, deviceShare: String)
+        case first(deviceShare: String)
         case second(result: RestoreWalletResult)
     }
 
@@ -31,16 +31,16 @@ public enum RestoreSocialState: Codable, State, Equatable {
     public typealias Event = RestoreSocialEvent
     public typealias Provider = RestoreSocialContainer
 
-    case signIn(socialProvider: SocialProvider, deviceShare: String)
+    case signIn(deviceShare: String)
     case social(result: RestoreWalletResult)
     case finish(RestoreSocialResult)
 
-    public static var initialState: RestoreSocialState = .signIn(socialProvider: .apple, deviceShare: "")
+    public static var initialState: RestoreSocialState = .signIn(deviceShare: "")
 
     public static func createInitialState(provider: RestoreSocialContainer) async -> RestoreSocialState {
         switch provider.option {
-        case let .first(socialProvider, deviceShare):
-            RestoreSocialState.initialState = .signIn(socialProvider: socialProvider, deviceShare: deviceShare)
+        case let .first(deviceShare):
+            RestoreSocialState.initialState = .signIn(deviceShare: deviceShare)
         case let .second(result):
             RestoreSocialState.initialState = .social(result: result)
         }
@@ -49,23 +49,25 @@ public enum RestoreSocialState: Codable, State, Equatable {
 
     public func accept(currentState: RestoreSocialState, event: RestoreSocialEvent, provider: RestoreSocialContainer) async throws -> RestoreSocialState {
         switch currentState {
-        case let .signIn(socialProvider, deviceShare):
+        case let .signIn(deviceShare):
             switch event {
-            case let .signIn(socialProvider, deviceShare):
+            case let .signInDevice(socialProvider, deviceShare):
                 let (tokenID, _) = try await provider.authService.auth(type: socialProvider)
                 let result = try await provider.tKeyFacade.signIn(
                     tokenID: TokenID(value: tokenID, provider: socialProvider.rawValue),
                     deviceShare: deviceShare
                 )
                 return .finish(.successful(solPrivateKey: result.privateSOL, ethPublicKey: result.reconstructedETH))
+            case .signInCustom:
+                throw StateMachineError.invalidEvent
             }
 
         case .social(let result):
             switch event {
-            case .signIn:
+            case .signInDevice:
                 throw StateMachineError.invalidEvent
 
-            case let .signIn(socialProvider, customShare):
+            case let .signInCustom(socialProvider):
                 let (tokenID, _) = try await provider.authService.auth(type: socialProvider)
                 let result = try await provider.tKeyFacade.signIn(
                     tokenID: TokenID(value: tokenID, provider: socialProvider.rawValue),
@@ -84,7 +86,7 @@ extension RestoreSocialState: Step, Continuable {
 
     public var step: Float {
         switch self {
-        case .signIn(let socialProvider, let deviceShare):
+        case .signIn(let deviceShare):
             return 1
         case .social(let result):
             return 2
