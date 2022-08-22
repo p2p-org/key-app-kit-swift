@@ -20,6 +20,7 @@ public enum APIGatewayError: Int, Error, CaseIterable {
     case callNotPermit = -32055
     case publicKeyExists = -32056
     case publicKeyAndPhoneExists = -32057
+    case youRequestOTPTooOften = -32059
 
     case invalidE164NumberStandard = -40000
     case failedSending = -40001
