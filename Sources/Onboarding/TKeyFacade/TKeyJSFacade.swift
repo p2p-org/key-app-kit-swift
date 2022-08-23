@@ -9,11 +9,18 @@ import WebKit
 public struct TKeyJSFacadeConfiguration {
     let metadataEndpoint: String
     let torusEndpoint: String
+    let torusNetwork: String
     let torusVerifierMapping: [String: String]
-
-    public init(metadataEndpoint: String, torusEndpoint: String, torusVerifierMapping: [String: String]) {
+    
+    public init(
+        metadataEndpoint: String,
+        torusEndpoint: String,
+        torusNetwork: String,
+        torusVerifierMapping: [String: String]
+    ) {
         self.metadataEndpoint = metadataEndpoint
         self.torusEndpoint = torusEndpoint
+        self.torusNetwork = torusNetwork
         self.torusVerifierMapping = torusVerifierMapping
     }
 }
@@ -75,6 +82,7 @@ public class TKeyJSFacade: TKeyFacade {
                 [
                     "metadataEndpoint": config.metadataEndpoint,
                     "torusEndpoint": config.torusEndpoint,
+                    "torusNetwork": config.torusNetwork
                 ].merging(configuration, uniquingKeysWith: { $1 }),
             ]
         )
