@@ -117,57 +117,80 @@ public class TKeyJSFacade: TKeyFacade {
     }
 
     public func signIn(tokenID: TokenID, deviceShare: String) async throws -> SignInResult {
-        let facade = try await getFacade(configuration: [:])
-        let value = try await facade.invokeAsyncMethod(
-            "triggerSignInNoCustom",
-            withArguments: [tokenID.value, deviceShare]
-        )
-        guard
-            let result = try await value.toDictionary(),
-            let privateSOL = result["privateSOL"] as? String,
-            let reconstructedETH = result["reconstructedETH"] as? String
-        else { throw Error.invalidReturnValue }
-
-        return .init(
-            privateSOL: privateSOL,
-            reconstructedETH: reconstructedETH
-        )
+        do {
+            let facade = try await getFacade(configuration: [:])
+            let value = try await facade.invokeAsyncMethod(
+                "triggerSignInNoCustom",
+                withArguments: [tokenID.value, deviceShare]
+            )
+            guard
+                let result = try await value.toDictionary(),
+                let privateSOL = result["privateSOL"] as? String,
+                let reconstructedETH = result["reconstructedETH"] as? String
+            else { throw Error.invalidReturnValue }
+            
+            return .init(
+                privateSOL: privateSOL,
+                reconstructedETH: reconstructedETH
+            )
+        } catch let JSBError.jsError(error) {
+            let parsedError = parseFacadeJSError(error: error)
+            throw parsedError ?? JSBError.jsError(error)
+        } catch {
+            throw error
+        }
     }
 
     public func signIn(tokenID: TokenID, customShare: String) async throws -> SignInResult {
-        let facade = try await getFacade(configuration: [:])
-        let value = try await facade.invokeAsyncMethod(
-            "triggerSignInNoDevice",
-            withArguments: [tokenID.value, customShare]
-        )
-        guard
-            let result = try await value.toDictionary(),
-            let privateSOL = result["privateSOL"] as? String,
-            let reconstructedETH = result["reconstructedETH"] as? String
-        else { throw Error.invalidReturnValue }
-
-        return .init(
-            privateSOL: privateSOL,
-            reconstructedETH: reconstructedETH
-        )
+        do {
+            let facade = try await getFacade(configuration: [:])
+            let value = try await facade.invokeAsyncMethod(
+                "triggerSignInNoDevice",
+                withArguments: [tokenID.value, customShare]
+            )
+            guard
+                let result = try await value.toDictionary(),
+                let privateSOL = result["privateSOL"] as? String,
+                let reconstructedETH = result["reconstructedETH"] as? String
+            else { throw Error.invalidReturnValue }
+            
+            return .init(
+                privateSOL: privateSOL,
+                reconstructedETH: reconstructedETH
+            )
+        }
+        catch let JSBError.jsError(error) {
+            let parsedError = parseFacadeJSError(error: error)
+            throw parsedError ?? JSBError.jsError(error)
+        } catch {
+            throw error
+        }
     }
 
     public func signIn(deviceShare: String, customShare: String) async throws -> SignInResult {
-        let facade = try await getFacade(configuration: [:])
-        let value = try await facade.invokeAsyncMethod(
-            "triggerSignInNoTorus",
-            withArguments: [deviceShare, customShare, ]
-        )
-        guard
-            let result = try await value.toDictionary(),
-            let privateSOL = result["privateSOL"] as? String,
-            let reconstructedETH = result["reconstructedETH"] as? String
-        else { throw Error.invalidReturnValue }
-
-        return .init(
-            privateSOL: privateSOL,
-            reconstructedETH: reconstructedETH
-        )
+        do {
+            let facade = try await getFacade(configuration: [:])
+            let value = try await facade.invokeAsyncMethod(
+                "triggerSignInNoTorus",
+                withArguments: [deviceShare, customShare, ]
+            )
+            guard
+                let result = try await value.toDictionary(),
+                let privateSOL = result["privateSOL"] as? String,
+                let reconstructedETH = result["reconstructedETH"] as? String
+            else { throw Error.invalidReturnValue }
+            
+            return .init(
+                privateSOL: privateSOL,
+                reconstructedETH: reconstructedETH
+            )
+        }
+        catch let JSBError.jsError(error) {
+            let parsedError = parseFacadeJSError(error: error)
+            throw parsedError ?? JSBError.jsError(error)
+        } catch {
+            throw error
+        }
     }
 
     func getLibrary() throws -> JSBValue {

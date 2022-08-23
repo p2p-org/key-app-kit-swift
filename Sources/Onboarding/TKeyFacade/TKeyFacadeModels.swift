@@ -4,7 +4,7 @@
 
 import Foundation
 
-public struct TokenID {
+public struct TokenID: Codable, Equatable {
     public let value: String
     public let provider: String
     
