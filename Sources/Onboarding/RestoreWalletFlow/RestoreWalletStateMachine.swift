@@ -102,8 +102,9 @@ public enum RestoreWalletState: Codable, State, Equatable {
 
             case let .restoreSocial(event):
                 switch event {
-                case let .signInDevice(socialProvider, deviceShare):
-                    let event = RestoreSocialEvent.signInDevice(socialProvider: socialProvider, deviceShare: deviceShare)
+                case let .signInDevice(socialProvider):
+                    guard let deviceShare = provider.deviceShare else { throw StateMachineError.invalidEvent }
+                    let event = RestoreSocialEvent.signInDevice(socialProvider: socialProvider)
                     let innerState = RestoreSocialState.signIn(deviceShare: deviceShare)
                     let nextInnerState = try await innerState <- (
                         event,

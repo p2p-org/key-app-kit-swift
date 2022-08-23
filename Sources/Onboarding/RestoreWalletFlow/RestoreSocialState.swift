@@ -12,7 +12,7 @@ public enum RestoreSocialResult: Codable, Equatable {
 }
 
 public enum RestoreSocialEvent {
-    case signInDevice(socialProvider: SocialProvider, deviceShare: String)
+    case signInDevice(socialProvider: SocialProvider)
     case signInCustom(socialProvider: SocialProvider)
 }
 
@@ -51,7 +51,7 @@ public enum RestoreSocialState: Codable, State, Equatable {
         switch currentState {
         case let .signIn(deviceShare):
             switch event {
-            case let .signInDevice(socialProvider, deviceShare):
+            case let .signInDevice(socialProvider):
                 let (tokenID, _) = try await provider.authService.auth(type: socialProvider)
                 let result = try await provider.tKeyFacade.signIn(
                     tokenID: TokenID(value: tokenID, provider: socialProvider.rawValue),
