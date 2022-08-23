@@ -9,6 +9,8 @@ public enum RestoreSocialResult: Codable, Equatable {
         solPrivateKey: String,
         ethPublicKey: String
     )
+    case notFoundDevice(tokenID: TokenID, email: String?)
+    case notFoundCustom(result: RestoreWalletResult, email: String)
 }
 
 public enum RestoreSocialEvent {
@@ -52,12 +54,25 @@ public enum RestoreSocialState: Codable, State, Equatable {
         case let .signIn(deviceShare):
             switch event {
             case let .signInDevice(socialProvider):
-                let (tokenID, _) = try await provider.authService.auth(type: socialProvider)
-                let result = try await provider.tKeyFacade.signIn(
-                    tokenID: TokenID(value: tokenID, provider: socialProvider.rawValue),
-                    deviceShare: deviceShare
-                )
-                return .finish(.successful(solPrivateKey: result.privateSOL, ethPublicKey: result.reconstructedETH))
+                let (value, email) = try await provider.authService.auth(type: socialProvider)
+                let tokenID = TokenID(value: value, provider: socialProvider.rawValue)
+                do {
+                    let result = try await provider.tKeyFacade.signIn(
+                        tokenID: tokenID,
+                        deviceShare: deviceShare
+                    )
+                    return .finish(.successful(solPrivateKey: result.privateSOL, ethPublicKey: result.reconstructedETH))
+                }
+                catch let error as TKeyFacadeError {
+                    switch error.code {
+                    case 0:
+                        return .finish(.notFoundDevice(tokenID: tokenID, email: nil))
+                    case 1:
+                        return .finish(.notFoundDevice(tokenID: tokenID, email: email))
+                    default:
+                        throw error
+                    }
+                }
             case .signInCustom:
                 throw StateMachineError.invalidEvent
             }
@@ -68,14 +83,20 @@ public enum RestoreSocialState: Codable, State, Equatable {
                 throw StateMachineError.invalidEvent
 
             case let .signInCustom(socialProvider):
-                let (tokenID, _) = try await provider.authService.auth(type: socialProvider)
-                let result = try await provider.tKeyFacade.signIn(
-                    tokenID: TokenID(value: tokenID, provider: socialProvider.rawValue),
-                    customShare: result.encryptedShare
-                )
-                return .finish(.successful(solPrivateKey: result.privateSOL, ethPublicKey: result.reconstructedETH))
+                let (tokenID, email) = try await provider.authService.auth(type: socialProvider)
+                do {
+                    let result = try await provider.tKeyFacade.signIn(
+                        tokenID: TokenID(value: tokenID, provider: socialProvider.rawValue),
+                        customShare: result.encryptedShare
+                    )
+                    return .finish(.successful(solPrivateKey: result.privateSOL, ethPublicKey: result.reconstructedETH))
+                }
+                catch {
+                    return .finish(.notFoundCustom(result: result, email: email))
+                }
             }
-        case .finish(let restoreSocialResult):
+
+        case .finish:
             throw StateMachineError.invalidEvent
         }
     }
@@ -86,11 +107,11 @@ extension RestoreSocialState: Step, Continuable {
 
     public var step: Float {
         switch self {
-        case .signIn(let deviceShare):
+        case .signIn:
             return 1
-        case .social(let result):
+        case .social:
             return 2
-        case .finish(let restoreSocialResult):
+        case .finish:
             return 3
         }
     }

@@ -14,6 +14,7 @@ public enum RestoreCustomResult: Codable, Equatable {
         ethPublicKey: String
     )
     case requireSocial(result: RestoreWalletResult)
+    case noMatch
 }
 
 public enum RestoreCustomEvent {
@@ -34,11 +35,11 @@ public enum RestoreCustomState: Codable, State, Equatable {
     public typealias Event = RestoreCustomEvent
     public typealias Provider = RestoreCustomContainer
 
-    case enterPhone
-    case enterOTP(phoneNumber: String, solPrivateKey: Data)
+    case enterPhone(tokenID: TokenID?)
+    case enterOTP(phoneNumber: String, solPrivateKey: Data, tokenID: TokenID?)
     case finish(result: RestoreCustomResult)
 
-    public static var initialState: RestoreCustomState = .enterPhone
+    public static var initialState: RestoreCustomState = .enterPhone(tokenID: nil)
 
     public static func createInitialState(provider _: Provider) async -> RestoreCustomState {
         RestoreCustomState.initialState
@@ -51,7 +52,7 @@ public enum RestoreCustomState: Codable, State, Equatable {
     ) async throws -> RestoreCustomState {
 
         switch currentState {
-        case .enterPhone:
+        case let .enterPhone(tokenID):
             switch event {
             case .enterPhoneNumber(let phoneNumber):
                 let solPrivateKey = try NaclSign.KeyPair.keyPair().secretKey
@@ -61,13 +62,13 @@ public enum RestoreCustomState: Codable, State, Equatable {
                     channel: .sms,
                     timestampDevice: Date()
                 )
-                return .enterOTP(phoneNumber: phoneNumber, solPrivateKey: solPrivateKey)
+                return .enterOTP(phoneNumber: phoneNumber, solPrivateKey: solPrivateKey, tokenID: tokenID)
 
             default:
                 throw StateMachineError.invalidEvent
             }
 
-        case let .enterOTP(phoneNumber, solPrivateKey):
+        case let .enterOTP(phoneNumber, solPrivateKey, tokenID):
             switch event {
             case .enterOTP(let otp):
                 let result = try await provider.apiGatewayClient.confirmRestoreWallet(
@@ -77,7 +78,10 @@ public enum RestoreCustomState: Codable, State, Equatable {
                     timestampDevice: Date()
                 )
 
-                if let deviceShare = provider.deviceShare {
+                if let tokenID = tokenID, let deviceShare = provider.deviceShare {
+                    return try await restore(with: tokenID, customShare: result.encryptedShare, deviceShare: deviceShare, tKey: provider.tKeyFacade)
+                }
+                else if let deviceShare = provider.deviceShare {
                     let finalResult = try await provider.tKeyFacade.signIn(deviceShare: deviceShare, customShare: result.encryptedShare)
                     return .finish(result: .successful(solPrivateKey: finalResult.privateSOL, ethPublicKey: finalResult.reconstructedETH))
                 }
@@ -94,6 +98,22 @@ public enum RestoreCustomState: Codable, State, Equatable {
             }
         }
     }
+
+    private func restore(with tokenID: TokenID, customShare: String, deviceShare: String, tKey: TKeyFacade) async throws -> RestoreCustomState {
+        do {
+            let finalResult = try await tKey.signIn(tokenID: tokenID, customShare: customShare)
+            return .finish(result: .successful(solPrivateKey: finalResult.privateSOL, ethPublicKey: finalResult.reconstructedETH))
+        }
+        catch {
+            do {
+                let finalResult = try await tKey.signIn(deviceShare: deviceShare, customShare: customShare)
+                return .finish(result: .successful(solPrivateKey: finalResult.privateSOL, ethPublicKey: finalResult.reconstructedETH))
+            }
+            catch {
+                return .finish(result: .noMatch)
+            }
+        }
+    }
 }
 
 extension RestoreCustomState: Step, Continuable {
@@ -103,9 +123,9 @@ extension RestoreCustomState: Step, Continuable {
         switch self {
         case .enterPhone:
             return 1
-        case .enterOTP(let phoneNumber, let solPrivateKey):
+        case .enterOTP:
             return 2
-        case .finish(let result):
+        case .finish:
             return 3
         }
     }
