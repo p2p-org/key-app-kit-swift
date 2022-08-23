@@ -7,7 +7,8 @@ import SolanaSwift
 import TweetNacl
 
 public enum RestoreWalletFlowResult: Codable, Equatable {
-    case successful(solPrivateKey: String, ethPublicKey: String)
+    case successful(OnboardingWallet)
+    case needHelp
     case breakProcess
 }
 
@@ -182,8 +183,13 @@ public enum RestoreWalletState: Codable, State, Equatable {
 
                 if case let .finish(result) = nextInnerState {
                     switch result {
-                    case let .success:
-                        return .finished(.successful(solPrivateKey: solPrivateKey, ethPublicKey: ethPublicKey))
+                    case let .success(pincode, withBiometric):
+                        return .finished(.successful(OnboardingWallet(
+                            solPrivateKey: solPrivateKey,
+                            deviceShare: deviceShare,
+                            pincode: pincode ?? "000000",
+                            useBiometric: withBiometric)
+                        ))
                     }
                 } else {
                     return .securitySetup(
