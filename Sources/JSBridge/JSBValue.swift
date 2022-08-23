@@ -110,6 +110,7 @@ public class JSBValue: JSBridge, CustomStringConvertible {
     public func invokeNew<T: CustomStringConvertible>(withArguments args: [T]) async throws -> JSBValue {
         let context = try await getContext()
         let result = JSBValue(in: context)
+        debugPrint("\(result.name) = new \(name)(\(try parseArgs(args)));")
         try await context.evaluate("\(result.name) = new \(name)(\(try parseArgs(args)));")
         return result
     }
