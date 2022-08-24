@@ -180,7 +180,7 @@ public enum BindingPhoneNumberState: Codable, State, Equatable {
                 switch reason {
                 case .blockEnterPhoneNumber:
                     return .enterPhoneNumber(
-                        initialPhoneNumber: nil,
+                        initialPhoneNumber: phoneNumber,
                         data: data
                     )
                 case .blockEnterOTP:
