@@ -209,10 +209,17 @@ public enum RestoreWalletState: Codable, State, Equatable {
                     case let .successful(solPrivateKey, ethPublicKey):
                         let initial = await SecuritySetupState.createInitialState(provider: provider.securityStatusProvider)
                         return .securitySetup(email: "", solPrivateKey: solPrivateKey, ethPublicKey: ethPublicKey, deviceShare: "", initial)
-                    case let .requireSocial(result):
+                    case let .requireSocialCustom(result):
                         return .restoreSocial(.social(result: result), option: .second(result: result))
+                    case let .requireSocialDevice(socialProvider):
+                        let state = try await handleSignInDeviceEvent(provider: provider, socialProvider: socialProvider, event: .signInDevice(socialProvider: socialProvider))
+                        return state
                     case .noMatch:
                         return .noMatch
+                    case .help:
+                        return .finished(.needHelp)
+                    case .start:
+                        return .finished(.breakProcess)
                     }
                 } else {
                     return .restoreCustom(nextInnerState)
