@@ -13,8 +13,11 @@ public enum RestoreCustomResult: Codable, Equatable {
         solPrivateKey: String,
         ethPublicKey: String
     )
-    case requireSocial(result: RestoreWalletResult)
+    case requireSocialCustom(result: RestoreWalletResult)
+    case requireSocialDevice(provider: SocialProvider)
     case noMatch
+    case start
+    case help
 }
 
 public enum RestoreCustomEvent {
@@ -22,6 +25,9 @@ public enum RestoreCustomEvent {
     case enterPhoneNumber(phoneNumber: String)
     case enterOTP(otp: String)
     case resendOTP
+    case requireSocial(provider: SocialProvider)
+    case help
+    case start
     case back
 }
 
@@ -37,6 +43,8 @@ public enum RestoreCustomState: Codable, State, Equatable {
 
     case enterPhone(tokenID: TokenID?)
     case enterOTP(phoneNumber: String, solPrivateKey: Data, tokenID: TokenID?)
+    case otpNotDeliveredRequireSocial(phoneNumber: String)
+    case otpNotDelivered(phoneNumber: String)
     case finish(result: RestoreCustomResult)
 
     public static var initialState: RestoreCustomState = .enterPhone(tokenID: nil)
@@ -56,13 +64,34 @@ public enum RestoreCustomState: Codable, State, Equatable {
             switch event {
             case .enterPhoneNumber(let phoneNumber):
                 let solPrivateKey = try NaclSign.KeyPair.keyPair().secretKey
-                try await provider.apiGatewayClient.restoreWallet(
-                    solPrivateKey: solPrivateKey,
-                    phone: phoneNumber,
-                    channel: .sms,
-                    timestampDevice: Date()
-                )
-                return .enterOTP(phoneNumber: phoneNumber, solPrivateKey: solPrivateKey, tokenID: tokenID)
+                do {
+                    try await provider.apiGatewayClient.restoreWallet(
+                        solPrivateKey: solPrivateKey,
+                        phone: phoneNumber,
+                        channel: .sms,
+                        timestampDevice: Date()
+                    )
+                    return .enterOTP(phoneNumber: phoneNumber, solPrivateKey: solPrivateKey, tokenID: tokenID)
+                }
+                catch let error as APIGatewayError {
+                    switch error._code {
+                    case -32058, -32700, -32600, -32601, -32602, -32603, -32052:
+                        throw error
+                    case -32050:
+                        throw error // retry
+                    case -32054:
+                        if let deviceShare = provider.deviceShare {
+                            return .otpNotDeliveredRequireSocial(phoneNumber: phoneNumber)
+                        }
+                        else {
+                            return .otpNotDelivered(phoneNumber: phoneNumber)
+                        }
+                    case -32053:
+                        throw error
+                    default:
+                        throw error
+                    }
+                }
 
             default:
                 throw StateMachineError.invalidEvent
@@ -71,26 +100,67 @@ public enum RestoreCustomState: Codable, State, Equatable {
         case let .enterOTP(phoneNumber, solPrivateKey, tokenID):
             switch event {
             case .enterOTP(let otp):
-                let result = try await provider.apiGatewayClient.confirmRestoreWallet(
-                    solanaPrivateKey: solPrivateKey,
-                    phone: phoneNumber,
-                    otpCode: otp,
-                    timestampDevice: Date()
-                )
+                do {
+                    let result = try await provider.apiGatewayClient.confirmRestoreWallet(
+                        solanaPrivateKey: solPrivateKey,
+                        phone: phoneNumber,
+                        otpCode: otp,
+                        timestampDevice: Date()
+                    )
 
-                if let tokenID = tokenID, let deviceShare = provider.deviceShare {
-                    return try await restore(with: tokenID, customShare: result.encryptedShare, deviceShare: deviceShare, tKey: provider.tKeyFacade)
+                    if let tokenID = tokenID, let deviceShare = provider.deviceShare {
+                        return try await restore(with: tokenID, customShare: result.encryptedShare, deviceShare: deviceShare, tKey: provider.tKeyFacade)
+                    }
+                    else if let deviceShare = provider.deviceShare {
+                        let finalResult = try await provider.tKeyFacade.signIn(deviceShare: deviceShare, customShare: result.encryptedShare)
+                        return .finish(result: .successful(solPrivateKey: finalResult.privateSOL, ethPublicKey: finalResult.reconstructedETH))
+                    }
+                    else {
+                        return .finish(result: .requireSocialCustom(result: result))
+                    }
                 }
-                else if let deviceShare = provider.deviceShare {
-                    let finalResult = try await provider.tKeyFacade.signIn(deviceShare: deviceShare, customShare: result.encryptedShare)
-                    return .finish(result: .successful(solPrivateKey: finalResult.privateSOL, ethPublicKey: finalResult.reconstructedETH))
-                }
-                else {
-                    return .finish(result: .requireSocial(result: result))
+                catch let error as APIGatewayError {
+                    switch error._code {
+                    case -32700, -32600, -32601, -32602, -32603, -32052:
+                        throw error
+                    case -32050:
+                        throw error // retry 3
+                    case -32061: //Invalid value of OTP. Please try again to input correct value of OTP
+                        throw error
+                    case -32053:
+                        throw error //"Please wait 10 min and will ask for new OTP"
+                    default:
+                        throw error
+                    }
                 }
             default:
                 throw StateMachineError.invalidEvent
             }
+
+        case let .otpNotDeliveredRequireSocial(phone):
+            switch event {
+            case .back:
+                return .enterPhone(tokenID: nil)
+            case let .requireSocial(provider):
+                return .finish(result: .requireSocialDevice(provider: provider))
+            case .help:
+                return .finish(result: .help)
+            case .start:
+                return .finish(result: .start)
+            default:
+                throw StateMachineError.invalidEvent
+            }
+
+        case .otpNotDelivered:
+            switch event {
+            case .help:
+                return .finish(result: .help)
+            case .back:
+                return .finish(result: .start)
+            default:
+                throw StateMachineError.invalidEvent
+            }
+
         case .finish(let result):
             switch event {
             default:
@@ -125,8 +195,12 @@ extension RestoreCustomState: Step, Continuable {
             return 1
         case .enterOTP:
             return 2
-        case .finish:
+        case .otpNotDeliveredRequireSocial:
             return 3
+        case .otpNotDelivered:
+            return 4
+        case .finish:
+            return 5
         }
     }
 }
