@@ -17,7 +17,7 @@ public class APIGatewayClientImplMock: APIGatewayClient {
         timestampDevice _: Date
     ) async throws {
         debugPrint("SMSServiceImplMock code: \(code) for phone \(phone)")
-        sleep(4)
+        sleep(1)
 
         if
             let exep = APIGatewayError(rawValue: -(Int(String(phone.suffix(5))) ?? 0)),
@@ -36,7 +36,7 @@ public class APIGatewayClientImplMock: APIGatewayClient {
         otpCode: String,
         timestampDevice _: Date
     ) async throws {
-        sleep(4)
+        sleep(1)
         debugPrint("SMSServiceImplMock confirm isConfirmed: \(code == code)")
 
         if
@@ -58,7 +58,7 @@ public class APIGatewayClientImplMock: APIGatewayClient {
         timestampDevice _: Date
     ) async throws {
         debugPrint("SMSServiceImplMock code: \(code) for phone \(phone)")
-        sleep(4)
+        sleep(1)
 
         if
             let exep = APIGatewayError(rawValue: -(Int(String(phone.suffix(5))) ?? 0)),
@@ -74,7 +74,7 @@ public class APIGatewayClientImplMock: APIGatewayClient {
         otpCode: String,
         timestampDevice _: Date
     ) async throws -> RestoreWalletResult {
-        sleep(4)
+        sleep(1)
         debugPrint("SMSServiceImplMock confirm isConfirmed: \(code == code)")
 
         if

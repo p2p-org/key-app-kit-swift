@@ -39,9 +39,14 @@ public enum BindingPhoneNumberState: Codable, State, Equatable {
     public typealias Provider = APIGatewayClient
 
     case enterPhoneNumber(initialPhoneNumber: String?, data: BindingPhoneNumberData)
-    case enterOTP(channel: BindingPhoneNumberChannel, phoneNumber: String, data: BindingPhoneNumberData)
+    case enterOTP(
+        resendAttempt: Wrapper<Int>,
+        channel: BindingPhoneNumberChannel,
+        phoneNumber: String,
+        data: BindingPhoneNumberData
+    )
     case block(until: Date, reason: BindingPhoneBlockReason, phoneNumber: String, data: BindingPhoneNumberData)
-    case broken
+    case broken(code: Int)
     case finish(_ result: BindingPhoneNumberResult)
 
     public static var initialState: BindingPhoneNumberState = .enterPhoneNumber(
@@ -81,7 +86,7 @@ public enum BindingPhoneNumberState: Codable, State, Equatable {
                     // case -32056:
                     //     return .finish(.success)
                     case -32058, -32700, -32600, -32601, -32602, -32603, -32052:
-                        return .broken
+                        return .broken(code: error._code)
                     case -32053:
                         return .block(
                             until: Date() + (60 * 10),
@@ -95,6 +100,7 @@ public enum BindingPhoneNumberState: Codable, State, Equatable {
                 }
 
                 return .enterOTP(
+                    resendAttempt: Wrapper(0),
                     channel: channel,
                     phoneNumber: phoneNumber,
                     data: data
@@ -102,7 +108,7 @@ public enum BindingPhoneNumberState: Codable, State, Equatable {
             default:
                 throw StateMachineError.invalidEvent
             }
-        case let .enterOTP(channel, phoneNumber, data):
+        case .enterOTP(var resendAttempt, let channel, let phoneNumber, let data):
             switch event {
             case let .enterOTP(opt):
                 let account = try await Account(
@@ -126,7 +132,7 @@ public enum BindingPhoneNumberState: Codable, State, Equatable {
                     // case -32056:
                     //     return .finish(.success)
                     case -32058, -32700, -32600, -32601, -32602, -32603, -32052:
-                        return .broken
+                        return .broken(code: error._code)
                     case -32053:
                         return .block(
                             until: Date() + (60 * 10),
@@ -141,6 +147,17 @@ public enum BindingPhoneNumberState: Codable, State, Equatable {
 
                 return .finish(.success)
             case .resendOTP:
+                if resendAttempt.value >= 5 {
+                    return .block(
+                        until: Date() + (60 * 10),
+                        reason: .blockEnterPhoneNumber,
+                        phoneNumber: phoneNumber,
+                        data: data
+                    )
+                }
+                
+                resendAttempt.value = resendAttempt.value + 1
+
                 let account = try await Account(
                     phrase: data.solanaPublicKey.components(separatedBy: " "),
                     network: .mainnetBeta,
@@ -198,7 +215,12 @@ public enum BindingPhoneNumberState: Codable, State, Equatable {
 }
 
 extension BindingPhoneNumberState: Step, Continuable {
-    public var continuable: Bool { true }
+    public var continuable: Bool {
+        switch self {
+        case .broken: return false
+        default: return true
+        }
+    }
 
     public var step: Float {
         switch self {
