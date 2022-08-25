@@ -16,6 +16,7 @@ public enum RestoreSocialResult: Codable, Equatable {
 public enum RestoreSocialEvent {
     case signInDevice(socialProvider: SocialProvider)
     case signInCustom(socialProvider: SocialProvider)
+    case back
 }
 
 public struct RestoreSocialContainer {
@@ -73,15 +74,12 @@ public enum RestoreSocialState: Codable, State, Equatable {
                         throw error
                     }
                 }
-            case .signInCustom:
+            default:
                 throw StateMachineError.invalidEvent
             }
 
         case .social(let result):
             switch event {
-            case .signInDevice:
-                throw StateMachineError.invalidEvent
-
             case let .signInCustom(socialProvider):
                 let (tokenID, email) = try await provider.authService.auth(type: socialProvider)
                 do {
@@ -94,6 +92,13 @@ public enum RestoreSocialState: Codable, State, Equatable {
                 catch {
                     return .finish(.notFoundCustom(result: result, email: email))
                 }
+
+            case .back:
+                throw StateMachineError.invalidEvent
+
+            default:
+                throw StateMachineError.invalidEvent
+
             }
 
         case .finish:
