@@ -13,11 +13,6 @@ public enum BindingPhoneNumberResult: Codable {
     case breakProcess
 }
 
-public enum BindingPhoneBlockReason: Codable {
-    case blockEnterPhoneNumber
-    case blockEnterOTP
-}
-
 public enum BindingPhoneNumberEvent {
     case enterPhoneNumber(phoneNumber: String, channel: BindingPhoneNumberChannel)
     case enterOTP(opt: String)
@@ -45,7 +40,7 @@ public enum BindingPhoneNumberState: Codable, State, Equatable {
         phoneNumber: String,
         data: BindingPhoneNumberData
     )
-    case block(until: Date, reason: BindingPhoneBlockReason, phoneNumber: String, data: BindingPhoneNumberData)
+    case block(until: Date, reason: PhoneFlowBlockReason, phoneNumber: String, data: BindingPhoneNumberData)
     case broken(code: Int)
     case finish(_ result: BindingPhoneNumberResult)
 

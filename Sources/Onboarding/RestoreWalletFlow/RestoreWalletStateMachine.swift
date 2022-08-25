@@ -59,8 +59,6 @@ public enum RestoreWalletState: Codable, State, Equatable {
     case restoreSocial(RestoreSocialState, option: RestoreSocialContainer.Option)
     case restoreCustom(RestoreCustomState)
 
-    case noMatch
-
     case securitySetup(
         email: String,
         solPrivateKey: String,
@@ -99,7 +97,7 @@ public enum RestoreWalletState: Codable, State, Equatable {
             case let .restoreCustom(event):
                 switch event {
                 case .enterPhone:
-                    return .restoreCustom(.enterPhone(tokenID: nil))
+                    return .restoreCustom(.enterPhone(phone: nil, tokenID: nil))
                 default:
                     throw StateMachineError.invalidEvent
                 }
@@ -129,7 +127,7 @@ public enum RestoreWalletState: Codable, State, Equatable {
             case let .restoreCustom(event):
                 switch event {
                 case .enterPhone:
-                    return .restoreCustom(.enterPhone(tokenID: tokenID))
+                    return .restoreCustom(.enterPhone(phone: nil, tokenID: tokenID))
                 default:
                     throw StateMachineError.invalidEvent
                 }
@@ -149,7 +147,7 @@ public enum RestoreWalletState: Codable, State, Equatable {
             default:
                 throw StateMachineError.invalidEvent
             }
-            
+
         case let .restoreNotFoundCustom(result, email):
             switch event {
 
@@ -214,8 +212,6 @@ public enum RestoreWalletState: Codable, State, Equatable {
                     case let .requireSocialDevice(socialProvider):
                         let state = try await handleSignInDeviceEvent(provider: provider, socialProvider: socialProvider, event: .signInDevice(socialProvider: socialProvider))
                         return state
-                    case .noMatch:
-                        return .noMatch
                     case .help:
                         return .finished(.needHelp)
                     case .start:
@@ -272,7 +268,7 @@ public enum RestoreWalletState: Codable, State, Equatable {
                     deviceShare: "",
                     await SecuritySetupState.createInitialState(provider: provider.securityStatusProvider)
                 )
-            case let .back:
+            case .back:
                 return .restore
             default:
                 throw StateMachineError.invalidEvent
@@ -281,17 +277,7 @@ public enum RestoreWalletState: Codable, State, Equatable {
         case .signInSeed:
             throw StateMachineError.invalidEvent
 
-        case .noMatch:
-            switch event {
-            case .start:
-                return .finished(.breakProcess)
-            case .help:
-                return .finished(.needHelp)
-            default:
-                throw StateMachineError.invalidEvent
-            }
-
-        case let .finished(result):
+        case .finished:
             throw StateMachineError.invalidEvent
         }
     }
@@ -363,8 +349,6 @@ extension RestoreWalletState: Step, Continuable {
             return securitySetupState.continuable
         case .finished:
             return false
-        case .noMatch:
-            return false
         }
     }
 
@@ -386,11 +370,8 @@ extension RestoreWalletState: Step, Continuable {
             return 7 * 100 + restoreCustomState.step
         case let .securitySetup(_, _, _, _, securitySetupState):
             return 8 * 100 + securitySetupState.step
-        case .noMatch:
-            return 9 * 100
         case .finished:
-            return 10 * 100
+            return 9 * 100
         }
     }
 }
-
