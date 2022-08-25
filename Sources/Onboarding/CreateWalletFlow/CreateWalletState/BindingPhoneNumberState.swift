@@ -29,6 +29,8 @@ public struct BindingPhoneNumberData: Codable, Equatable {
     let payload: String
 }
 
+private let blockTime: TimeInterval = 60 * 10
+
 public enum BindingPhoneNumberState: Codable, State, Equatable {
     public typealias Event = BindingPhoneNumberEvent
     public typealias Provider = APIGatewayClient
@@ -84,7 +86,7 @@ public enum BindingPhoneNumberState: Codable, State, Equatable {
                         return .broken(code: error._code)
                     case -32053:
                         return .block(
-                            until: Date() + (60 * 10),
+                            until: Date() + blockTime,
                             reason: .blockEnterPhoneNumber,
                             phoneNumber: phoneNumber,
                             data: data
@@ -130,7 +132,7 @@ public enum BindingPhoneNumberState: Codable, State, Equatable {
                         return .broken(code: error._code)
                     case -32053:
                         return .block(
-                            until: Date() + (60 * 10),
+                            until: Date() + blockTime,
                             reason: .blockEnterOTP,
                             phoneNumber: phoneNumber,
                             data: data
@@ -144,7 +146,7 @@ public enum BindingPhoneNumberState: Codable, State, Equatable {
             case .resendOTP:
                 if resendAttempt.value >= 4 {
                     return .block(
-                        until: Date() + (60 * 10),
+                        until: Date() + blockTime,
                         reason: .blockEnterPhoneNumber,
                         phoneNumber: phoneNumber,
                         data: data
