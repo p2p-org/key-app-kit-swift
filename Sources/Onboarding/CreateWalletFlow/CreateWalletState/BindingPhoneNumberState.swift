@@ -29,8 +29,6 @@ public struct BindingPhoneNumberData: Codable, Equatable {
     let payload: String
 }
 
-private let blockTime: TimeInterval = 60 * 10
-
 public enum BindingPhoneNumberState: Codable, State, Equatable {
     public typealias Event = BindingPhoneNumberEvent
     public typealias Provider = APIGatewayClient

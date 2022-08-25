@@ -100,16 +100,16 @@ public enum RestoreCustomState: Codable, State, Equatable {
                     case -32700, -32600, -32601, -32602, -32603, -32052:
                         return .broken(code: error.rawValue)
                     case -32053:
-                        return .block(until: Date() + (60 * 10), tokenID: tokenID, reason: .blockEnterOTP)
+                        return .block(until: Date() + blockTime, tokenID: tokenID, reason: .blockEnterOTP)
                     default:
                         throw error
                     }
                 }
 
             case .resendOTP:
-                if attempt.value >= 5 {
+                if attempt.value == 4 {
                     return .block(
-                        until: Date() + (60 * 10),
+                        until: Date() + blockTime,
                         tokenID: tokenID,
                         reason: .blockEnterOTP
                     )
@@ -225,7 +225,7 @@ public enum RestoreCustomState: Codable, State, Equatable {
                     return .otpNotDelivered(phone: phone)
                 }
             case -32053:
-                return .block(until: Date() + (60 * 10), tokenID: tokenID, reason: .blockEnterPhoneNumber)
+                return .block(until: Date() + blockTime, tokenID: tokenID, reason: .blockEnterPhoneNumber)
             default:
                 throw error
             }
