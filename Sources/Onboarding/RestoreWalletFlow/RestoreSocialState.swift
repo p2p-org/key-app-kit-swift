@@ -9,14 +9,16 @@ public enum RestoreSocialResult: Codable, Equatable {
         solPrivateKey: String,
         ethPublicKey: String
     )
-    case notFoundDevice(tokenID: TokenID, email: String?)
-    case notFoundCustom(result: RestoreWalletResult, email: String)
+    case start
+    case requireCustom
 }
 
 public enum RestoreSocialEvent {
     case signInDevice(socialProvider: SocialProvider)
     case signInCustom(socialProvider: SocialProvider)
     case back
+    case start
+    case requireCustom
 }
 
 public struct RestoreSocialContainer {
@@ -36,6 +38,8 @@ public enum RestoreSocialState: Codable, State, Equatable {
 
     case signIn(deviceShare: String)
     case social(result: RestoreWalletResult)
+    case notFoundDevice(tokenID: TokenID, email: String?, deviceShare: String)
+    case notFoundCustom(result: RestoreWalletResult, email: String)
     case finish(RestoreSocialResult)
 
     public static var initialState: RestoreSocialState = .signIn(deviceShare: "")
@@ -55,25 +59,7 @@ public enum RestoreSocialState: Codable, State, Equatable {
         case let .signIn(deviceShare):
             switch event {
             case let .signInDevice(socialProvider):
-                let (value, email) = try await provider.authService.auth(type: socialProvider)
-                let tokenID = TokenID(value: value, provider: socialProvider.rawValue)
-                do {
-                    let result = try await provider.tKeyFacade.signIn(
-                        tokenID: tokenID,
-                        deviceShare: deviceShare
-                    )
-                    return .finish(.successful(solPrivateKey: result.privateSOL, ethPublicKey: result.reconstructedETH))
-                }
-                catch let error as TKeyFacadeError {
-                    switch error.code {
-                    case 0:
-                        return .finish(.notFoundDevice(tokenID: tokenID, email: nil))
-                    case 1:
-                        return .finish(.notFoundDevice(tokenID: tokenID, email: email))
-                    default:
-                        throw error
-                    }
-                }
+                return try await handleSignInDevice(deviceShare: deviceShare, socialProvider: socialProvider, provider: provider)
             default:
                 throw StateMachineError.invalidEvent
             }
@@ -81,17 +67,7 @@ public enum RestoreSocialState: Codable, State, Equatable {
         case .social(let result):
             switch event {
             case let .signInCustom(socialProvider):
-                let (tokenID, email) = try await provider.authService.auth(type: socialProvider)
-                do {
-                    let result = try await provider.tKeyFacade.signIn(
-                        tokenID: TokenID(value: tokenID, provider: socialProvider.rawValue),
-                        customShare: result.encryptedShare
-                    )
-                    return .finish(.successful(solPrivateKey: result.privateSOL, ethPublicKey: result.reconstructedETH))
-                }
-                catch {
-                    return .finish(.notFoundCustom(result: result, email: email))
-                }
+                return try await handleSignInCustom(result: result, socialProvider: socialProvider, provider: provider)
 
             case .back:
                 throw StateMachineError.invalidEvent
@@ -101,8 +77,75 @@ public enum RestoreSocialState: Codable, State, Equatable {
 
             }
 
+        case let .notFoundCustom(result, email):
+            switch event {
+            case .signInCustom(let socialProvider):
+                return try await handleSignInCustom(result: result, socialProvider: socialProvider, provider: provider)
+
+            case .start:
+                return .finish(.start)
+            default:
+                throw StateMachineError.invalidEvent
+            }
+
+        case let .notFoundDevice(tokenID, email, deviceShare):
+            switch event {
+            case .signInDevice(let socialProvider):
+                return try await handleSignInDevice(deviceShare: deviceShare, socialProvider: socialProvider, provider: provider)
+            case .start:
+                return .finish(.start)
+            case .requireCustom:
+                return .finish(.requireCustom)
+            default:
+                throw StateMachineError.invalidEvent
+            }
+
         case .finish:
             throw StateMachineError.invalidEvent
+        }
+    }
+}
+
+private extension RestoreSocialState {
+    func handleSignInDevice(deviceShare: String, socialProvider: SocialProvider, provider: RestoreSocialContainer) async throws -> RestoreSocialState {
+        let (value, email) = try await provider.authService.auth(type: socialProvider)
+        let tokenID = TokenID(value: value, provider: socialProvider.rawValue)
+        do {
+            let result = try await provider.tKeyFacade.signIn(
+                tokenID: tokenID,
+                deviceShare: deviceShare
+            )
+            return .finish(.successful(solPrivateKey: result.privateSOL, ethPublicKey: result.reconstructedETH))
+        }
+        catch let error as TKeyFacadeError {
+            switch error.code {
+            case 1017:
+                return .notFoundDevice(tokenID: tokenID, email: nil, deviceShare: deviceShare)
+            case 1020:
+                return .notFoundDevice(tokenID: tokenID, email: email, deviceShare: deviceShare)
+            default:
+                throw error
+            }
+        }
+        catch {
+            throw error
+        }
+    }
+
+    func handleSignInCustom(result: RestoreWalletResult, socialProvider: SocialProvider, provider: RestoreSocialContainer) async throws -> RestoreSocialState {
+        let (tokenID, email) = try await provider.authService.auth(type: socialProvider)
+        do {
+            let result = try await provider.tKeyFacade.signIn(
+                tokenID: TokenID(value: tokenID, provider: socialProvider.rawValue),
+                customShare: result.encryptedShare
+            )
+            return .finish(.successful(solPrivateKey: result.privateSOL, ethPublicKey: result.reconstructedETH))
+        }
+        catch let error as TKeyFacadeError {
+            return .notFoundCustom(result: result, email: email)
+        }
+        catch {
+            throw error
         }
     }
 }
@@ -116,8 +159,12 @@ extension RestoreSocialState: Step, Continuable {
             return 1
         case .social:
             return 2
-        case .finish:
+        case .notFoundCustom:
             return 3
+        case .notFoundDevice:
+            return 4
+        case .finish:
+            return 5
         }
     }
 }
