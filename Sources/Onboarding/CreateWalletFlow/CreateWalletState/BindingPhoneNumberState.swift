@@ -147,7 +147,7 @@ public enum BindingPhoneNumberState: Codable, State, Equatable {
 
                 return .finish(.success)
             case .resendOTP:
-                if resendAttempt.value >= 5 {
+                if resendAttempt.value >= 4 {
                     return .block(
                         until: Date() + (60 * 10),
                         reason: .blockEnterPhoneNumber,
