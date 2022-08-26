@@ -10,7 +10,7 @@ public enum RestoreSocialResult: Codable, Equatable {
         ethPublicKey: String
     )
     case start
-    case requireCustom
+    case requireCustom(result: RestoreSocialData?)
 }
 
 public enum RestoreSocialEvent {
@@ -38,8 +38,9 @@ public enum RestoreSocialState: Codable, State, Equatable {
 
     case signIn(deviceShare: String)
     case social(result: RestoreWalletResult)
-    case notFoundDevice(tokenID: TokenID, email: String?, deviceShare: String)
+    case notFoundDevice(data: RestoreSocialData, code: Int, deviceShare: String)
     case notFoundCustom(result: RestoreWalletResult, email: String)
+    case expiredSocialTryAgain(result: RestoreWalletResult, provider: SocialProvider, email: String)
     case finish(RestoreSocialResult)
 
     public static var initialState: RestoreSocialState = .signIn(deviceShare: "")
@@ -88,16 +89,34 @@ public enum RestoreSocialState: Codable, State, Equatable {
                 throw StateMachineError.invalidEvent
             }
 
-        case let .notFoundDevice(tokenID, email, deviceShare):
+        case let .notFoundDevice(data, code, deviceShare):
             switch event {
             case .signInDevice(let socialProvider):
                 return try await handleSignInDevice(deviceShare: deviceShare, socialProvider: socialProvider, provider: provider)
             case .start:
                 return .finish(.start)
             case .requireCustom:
-                return .finish(.requireCustom)
+                return .finish(.requireCustom(result: data))
             default:
                 throw StateMachineError.invalidEvent
+            }
+
+        case let .expiredSocialTryAgain(result, socialProvider, email):
+            do {
+                return try await handleSignInCustom(result: result, socialProvider: socialProvider, provider: provider)
+            }
+            catch {
+                if case let .first(share) = provider.option {
+                    do {
+                        return try await handleSignInDevice(deviceShare: share, socialProvider: socialProvider, provider: provider)
+                    }
+                    catch {
+                        return .notFoundCustom(result: result, email: email)
+                    }
+                }
+                else {
+                    return .notFoundCustom(result: result, email: email)
+                }
             }
 
         case .finish:
@@ -119,10 +138,12 @@ private extension RestoreSocialState {
         }
         catch let error as TKeyFacadeError {
             switch error.code {
-            case 1017:
-                return .notFoundDevice(tokenID: tokenID, email: nil, deviceShare: deviceShare)
-            case 1020:
-                return .notFoundDevice(tokenID: tokenID, email: email, deviceShare: deviceShare)
+            case 1009, 1019:
+                return .notFoundDevice(
+                    data: RestoreSocialData(tokenID: tokenID, email: email),
+                    code: error.code,
+                    deviceShare: deviceShare
+                )
             default:
                 throw error
             }
@@ -163,8 +184,10 @@ extension RestoreSocialState: Step, Continuable {
             return 3
         case .notFoundDevice:
             return 4
-        case .finish:
+        case .expiredSocialTryAgain:
             return 5
+        case .finish:
+            return 6
         }
     }
 }

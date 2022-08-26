@@ -94,7 +94,7 @@ public enum RestoreWalletState: Codable, State, Equatable {
             case let .restoreCustom(event):
                 switch event {
                 case .enterPhone:
-                    return .restoreCustom(.enterPhone(phone: nil, tokenID: nil))
+                    return .restoreCustom(.enterPhone(phone: nil, social: nil))
                 default:
                     throw StateMachineError.invalidEvent
                 }
@@ -140,7 +140,12 @@ public enum RestoreWalletState: Codable, State, Equatable {
             case let .restoreCustom(event):
                 let nextInnerState = try await innerState <- (
                     event,
-                    .init(tKeyFacade: provider.tKeyFacade, apiGatewayClient: provider.apiGatewayClient, deviceShare: provider.deviceShare)
+                    .init(
+                        tKeyFacade: provider.tKeyFacade,
+                        apiGatewayClient: provider.apiGatewayClient,
+                        authService: provider.authService,
+                        deviceShare: provider.deviceShare
+                    )
                 )
 
                 if case let .finish(result) = nextInnerState {
@@ -151,12 +156,24 @@ public enum RestoreWalletState: Codable, State, Equatable {
                     case let .requireSocialCustom(result):
                         return .restoreSocial(.social(result: result), option: .second(result: result))
                     case let .requireSocialDevice(socialProvider):
-                        let state = try await handleSignInDeviceEvent(provider: provider, socialProvider: socialProvider, event: .signInDevice(socialProvider: socialProvider))
-                        return state
+                        return try await handleSignInDeviceEvent(provider: provider, socialProvider: socialProvider, event: .signInDevice(socialProvider: socialProvider))
                     case .help:
                         return .finished(.needHelp)
                     case .start:
                         return .finished(.breakProcess)
+                    case let .expiredSocialTryAgain(result, socialProvider, email):
+                        let event = RestoreSocialEvent.signInCustom(socialProvider: socialProvider)
+                        let innerState = RestoreSocialState.expiredSocialTryAgain(result: result, provider: socialProvider, email: email)
+                        let nextInnerState = try await innerState <- (
+                            event,
+                            .init(option: .second(result: result), tKeyFacade: provider.tKeyFacade, authService: provider.authService)
+                        )
+
+                        if case let .finish(result) = nextInnerState {
+                            return try await handleRestoreSocial(provider: provider, result: result)
+                        } else {
+                            return .restoreSocial(nextInnerState, option: .second(result: result))
+                        }
                     }
                 } else {
                     return .restoreCustom(nextInnerState)
@@ -228,8 +245,8 @@ public enum RestoreWalletState: Codable, State, Equatable {
             return .securitySetup(solPrivateKey: solPrivateKey, ethPublicKey: ethPublicKey, deviceShare: "", initial)
         case .start:
             return .finished(.breakProcess)
-        case .requireCustom:
-            return .restoreCustom(.enterPhone(phone: nil, tokenID: nil))
+        case let .requireCustom(data):
+            return .restoreCustom(.enterPhone(phone: nil, social: data))
         }
     }
 
