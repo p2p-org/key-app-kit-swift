@@ -27,13 +27,15 @@ public struct BindingPhoneNumberData: Codable, Equatable {
     let ethereumId: String
     let customShare: String
     let payload: String
+
+    var sendingThrottle: Throttle = .init(maxAttempt: 5, timeInterval: 60 * 10)
 }
 
 public enum BindingPhoneNumberState: Codable, State, Equatable {
     public typealias Event = BindingPhoneNumberEvent
     public typealias Provider = APIGatewayClient
 
-    case enterPhoneNumber(initialPhoneNumber: String?, data: BindingPhoneNumberData)
+    case enterPhoneNumber(initialPhoneNumber: String?, didSend: Bool, data: BindingPhoneNumberData)
     case enterOTP(
         resendAttempt: Wrapper<Int>,
         channel: BindingPhoneNumberChannel,
@@ -46,6 +48,7 @@ public enum BindingPhoneNumberState: Codable, State, Equatable {
 
     public static var initialState: BindingPhoneNumberState = .enterPhoneNumber(
         initialPhoneNumber: nil,
+        didSend: false,
         data: .init(solanaPublicKey: "", ethereumId: "", customShare: "", payload: "")
     )
 
@@ -59,9 +62,28 @@ public enum BindingPhoneNumberState: Codable, State, Equatable {
         provider: APIGatewayClient
     ) async throws -> BindingPhoneNumberState {
         switch currentState {
-        case let .enterPhoneNumber(_, data):
+        case let .enterPhoneNumber(initialPhoneNumber, didSend, data):
             switch event {
             case let .enterPhoneNumber(phoneNumber, channel):
+                if initialPhoneNumber == phoneNumber, didSend {
+                    return .enterOTP(
+                        resendAttempt: .init(0),
+                        channel: .sms,
+                        phoneNumber: phoneNumber,
+                        data: data
+                    )
+                }
+
+                if !data.sendingThrottle.process() {
+                    data.sendingThrottle.reset()
+                    return .block(
+                        until: Date() + blockTime,
+                        reason: .blockEnterPhoneNumber,
+                        phoneNumber: phoneNumber,
+                        data: data
+                    )
+                }
+
                 let account = try await Account(
                     phrase: data.solanaPublicKey.components(separatedBy: " "),
                     network: .mainnetBeta,
@@ -75,6 +97,13 @@ public enum BindingPhoneNumberState: Codable, State, Equatable {
                         phone: phoneNumber,
                         channel: channel,
                         timestampDevice: Date()
+                    )
+
+                    return .enterOTP(
+                        resendAttempt: Wrapper(0),
+                        channel: channel,
+                        phoneNumber: phoneNumber,
+                        data: data
                     )
                 } catch let error as APIGatewayError {
                     switch error._code {
@@ -93,13 +122,6 @@ public enum BindingPhoneNumberState: Codable, State, Equatable {
                         throw error
                     }
                 }
-
-                return .enterOTP(
-                    resendAttempt: Wrapper(0),
-                    channel: channel,
-                    phoneNumber: phoneNumber,
-                    data: data
-                )
             default:
                 throw StateMachineError.invalidEvent
             }
@@ -150,7 +172,7 @@ public enum BindingPhoneNumberState: Codable, State, Equatable {
                         data: data
                     )
                 }
-                
+
                 resendAttempt.value = resendAttempt.value + 1
 
                 let account = try await Account(
@@ -171,6 +193,7 @@ public enum BindingPhoneNumberState: Codable, State, Equatable {
             case .back:
                 return .enterPhoneNumber(
                     initialPhoneNumber: phoneNumber,
+                    didSend: true,
                     data: data
                 )
             default:
@@ -193,11 +216,13 @@ public enum BindingPhoneNumberState: Codable, State, Equatable {
                 case .blockEnterPhoneNumber:
                     return .enterPhoneNumber(
                         initialPhoneNumber: phoneNumber,
+                        didSend: false,
                         data: data
                     )
                 case .blockEnterOTP:
                     return .enterPhoneNumber(
                         initialPhoneNumber: phoneNumber,
+                        didSend: false,
                         data: data
                     )
                 }
