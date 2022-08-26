@@ -52,7 +52,9 @@ public enum RestoreWalletState: Codable, State, Equatable {
     case restore
     
     case signInKeychain(accounts: [ICloudAccount])
+    
     case signInSeed
+    case derivationPath(phrase: [String])
 
     case restoreSocial(RestoreSocialState, option: RestoreSocialContainer.Option)
     case restoreCustom(RestoreCustomState)
@@ -231,8 +233,35 @@ public enum RestoreWalletState: Codable, State, Equatable {
             }
 
         case .signInSeed:
-            throw StateMachineError.invalidEvent
-
+            switch event {
+            case let .derivationPath(phrase):
+                return .derivationPath(phrase: phrase)
+            case .back:
+                return .restore
+            default:
+                throw StateMachineError.invalidEvent
+            }
+            
+        case let .derivationPath(phrase):
+            switch event {
+            case let .restoreWithSeed(phrase, path):
+                let account = try await Account(
+                    phrase: phrase,
+                    network: .mainnetBeta,
+                    derivablePath: path
+                )
+                return .securitySetup(
+                    solPrivateKey: Base58.encode(account.secretKey),
+                    ethPublicKey: "",
+                    deviceShare: "",
+                    await SecuritySetupState.createInitialState(provider: provider.securityStatusProvider)
+                )
+            case .back:
+                return .signInSeed
+            default:
+                throw StateMachineError.invalidEvent
+            }
+            
         case .finished:
             throw StateMachineError.invalidEvent
         }
@@ -277,6 +306,8 @@ public enum RestoreWalletEvent {
     case restoreICloudAccount(account: ICloudAccount)
 
     case signInWithSeed
+    case derivationPath(phrase: [String])
+    case restoreWithSeed(phrase: [String], path: DerivablePath)
 
     case restoreSocial(RestoreSocialEvent)
     case restoreCustom(RestoreCustomEvent)
@@ -301,6 +332,8 @@ extension RestoreWalletState: Step, Continuable {
             return securitySetupState.continuable
         case .finished:
             return false
+        case .derivationPath(phrase: let phrase):
+            return false
         }
     }
 
@@ -320,6 +353,8 @@ extension RestoreWalletState: Step, Continuable {
             return 7 * 100 + securitySetupState.step
         case .finished:
             return 8 * 100
+        case .derivationPath(phrase: let phrase):
+            return 9 * 100
         }
     }
 }
