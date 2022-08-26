@@ -214,7 +214,7 @@ public enum RestoreWalletState: Codable, State, Equatable {
             default:
                 throw StateMachineError.invalidEvent
             }
-            
+
         case .signInSeed:
             switch event {
             case let .derivationPath(phrase):
