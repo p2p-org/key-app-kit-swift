@@ -86,6 +86,7 @@ public enum CreateWalletFlowState: Codable, State, Equatable {
                             deviceShare: deviceShare,
                             .enterPhoneNumber(
                                 initialPhoneNumber: nil,
+                                didSend: false,
                                 data: .init(
                                     solanaPublicKey: solPrivateKey,
                                     ethereumId: ethPublicKey,
