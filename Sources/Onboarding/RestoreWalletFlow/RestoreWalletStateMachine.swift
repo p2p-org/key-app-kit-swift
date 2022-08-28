@@ -221,7 +221,7 @@ public enum RestoreWalletState: Codable, State, Equatable {
                     derivablePath: account.derivablePath
                 )
                 return .securitySetup(
-                    solPrivateKey: Base58.encode(account.secretKey),
+                    solPrivateKey: account.phrase.joined(separator: " "),
                     ethPublicKey: "",
                     deviceShare: "",
                     await SecuritySetupState.createInitialState(provider: provider.securityStatusProvider)
@@ -251,7 +251,7 @@ public enum RestoreWalletState: Codable, State, Equatable {
                     derivablePath: path
                 )
                 return .securitySetup(
-                    solPrivateKey: Base58.encode(account.secretKey),
+                    solPrivateKey: phrase.joined(separator: " "),
                     ethPublicKey: "",
                     deviceShare: "",
                     await SecuritySetupState.createInitialState(provider: provider.securityStatusProvider)

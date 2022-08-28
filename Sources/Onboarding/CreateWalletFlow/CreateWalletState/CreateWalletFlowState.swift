@@ -5,9 +5,10 @@
 import Foundation
 
 public struct OnboardingWallet: Codable, Equatable {
+    // TODO: rename it to seed phrase
     public let solPrivateKey: String
     public let deviceShare: String
-    
+
     public let pincode: String
     public let useBiometric: Bool
 }
@@ -30,7 +31,7 @@ public struct CreateWalletFlowContainer {
     let apiGatewayClient: APIGatewayClient
     let tKeyFacade: TKeyFacade
     let securityStatusProvider: SecurityStatusProvider
-    
+
     public init(
         authService: SocialAuthService,
         apiGatewayClient: APIGatewayClient,
@@ -47,21 +48,33 @@ public struct CreateWalletFlowContainer {
 public enum CreateWalletFlowState: Codable, State, Equatable {
     public typealias Event = CreateWalletFlowEvent
     public typealias Provider = CreateWalletFlowContainer
-    
+
     public private(set) static var initialState: CreateWalletFlowState = .socialSignIn(.socialSelection)
-    
+
     // States
     case socialSignIn(SocialSignInState)
-    case bindingPhoneNumber(email: String, solPrivateKey: String, ethPublicKey: String, deviceShare: String, BindingPhoneNumberState)
-    case securitySetup(email: String, solPrivateKey: String, ethPublicKey: String, deviceShare: String, SecuritySetupState)
-    
+    case bindingPhoneNumber(
+        email: String,
+        solPrivateKey: String,
+        ethPublicKey: String,
+        deviceShare: String,
+        BindingPhoneNumberState
+    )
+    case securitySetup(
+        email: String,
+        solPrivateKey: String,
+        ethPublicKey: String,
+        deviceShare: String,
+        SecuritySetupState
+    )
+
     // Final state
     case finish(CreateWalletFlowResult)
-    
-    public static func createInitialState(provider: CreateWalletFlowContainer) async -> CreateWalletFlowState {
+
+    public static func createInitialState(provider _: CreateWalletFlowContainer) async -> CreateWalletFlowState {
         CreateWalletFlowState.initialState
     }
-    
+
     public func accept(
         currentState: CreateWalletFlowState,
         event: CreateWalletFlowEvent,
@@ -75,7 +88,7 @@ public enum CreateWalletFlowState: Codable, State, Equatable {
                     event,
                     .init(tKeyFacade: provider.tKeyFacade, authService: provider.authService)
                 )
-                
+
                 if case let .finish(result) = nextInnerState {
                     switch result {
                     case let .successful(email, solPrivateKey, ethPublicKey, deviceShare, customShare, metaData):
@@ -110,10 +123,10 @@ public enum CreateWalletFlowState: Codable, State, Equatable {
             switch event {
             case let .bindingPhoneNumberEvent(event):
                 let nextInnerState = try await innerState <- (event, provider.apiGatewayClient)
-                
+
                 if case let .finish(result) = nextInnerState {
                     let initial = await SecuritySetupState.createInitialState(provider: provider.securityStatusProvider)
-                    
+
                     switch result {
                     case .success:
                         return .securitySetup(
@@ -138,12 +151,12 @@ public enum CreateWalletFlowState: Codable, State, Equatable {
             default:
                 throw StateMachineError.invalidEvent
             }
-        
+
         case let .securitySetup(email, solPrivateKey, ethPublicKey, deviceShare, innerState):
             switch event {
             case let .securitySetup(event):
                 let nextInnerState = try await innerState <- (event, provider.securityStatusProvider)
-                
+
                 if case let .finish(result) = nextInnerState {
                     switch result {
                     case let .success(pincode, withBiometric):
@@ -170,7 +183,7 @@ public enum CreateWalletFlowState: Codable, State, Equatable {
             default:
                 throw StateMachineError.invalidEvent
             }
-        
+
         default: throw StateMachineError.invalidEvent
         }
     }
@@ -179,18 +192,17 @@ public enum CreateWalletFlowState: Codable, State, Equatable {
 extension CreateWalletFlowState: Step, Continuable {
     public var continuable: Bool {
         switch self {
-        case .socialSignIn(let innerState):
+        case let .socialSignIn(innerState):
             return innerState.continuable
-        case .bindingPhoneNumber(_, _, _, _, let innerState):
+        case let .bindingPhoneNumber(_, _, _, _, innerState):
             return innerState.continuable
-        case .securitySetup(_, _, _, _, let innerState):
+        case let .securitySetup(_, _, _, _, innerState):
             return innerState.continuable
-        case .finish(_):
+        case .finish:
             return false
         }
     }
-    
-    
+
     public var step: Float {
         switch self {
         case let .socialSignIn(innerState):
