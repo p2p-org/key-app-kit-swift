@@ -23,14 +23,14 @@ public class TKeyMockupFacade: TKeyFacade {
     }
 
     public func signIn(tokenID _: TokenID, deviceShare _: String) async throws -> SignInResult {
-        .init(privateSOL: "somePrivateKey", reconstructedETH: "someEthPublicKey")
+        .init(privateSOL: Mnemonic().phrase.joined(separator: " "), reconstructedETH: "someEthPublicKey")
     }
 
     public func signIn(tokenID: TokenID, customShare: String) async throws -> SignInResult {
-        .init(privateSOL: "somePrivateKey", reconstructedETH: "someEthPublicKey")
+        .init(privateSOL: Mnemonic().phrase.joined(separator: " "), reconstructedETH: "someEthPublicKey")
     }
 
     public func signIn(deviceShare: String, customShare: String) async throws -> SignInResult {
-        .init(privateSOL: "somePrivateKey", reconstructedETH: "someEthPublicKey")
+        .init(privateSOL: Mnemonic().phrase.joined(separator: " "), reconstructedETH: "someEthPublicKey")
     }
 }
