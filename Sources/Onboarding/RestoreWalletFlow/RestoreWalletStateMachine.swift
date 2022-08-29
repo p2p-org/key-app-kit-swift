@@ -50,12 +50,10 @@ public enum RestoreWalletState: Codable, State, Equatable {
     }
 
     case restore
-    
-    case signInKeychain(accounts: [ICloudAccount])
-    
-    case signInSeed
-    case derivationPath(phrase: [String])
 
+    case signInKeychain(accounts: [ICloudAccount])
+
+    case restoreSeed(RestoreSeedState)
     case restoreSocial(RestoreSocialState, option: RestoreSocialContainer.Option)
     case restoreCustom(RestoreCustomState)
 
@@ -90,8 +88,13 @@ public enum RestoreWalletState: Codable, State, Equatable {
                 }
                 return .signInKeychain(accounts: accounts)
 
-            case .signInWithSeed:
-                return .signInSeed
+            case let .restoreSeed(event):
+                switch event {
+                case .signInWithSeed:
+                    return .restoreSeed(.signInSeed)
+                default:
+                    throw StateMachineError.invalidEvent
+                }
 
             case let .restoreCustom(event):
                 switch event {
@@ -185,6 +188,39 @@ public enum RestoreWalletState: Codable, State, Equatable {
                 throw StateMachineError.invalidEvent
             }
 
+        case let .restoreSeed(innerState):
+            switch event {
+            case let .restoreSeed(event):
+                let nextInnerState = try await innerState <- (
+                    event,
+                    .init()
+                )
+
+                if case let .finish(result) = nextInnerState {
+                    switch result {
+                    case let .successful(phrase, path):
+                        let account = try await Account(
+                            phrase: phrase,
+                            network: .mainnetBeta,
+                            derivablePath: path
+                        )
+                        return .securitySetup(
+                            solPrivateKey: phrase.joined(separator: " "),
+                            ethPublicKey: "",
+                            deviceShare: "",
+                            await SecuritySetupState.createInitialState(provider: provider.securityStatusProvider)
+                        )
+                    case .back:
+                        return .restore
+                    }
+                } else {
+                    return .restoreSeed(nextInnerState)
+                }
+
+            default:
+                throw StateMachineError.invalidEvent
+            }
+
         case let .securitySetup(solPrivateKey, ethPublicKey, deviceShare, innerState):
             switch event {
             case let .securitySetup(event):
@@ -232,36 +268,6 @@ public enum RestoreWalletState: Codable, State, Equatable {
                 throw StateMachineError.invalidEvent
             }
 
-        case .signInSeed:
-            switch event {
-            case let .derivationPath(phrase):
-                return .derivationPath(phrase: phrase)
-            case .back:
-                return .restore
-            default:
-                throw StateMachineError.invalidEvent
-            }
-            
-        case let .derivationPath(phrase):
-            switch event {
-            case let .restoreWithSeed(phrase, path):
-                let account = try await Account(
-                    phrase: phrase,
-                    network: .mainnetBeta,
-                    derivablePath: path
-                )
-                return .securitySetup(
-                    solPrivateKey: phrase.joined(separator: " "),
-                    ethPublicKey: "",
-                    deviceShare: "",
-                    await SecuritySetupState.createInitialState(provider: provider.securityStatusProvider)
-                )
-            case .back:
-                return .signInSeed
-            default:
-                throw StateMachineError.invalidEvent
-            }
-            
         case .finished:
             throw StateMachineError.invalidEvent
         }
@@ -305,12 +311,9 @@ public enum RestoreWalletEvent {
     case signInWithKeychain
     case restoreICloudAccount(account: ICloudAccount)
 
-    case signInWithSeed
-    case derivationPath(phrase: [String])
-    case restoreWithSeed(phrase: [String], path: DerivablePath)
-
     case restoreSocial(RestoreSocialEvent)
     case restoreCustom(RestoreCustomEvent)
+    case restoreSeed(RestoreSeedEvent)
 
     case securitySetup(SecuritySetupEvent)
 }
@@ -322,8 +325,8 @@ extension RestoreWalletState: Step, Continuable {
             return false
         case .signInKeychain:
             return false
-        case .signInSeed:
-            return false
+        case let .restoreSeed(restoreSeedState):
+            return restoreSeedState.continuable
         case let .restoreSocial(restoreSocialState, _):
             return restoreSocialState.continuable
         case let .restoreCustom(restoreCustomState):
@@ -331,8 +334,6 @@ extension RestoreWalletState: Step, Continuable {
         case let .securitySetup(_, _, _, securitySetupState):
             return securitySetupState.continuable
         case .finished:
-            return false
-        case .derivationPath(phrase: let phrase):
             return false
         }
     }
@@ -343,8 +344,8 @@ extension RestoreWalletState: Step, Continuable {
             return 1 * 100
         case .signInKeychain:
             return 3 * 100
-        case .signInSeed:
-            return 4 * 100
+        case let .restoreSeed(restoreSeedState):
+            return 4 * 100 + restoreSeedState.step
         case let .restoreSocial(restoreSocialState, _):
             return 5 * 100 + restoreSocialState.step
         case let .restoreCustom(restoreCustomState):
@@ -353,8 +354,6 @@ extension RestoreWalletState: Step, Continuable {
             return 7 * 100 + securitySetupState.step
         case .finished:
             return 8 * 100
-        case .derivationPath(phrase: let phrase):
-            return 9 * 100
         }
     }
 }
