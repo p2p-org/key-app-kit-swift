@@ -19,7 +19,6 @@ public struct RestoreWalletFlowContainer {
     let deviceShare: String?
     let authService: SocialAuthService
     let apiGatewayClient: APIGatewayClient
-    let securityStatusProvider: SecurityStatusProvider
     let icloudAccountProvider: ICloudAccountProvider
 
     public init(
@@ -27,14 +26,12 @@ public struct RestoreWalletFlowContainer {
         deviceShare: String?,
         authService: SocialAuthService,
         apiGatewayClient: APIGatewayClient,
-        securityStatusProvider: SecurityStatusProvider,
         icloudAccountProvider: ICloudAccountProvider
     ) {
         self.tKeyFacade = tKeyFacade
         self.deviceShare = deviceShare
         self.authService = authService
         self.apiGatewayClient = apiGatewayClient
-        self.securityStatusProvider = securityStatusProvider
         self.icloudAccountProvider = icloudAccountProvider
     }
 }
@@ -43,11 +40,6 @@ public enum RestoreWalletState: Codable, State, Equatable {
     public typealias Event = RestoreWalletEvent
     public typealias Provider = RestoreWalletFlowContainer
     public static var initialState: RestoreWalletState = .restore
-
-    public static func createInitialState(provider _: Provider) async -> RestoreWalletState {
-        RestoreWalletState.initialState = .restore
-        return RestoreWalletState.initialState
-    }
 
     case restore
 
@@ -156,8 +148,7 @@ public enum RestoreWalletState: Codable, State, Equatable {
                 if case let .finish(result) = nextInnerState {
                     switch result {
                     case let .successful(solPrivateKey, ethPublicKey):
-                        let initial = await SecuritySetupState.createInitialState(provider: provider.securityStatusProvider)
-                        return .securitySetup(solPrivateKey: solPrivateKey, ethPublicKey: ethPublicKey, deviceShare: "", initial)
+                        return .securitySetup(solPrivateKey: solPrivateKey, ethPublicKey: ethPublicKey, deviceShare: "", SecuritySetupState.initialState)
                     case let .requireSocialCustom(result):
                         return .restoreSocial(.social(result: result), option: .second(result: result))
                     case let .requireSocialDevice(socialProvider):
@@ -208,7 +199,7 @@ public enum RestoreWalletState: Codable, State, Equatable {
                             solPrivateKey: phrase.joined(separator: " "),
                             ethPublicKey: "",
                             deviceShare: "",
-                            await SecuritySetupState.createInitialState(provider: provider.securityStatusProvider)
+                            SecuritySetupState.initialState
                         )
                     case .back:
                         return .restore
@@ -224,17 +215,17 @@ public enum RestoreWalletState: Codable, State, Equatable {
         case let .securitySetup(solPrivateKey, ethPublicKey, deviceShare, innerState):
             switch event {
             case let .securitySetup(event):
-                let nextInnerState = try await innerState <- (event, provider.securityStatusProvider)
+                let nextInnerState = try await innerState <- (event, .init())
 
                 if case let .finish(result) = nextInnerState {
                     switch result {
-                    case let .success(pincode, withBiometric):
-                        return .finished(.successful(OnboardingWallet(
-                            solPrivateKey: solPrivateKey,
-                            deviceShare: deviceShare,
-                            pincode: pincode ?? "000000",
-                            useBiometric: withBiometric)
-                        ))
+                    case let .success(pincode):
+                        return .finished(.successful(
+                            OnboardingWallet(
+                                solPrivateKey: solPrivateKey,
+                                deviceShare: deviceShare,
+                                pincode: pincode
+                            )))
                     }
                 } else {
                     return .securitySetup(
@@ -260,7 +251,7 @@ public enum RestoreWalletState: Codable, State, Equatable {
                     solPrivateKey: account.phrase.joined(separator: " "),
                     ethPublicKey: "",
                     deviceShare: "",
-                    await SecuritySetupState.createInitialState(provider: provider.securityStatusProvider)
+                    SecuritySetupState.initialState
                 )
             case .back:
                 return .restore
@@ -276,8 +267,7 @@ public enum RestoreWalletState: Codable, State, Equatable {
     private func handleRestoreSocial(provider: RestoreWalletFlowContainer, result: RestoreSocialResult) async throws -> RestoreWalletState {
         switch result {
         case let .successful(solPrivateKey, ethPublicKey):
-            let initial = await SecuritySetupState.createInitialState(provider: provider.securityStatusProvider)
-            return .securitySetup(solPrivateKey: solPrivateKey, ethPublicKey: ethPublicKey, deviceShare: "", initial)
+            return .securitySetup(solPrivateKey: solPrivateKey, ethPublicKey: ethPublicKey, deviceShare: "", SecuritySetupState.initialState)
         case .start:
             return .finished(.breakProcess)
         case let .requireCustom(data):

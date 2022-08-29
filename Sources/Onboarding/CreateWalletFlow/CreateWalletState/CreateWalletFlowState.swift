@@ -10,7 +10,6 @@ public struct OnboardingWallet: Codable, Equatable {
     public let deviceShare: String
 
     public let pincode: String
-    public let useBiometric: Bool
 }
 
 public enum CreateWalletFlowResult: Codable, Equatable {
@@ -30,18 +29,15 @@ public struct CreateWalletFlowContainer {
     let authService: SocialAuthService
     let apiGatewayClient: APIGatewayClient
     let tKeyFacade: TKeyFacade
-    let securityStatusProvider: SecurityStatusProvider
 
     public init(
         authService: SocialAuthService,
         apiGatewayClient: APIGatewayClient,
-        tKeyFacade: TKeyFacade,
-        securityStatusProvider: SecurityStatusProvider
+        tKeyFacade: TKeyFacade
     ) {
         self.authService = authService
         self.apiGatewayClient = apiGatewayClient
         self.tKeyFacade = tKeyFacade
-        self.securityStatusProvider = securityStatusProvider
     }
 }
 
@@ -70,10 +66,6 @@ public enum CreateWalletFlowState: Codable, State, Equatable {
 
     // Final state
     case finish(CreateWalletFlowResult)
-
-    public static func createInitialState(provider _: CreateWalletFlowContainer) async -> CreateWalletFlowState {
-        CreateWalletFlowState.initialState
-    }
 
     public func accept(
         currentState: CreateWalletFlowState,
@@ -125,8 +117,6 @@ public enum CreateWalletFlowState: Codable, State, Equatable {
                 let nextInnerState = try await innerState <- (event, provider.apiGatewayClient)
 
                 if case let .finish(result) = nextInnerState {
-                    let initial = await SecuritySetupState.createInitialState(provider: provider.securityStatusProvider)
-
                     switch result {
                     case .success:
                         return .securitySetup(
@@ -134,7 +124,7 @@ public enum CreateWalletFlowState: Codable, State, Equatable {
                             solPrivateKey: solPrivateKey,
                             ethPublicKey: ethPublicKey,
                             deviceShare: deviceShare,
-                            initial
+                            SecuritySetupState.initialState
                         )
                     case .breakProcess:
                         return .finish(.breakProcess)
@@ -155,18 +145,17 @@ public enum CreateWalletFlowState: Codable, State, Equatable {
         case let .securitySetup(email, solPrivateKey, ethPublicKey, deviceShare, innerState):
             switch event {
             case let .securitySetup(event):
-                let nextInnerState = try await innerState <- (event, provider.securityStatusProvider)
+                let nextInnerState = try await innerState <- (event, .init())
 
                 if case let .finish(result) = nextInnerState {
                     switch result {
-                    case let .success(pincode, withBiometric):
+                    case let .success(pincode):
                         return .finish(
                             .newWallet(
                                 .init(
                                     solPrivateKey: solPrivateKey,
                                     deviceShare: deviceShare,
-                                    pincode: pincode ?? "000000",
-                                    useBiometric: withBiometric
+                                    pincode: pincode
                                 )
                             )
                         )

@@ -45,16 +45,6 @@ public enum RestoreSocialState: Codable, State, Equatable {
 
     public static var initialState: RestoreSocialState = .signIn(deviceShare: "")
 
-    public static func createInitialState(provider: RestoreSocialContainer) async -> RestoreSocialState {
-        switch provider.option {
-        case let .first(deviceShare):
-            RestoreSocialState.initialState = .signIn(deviceShare: deviceShare)
-        case let .second(result):
-            RestoreSocialState.initialState = .social(result: result)
-        }
-        return RestoreSocialState.initialState
-    }
-
     public func accept(currentState: RestoreSocialState, event: RestoreSocialEvent, provider: RestoreSocialContainer) async throws -> RestoreSocialState {
         switch currentState {
         case let .signIn(deviceShare):

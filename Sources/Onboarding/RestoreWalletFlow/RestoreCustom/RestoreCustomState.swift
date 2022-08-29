@@ -55,10 +55,6 @@ public enum RestoreCustomState: Codable, State, Equatable {
 
     public static var initialState: RestoreCustomState = .enterPhone(phone: nil, social: nil)
 
-    public static func createInitialState(provider _: Provider) async -> RestoreCustomState {
-        RestoreCustomState.initialState
-    }
-
     public func accept(
         currentState: RestoreCustomState,
         event: RestoreCustomEvent,

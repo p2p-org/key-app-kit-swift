@@ -28,10 +28,6 @@ enum ThrottleState: Codable, State, Equatable {
     case cold(count: Int, start: Date)
     case overheat(until: Date)
 
-    static func createInitialState(provider: ThrottleConfiguration) async -> ThrottleState {
-        return ThrottleState.initialState
-    }
-
     func accept(
         currentState: ThrottleState,
         event: ThrottleEvent,

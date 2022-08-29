@@ -39,11 +39,7 @@ public enum SocialSignInState: Codable, State, Equatable {
     case finish(SocialSignInResult)
     
     public static var initialState: SocialSignInState = .socialSelection
-    
-    public static func createInitialState(provider: SocialSignInContainer) async -> SocialSignInState {
-        SocialSignInState.initialState
-    }
-    
+
     public func accept(
         currentState: SocialSignInState,
         event: SocialSignInEvent,
