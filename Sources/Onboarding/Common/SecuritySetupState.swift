@@ -5,33 +5,27 @@
 import Foundation
 
 public enum SecuritySetupResult: Codable, Equatable {
-    case success(pincode: String?, withBiometric: Bool)
+    case success(pincode: String)
 }
 
 public enum SecuritySetupEvent {
     case back
     case createPincode
     case confirmPincode(pincode: String)
-    case setPincode(pincode: String?, withBiometric: Bool)
+    case setPincode(pincode: String)
 }
+
+public struct SecuritySetupContainer { }
 
 public enum SecuritySetupState: Codable, State, Equatable {
     public typealias Event = SecuritySetupEvent
-    public typealias Provider = SecurityStatusProvider
+    public typealias Provider = SecuritySetupContainer
 
-    case setProtectionLevel
     case createPincode
     case confirmPincode(pincode: String)
     case finish(_ result: SecuritySetupResult)
 
-    public private(set) static var initialState: SecuritySetupState = .setProtectionLevel
-
-    public static func createInitialState(provider: Provider) async -> SecuritySetupState {
-        if !provider.isBiometryAvailable {
-            SecuritySetupState.initialState = .createPincode
-        }
-        return SecuritySetupState.initialState
-    }
+    public private(set) static var initialState: SecuritySetupState = .createPincode
 
     public func accept(
         currentState: SecuritySetupState,
@@ -39,21 +33,10 @@ public enum SecuritySetupState: Codable, State, Equatable {
         provider _: Provider
     ) async throws -> SecuritySetupState {
         switch currentState {
-        case .setProtectionLevel:
-            switch event {
-            case .createPincode:
-                return .createPincode
-            case let .setPincode(pincode, withBiometric):
-                return .finish(.success(pincode: pincode, withBiometric: withBiometric))
-            default:
-                throw StateMachineError.invalidEvent
-            }
         case .createPincode:
             switch event {
             case let .confirmPincode(pincode):
                 return .confirmPincode(pincode: pincode)
-            case .back:
-                return .setProtectionLevel
             default:
                 throw StateMachineError.invalidEvent
             }
@@ -63,8 +46,8 @@ public enum SecuritySetupState: Codable, State, Equatable {
                 return .createPincode
             case .createPincode:
                 return .createPincode
-            case let .setPincode(pincode, withBiometric):
-                return .finish(.success(pincode: pincode, withBiometric: withBiometric))
+            case let .setPincode(pincode):
+                return .finish(.success(pincode: pincode))
             default:
                 throw StateMachineError.invalidEvent
             }
@@ -84,17 +67,15 @@ extension SecuritySetupState: Step, Continuable {
             return true
         }
     }
-    
+
     public var step: Float {
         switch self {
-        case .setProtectionLevel:
-            return 1
         case .createPincode:
-            return 2
+            return 1
         case .confirmPincode:
-            return 3
+            return 2
         case .finish:
-            return 4
+            return 3
         }
     }
 }

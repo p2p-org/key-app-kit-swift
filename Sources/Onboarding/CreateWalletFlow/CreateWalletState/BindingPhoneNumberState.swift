@@ -52,10 +52,6 @@ public enum BindingPhoneNumberState: Codable, State, Equatable {
         data: .init(solanaPublicKey: "", ethereumId: "", customShare: "", payload: "")
     )
 
-    public static func createInitialState(provider _: Provider) async -> BindingPhoneNumberState {
-        BindingPhoneNumberState.initialState
-    }
-
     public func accept(
         currentState: BindingPhoneNumberState,
         event: BindingPhoneNumberEvent,

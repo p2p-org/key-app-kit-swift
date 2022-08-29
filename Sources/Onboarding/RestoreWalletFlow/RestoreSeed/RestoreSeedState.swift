@@ -29,10 +29,6 @@ public enum RestoreSeedState: Codable, State, Equatable {
 
     public static var initialState: RestoreSeedState = .signInSeed
 
-    public static func createInitialState(provider _: Provider) async -> RestoreSeedState {
-        RestoreSeedState.initialState
-    }
-
     public func accept(
         currentState: RestoreSeedState,
         event: RestoreSeedEvent,
