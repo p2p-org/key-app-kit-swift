@@ -5,14 +5,14 @@
 import Foundation
 
 public enum SecuritySetupResult: Codable, Equatable {
-    case success(pincode: String)
+    case success(pincode: String, isBiometryEnabled: Bool)
 }
 
 public enum SecuritySetupEvent {
     case back
     case createPincode
     case confirmPincode(pincode: String)
-    case setPincode(pincode: String)
+    case setPincode(pincode: String, isBiometryEnabled: Bool)
 }
 
 public struct SecuritySetupContainer { }
@@ -46,8 +46,8 @@ public enum SecuritySetupState: Codable, State, Equatable {
                 return .createPincode
             case .createPincode:
                 return .createPincode
-            case let .setPincode(pincode):
-                return .finish(.success(pincode: pincode))
+            case let .setPincode(pincode, isBiometryEnabled):
+                return .finish(.success(pincode: pincode, isBiometryEnabled: isBiometryEnabled))
             default:
                 throw StateMachineError.invalidEvent
             }
@@ -61,7 +61,7 @@ public enum SecuritySetupState: Codable, State, Equatable {
 extension SecuritySetupState: Step, Continuable {
     public var continuable: Bool {
         switch self {
-        case .confirmPincode(pincode: let pincode):
+        case .confirmPincode:
             return false
         default:
             return true
