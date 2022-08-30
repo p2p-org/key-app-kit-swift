@@ -175,7 +175,7 @@ public class APIGatewayClientImpl: APIGatewayClient {
             params: APIGatewayRestoreWalletParams(
                 restoreId: Base58.encode(solanaKeypair.publicKey),
                 phone: phone,
-                appHash: "",
+                // appHash: "",
                 channel: channel.rawValue,
                 signature: try RestoreWalletSignature(
                     restoreId: Base58.encode(solanaKeypair.publicKey),

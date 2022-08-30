@@ -47,7 +47,7 @@ struct APIGatewayConfirmRegisterWalletParams: Codable {
 struct APIGatewayRestoreWalletParams: Codable {
     let restoreId: String
     let phone: String
-    let appHash: String
+    // let appHash: String
     let channel: String
     let signature: String
     let timestampDevice: String
@@ -55,7 +55,7 @@ struct APIGatewayRestoreWalletParams: Codable {
     enum CodingKeys: String, CodingKey {
         case restoreId = "restore_id"
         case phone
-        case appHash = "app_hash"
+        // case appHash = "app_hash"
         case channel
         case signature
         case timestampDevice = "timestamp_device"
