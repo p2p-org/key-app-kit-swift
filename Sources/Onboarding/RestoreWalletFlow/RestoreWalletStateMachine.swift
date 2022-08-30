@@ -251,12 +251,13 @@ public enum RestoreWalletState: Codable, State, Equatable {
 
                 if case let .finish(result) = nextInnerState {
                     switch result {
-                    case let .success(pincode):
+                    case let .success(pincode, isBiometryEnabled):
                         return .finished(.successful(
                             OnboardingWallet(
                                 solPrivateKey: solPrivateKey,
                                 deviceShare: deviceShare,
-                                pincode: pincode
+                                pincode: pincode,
+                                isBiometryEnabled: isBiometryEnabled
                             )))
                     }
                 } else {

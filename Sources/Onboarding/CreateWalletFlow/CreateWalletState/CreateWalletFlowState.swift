@@ -10,6 +10,7 @@ public struct OnboardingWallet: Codable, Equatable {
     public let deviceShare: String
 
     public let pincode: String
+    public let isBiometryEnabled: Bool
 }
 
 public enum CreateWalletFlowResult: Codable, Equatable {
@@ -149,13 +150,14 @@ public enum CreateWalletFlowState: Codable, State, Equatable {
 
                 if case let .finish(result) = nextInnerState {
                     switch result {
-                    case let .success(pincode):
+                    case let .success(pincode, isBiometryEnabled):
                         return .finish(
                             .newWallet(
                                 .init(
                                     solPrivateKey: solPrivateKey,
                                     deviceShare: deviceShare,
-                                    pincode: pincode
+                                    pincode: pincode,
+                                    isBiometryEnabled: isBiometryEnabled
                                 )
                             )
                         )
