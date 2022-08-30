@@ -43,8 +43,7 @@ public enum RestoreWalletState: Codable, State, Equatable {
 
     case restore
 
-    case signInKeychain(accounts: [ICloudAccount])
-
+    case restoreICloud(RestoreICloudState)
     case restoreSeed(RestoreSeedState)
     case restoreSocial(RestoreSocialState, option: RestoreSocialContainer.Option)
     case restoreCustom(RestoreCustomState)
@@ -67,18 +66,22 @@ public enum RestoreWalletState: Codable, State, Equatable {
         case .restore:
 
             switch event {
-            case .signInWithKeychain:
-                let rawAccounts = try await provider.icloudAccountProvider.getAll()
-                var accounts: [ICloudAccount] = []
-                for rawAccount in rawAccounts {
-                    accounts
-                        .append(try await .init(
-                            name: rawAccount.name,
-                            phrase: rawAccount.phrase,
-                            derivablePath: rawAccount.derivablePath
-                        ))
+            case let .restoreICloud(event):
+                switch event {
+                case .signIn:
+                    let nextInnerState = try await RestoreICloudState.signIn <- (
+                        RestoreICloudEvent.signIn,
+                        .init(icloudAccountProvider: provider.icloudAccountProvider)
+                    )
+
+                    if case let .chooseWallet(accounts) = nextInnerState {
+                        return .restoreICloud(.chooseWallet(accounts: accounts))
+                    } else {
+                        return .restoreICloud(.signIn)
+                    }
+                default:
+                    throw StateMachineError.invalidEvent
                 }
-                return .signInKeychain(accounts: accounts)
 
             case let .restoreSeed(event):
                 switch event {
@@ -212,6 +215,35 @@ public enum RestoreWalletState: Codable, State, Equatable {
                 throw StateMachineError.invalidEvent
             }
 
+        case let .restoreICloud(innerState):
+            switch event {
+            case let .restoreICloud(event):
+                let nextInnerState = try await innerState <- (
+                    event,
+                    .init(icloudAccountProvider: provider.icloudAccountProvider)
+                )
+
+                if case let .finish(result) = nextInnerState {
+                    switch result {
+                    case let .successful(account):
+                        return .securitySetup(
+                            solPrivateKey: account.phrase.joined(separator: " "),
+                            ethPublicKey: "",
+                            deviceShare: "",
+                            SecuritySetupState.initialState
+                        )
+                    case .back:
+                        return .restore
+                    }
+                }
+                else {
+                    return .restoreICloud(nextInnerState)
+                }
+
+            default:
+                throw StateMachineError.invalidEvent
+            }
+
         case let .securitySetup(solPrivateKey, ethPublicKey, deviceShare, innerState):
             switch event {
             case let .securitySetup(event):
@@ -235,26 +267,6 @@ public enum RestoreWalletState: Codable, State, Equatable {
                         nextInnerState
                     )
                 }
-            default:
-                throw StateMachineError.invalidEvent
-            }
-
-        case .signInKeychain:
-            switch event {
-            case let .restoreICloudAccount(account):
-                let account = try await Account(
-                    phrase: account.phrase.components(separatedBy: " "),
-                    network: .mainnetBeta,
-                    derivablePath: account.derivablePath
-                )
-                return .securitySetup(
-                    solPrivateKey: account.phrase.joined(separator: " "),
-                    ethPublicKey: "",
-                    deviceShare: "",
-                    SecuritySetupState.initialState
-                )
-            case .back:
-                return .restore
             default:
                 throw StateMachineError.invalidEvent
             }
@@ -297,14 +309,10 @@ public enum RestoreWalletEvent {
     case start
     case help
 
-    // Icloud flow
-    case signInWithKeychain
-    case restoreICloudAccount(account: ICloudAccount)
-
     case restoreSocial(RestoreSocialEvent)
     case restoreCustom(RestoreCustomEvent)
     case restoreSeed(RestoreSeedEvent)
-
+    case restoreICloud(RestoreICloudEvent)
     case securitySetup(SecuritySetupEvent)
 }
 
@@ -313,14 +321,14 @@ extension RestoreWalletState: Step, Continuable {
         switch self {
         case .restore:
             return false
-        case .signInKeychain:
-            return false
         case let .restoreSeed(restoreSeedState):
             return restoreSeedState.continuable
         case let .restoreSocial(restoreSocialState, _):
             return restoreSocialState.continuable
         case let .restoreCustom(restoreCustomState):
             return restoreCustomState.continuable
+        case let .restoreICloud(restoreICloudState):
+            return restoreICloudState.continuable
         case let .securitySetup(_, _, _, securitySetupState):
             return securitySetupState.continuable
         case .finished:
@@ -332,8 +340,8 @@ extension RestoreWalletState: Step, Continuable {
         switch self {
         case .restore:
             return 1 * 100
-        case .signInKeychain:
-            return 3 * 100
+        case let .restoreICloud(restoreICloudState):
+            return 3 * 100 + restoreICloudState.step
         case let .restoreSeed(restoreSeedState):
             return 4 * 100 + restoreSeedState.step
         case let .restoreSocial(restoreSocialState, _):
