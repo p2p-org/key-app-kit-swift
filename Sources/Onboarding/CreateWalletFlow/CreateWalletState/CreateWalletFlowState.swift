@@ -4,17 +4,8 @@
 
 import Foundation
 
-public struct OnboardingWallet: Codable, Equatable {
-    // TODO: rename it to seed phrase
-    public let solPrivateKey: String
-    public let deviceShare: String
-
-    public let pincode: String
-    public let isBiometryEnabled: Bool
-}
-
 public enum CreateWalletFlowResult: Codable, Equatable {
-    case newWallet(OnboardingWallet)
+    case newWallet(CreateWalletData)
     case breakProcess
     case switchToRestoreFlow(socialProvider: SocialProvider, email: String)
 }
@@ -52,14 +43,14 @@ public enum CreateWalletFlowState: Codable, State, Equatable {
     case socialSignIn(SocialSignInState)
     case bindingPhoneNumber(
         email: String,
-        solPrivateKey: String,
+        seedPhrase: String,
         ethPublicKey: String,
         deviceShare: String,
         BindingPhoneNumberState
     )
     case securitySetup(
         email: String,
-        solPrivateKey: String,
+        wallet: OnboardingWallet,
         ethPublicKey: String,
         deviceShare: String,
         SecuritySetupState
@@ -84,17 +75,17 @@ public enum CreateWalletFlowState: Codable, State, Equatable {
 
                 if case let .finish(result) = nextInnerState {
                     switch result {
-                    case let .successful(email, solPrivateKey, ethPublicKey, deviceShare, customShare, metaData):
+                    case let .successful(email, seedPhrase, ethPublicKey, deviceShare, customShare, metaData):
                         return .bindingPhoneNumber(
                             email: email,
-                            solPrivateKey: solPrivateKey,
+                            seedPhrase: seedPhrase,
                             ethPublicKey: ethPublicKey,
                             deviceShare: deviceShare,
                             .enterPhoneNumber(
                                 initialPhoneNumber: nil,
                                 didSend: false,
                                 data: .init(
-                                    solanaPublicKey: solPrivateKey,
+                                    seedPhrase: seedPhrase,
                                     ethereumId: ethPublicKey,
                                     customShare: customShare,
                                     payload: metaData
@@ -112,7 +103,7 @@ public enum CreateWalletFlowState: Codable, State, Equatable {
             default:
                 throw StateMachineError.invalidEvent
             }
-        case let .bindingPhoneNumber(email, solPrivateKey, ethPublicKey, deviceShare, innerState):
+        case let .bindingPhoneNumber(email, seedPhrase, ethPublicKey, deviceShare, innerState):
             switch event {
             case let .bindingPhoneNumberEvent(event):
                 let nextInnerState = try await innerState <- (event, provider.apiGatewayClient)
@@ -122,7 +113,7 @@ public enum CreateWalletFlowState: Codable, State, Equatable {
                     case .success:
                         return .securitySetup(
                             email: email,
-                            solPrivateKey: solPrivateKey,
+                            wallet: OnboardingWallet(seedPhrase: seedPhrase),
                             ethPublicKey: ethPublicKey,
                             deviceShare: deviceShare,
                             SecuritySetupState.initialState
@@ -133,7 +124,7 @@ public enum CreateWalletFlowState: Codable, State, Equatable {
                 } else {
                     return .bindingPhoneNumber(
                         email: email,
-                        solPrivateKey: solPrivateKey,
+                        seedPhrase: seedPhrase,
                         ethPublicKey: ethPublicKey,
                         deviceShare: deviceShare,
                         nextInnerState
@@ -143,29 +134,26 @@ public enum CreateWalletFlowState: Codable, State, Equatable {
                 throw StateMachineError.invalidEvent
             }
 
-        case let .securitySetup(email, solPrivateKey, ethPublicKey, deviceShare, innerState):
+        case let .securitySetup(email, wallet, ethPublicKey, deviceShare, innerState):
             switch event {
             case let .securitySetup(event):
                 let nextInnerState = try await innerState <- (event, .init())
 
                 if case let .finish(result) = nextInnerState {
                     switch result {
-                    case let .success(pincode, isBiometryEnabled):
+                    case let .success(securityData):
                         return .finish(
-                            .newWallet(
-                                .init(
-                                    solPrivateKey: solPrivateKey,
-                                    deviceShare: deviceShare,
-                                    pincode: pincode,
-                                    isBiometryEnabled: isBiometryEnabled
-                                )
-                            )
+                            .newWallet(CreateWalletData(
+                                deviceShare: deviceShare,
+                                wallet: wallet,
+                                security: securityData
+                            ))
                         )
                     }
                 } else {
                     return .securitySetup(
                         email: email,
-                        solPrivateKey: solPrivateKey,
+                        wallet: wallet,
                         ethPublicKey: ethPublicKey,
                         deviceShare: deviceShare,
                         nextInnerState

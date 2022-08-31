@@ -10,7 +10,7 @@ public typealias RestoreCustomChannel = APIGatewayChannel
 
 public enum RestoreCustomResult: Codable, Equatable {
     case successful(
-        solPrivateKey: String,
+        seedPhrase: String,
         ethPublicKey: String
     )
     case requireSocialCustom(result: RestoreWalletResult)
@@ -89,7 +89,7 @@ public enum RestoreCustomState: Codable, State, Equatable {
                     else if let deviceShare = provider.deviceShare {
                         do {
                             let finalResult = try await provider.tKeyFacade.signIn(deviceShare: deviceShare, customShare: result.encryptedShare)
-                            return .finish(result: .successful(solPrivateKey: finalResult.privateSOL, ethPublicKey: finalResult.reconstructedETH))
+                            return .finish(result: .successful(seedPhrase: finalResult.privateSOL, ethPublicKey: finalResult.reconstructedETH))
                         }
                         catch {
                             if let social = social, provider.authService.isExpired(token: social.tokenID.value) {
@@ -207,12 +207,12 @@ public enum RestoreCustomState: Codable, State, Equatable {
     private func restore(with tokenID: TokenID, customShare: String, deviceShare: String, tKey: TKeyFacade) async throws -> RestoreCustomState {
         do {
             let finalResult = try await tKey.signIn(tokenID: tokenID, customShare: customShare)
-            return .finish(result: .successful(solPrivateKey: finalResult.privateSOL, ethPublicKey: finalResult.reconstructedETH))
+            return .finish(result: .successful(seedPhrase: finalResult.privateSOL, ethPublicKey: finalResult.reconstructedETH))
         }
         catch {
             do {
                 let finalResult = try await tKey.signIn(deviceShare: deviceShare, customShare: customShare)
-                return .finish(result: .successful(solPrivateKey: finalResult.privateSOL, ethPublicKey: finalResult.reconstructedETH))
+                return .finish(result: .successful(seedPhrase: finalResult.privateSOL, ethPublicKey: finalResult.reconstructedETH))
             }
             catch {
                 return .noMatch

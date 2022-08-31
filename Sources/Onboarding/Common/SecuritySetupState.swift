@@ -5,7 +5,7 @@
 import Foundation
 
 public enum SecuritySetupResult: Codable, Equatable {
-    case success(pincode: String, isBiometryEnabled: Bool)
+    case success(data: SecurityData)
 }
 
 public enum SecuritySetupEvent {
@@ -47,7 +47,7 @@ public enum SecuritySetupState: Codable, State, Equatable {
             case .createPincode:
                 return .createPincode
             case let .setPincode(pincode, isBiometryEnabled):
-                return .finish(.success(pincode: pincode, isBiometryEnabled: isBiometryEnabled))
+                return .finish(.success(data: SecurityData(pincode: pincode, isBiometryEnabled: isBiometryEnabled)))
             default:
                 throw StateMachineError.invalidEvent
             }
