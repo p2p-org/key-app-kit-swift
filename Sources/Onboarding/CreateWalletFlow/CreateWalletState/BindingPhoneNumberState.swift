@@ -23,7 +23,7 @@ public enum BindingPhoneNumberEvent {
 }
 
 public struct BindingPhoneNumberData: Codable, Equatable {
-    let solanaPublicKey: String
+    let seedPhrase: String
     let ethereumId: String
     let customShare: String
     let payload: String
@@ -49,7 +49,7 @@ public enum BindingPhoneNumberState: Codable, State, Equatable {
     public static var initialState: BindingPhoneNumberState = .enterPhoneNumber(
         initialPhoneNumber: nil,
         didSend: false,
-        data: .init(solanaPublicKey: "", ethereumId: "", customShare: "", payload: "")
+        data: .init(seedPhrase: "", ethereumId: "", customShare: "", payload: "")
     )
 
     public func accept(
@@ -81,7 +81,7 @@ public enum BindingPhoneNumberState: Codable, State, Equatable {
                 }
 
                 let account = try await Account(
-                    phrase: data.solanaPublicKey.components(separatedBy: " "),
+                    phrase: data.seedPhrase.components(separatedBy: " "),
                     network: .mainnetBeta,
                     derivablePath: .default
                 )
@@ -125,7 +125,7 @@ public enum BindingPhoneNumberState: Codable, State, Equatable {
             switch event {
             case let .enterOTP(opt):
                 let account = try await Account(
-                    phrase: data.solanaPublicKey.components(separatedBy: " "),
+                    phrase: data.seedPhrase.components(separatedBy: " "),
                     network: .mainnetBeta,
                     derivablePath: .default
                 )
@@ -172,7 +172,7 @@ public enum BindingPhoneNumberState: Codable, State, Equatable {
                 resendAttempt.value = resendAttempt.value + 1
 
                 let account = try await Account(
-                    phrase: data.solanaPublicKey.components(separatedBy: " "),
+                    phrase: data.seedPhrase.components(separatedBy: " "),
                     network: .mainnetBeta,
                     derivablePath: .default
                 )

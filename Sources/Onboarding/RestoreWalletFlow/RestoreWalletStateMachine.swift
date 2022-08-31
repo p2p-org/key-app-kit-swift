@@ -7,7 +7,7 @@ import SolanaSwift
 import TweetNacl
 
 public enum RestoreWalletFlowResult: Codable, Equatable {
-    case successful(OnboardingWallet)
+    case successful(RestoreWalletData)
     case needHelp
     case breakProcess
 }
@@ -42,16 +42,14 @@ public enum RestoreWalletState: Codable, State, Equatable {
     public static var initialState: RestoreWalletState = .restore
 
     case restore
-
     case restoreICloud(RestoreICloudState)
     case restoreSeed(RestoreSeedState)
     case restoreSocial(RestoreSocialState, option: RestoreSocialContainer.Option)
     case restoreCustom(RestoreCustomState)
 
     case securitySetup(
-        solPrivateKey: String,
+        wallet: OnboardingWallet,
         ethPublicKey: String,
-        deviceShare: String,
         SecuritySetupState
     )
 
@@ -150,8 +148,8 @@ public enum RestoreWalletState: Codable, State, Equatable {
 
                 if case let .finish(result) = nextInnerState {
                     switch result {
-                    case let .successful(solPrivateKey, ethPublicKey):
-                        return .securitySetup(solPrivateKey: solPrivateKey, ethPublicKey: ethPublicKey, deviceShare: "", SecuritySetupState.initialState)
+                    case let .successful(seedPhrase, ethPublicKey):
+                        return .securitySetup(wallet: OnboardingWallet(seedPhrase: seedPhrase), ethPublicKey: ethPublicKey, SecuritySetupState.initialState)
                     case let .requireSocialCustom(result):
                         return .restoreSocial(.social(result: result), option: .second(result: result))
                     case let .requireSocialDevice(socialProvider):
@@ -187,23 +185,19 @@ public enum RestoreWalletState: Codable, State, Equatable {
         case let .restoreSeed(innerState):
             switch event {
             case let .restoreSeed(event):
-                let nextInnerState = try await innerState <- (
-                    event,
-                    .init()
-                )
+                let nextInnerState = try await innerState <- (event, .init())
 
                 if case let .finish(result) = nextInnerState {
                     switch result {
-                    case let .successful(phrase, path):
+                    case let .successful(phrase, derivablePath):
                         let account = try await Account(
                             phrase: phrase,
                             network: .mainnetBeta,
-                            derivablePath: path
+                            derivablePath: derivablePath
                         )
                         return .securitySetup(
-                            solPrivateKey: phrase.joined(separator: " "),
+                            wallet: OnboardingWallet(seedPhrase: phrase.joined(separator: " "), derivablePath: derivablePath),
                             ethPublicKey: "",
-                            deviceShare: "",
                             SecuritySetupState.initialState
                         )
                     case .back:
@@ -220,18 +214,14 @@ public enum RestoreWalletState: Codable, State, Equatable {
         case let .restoreICloud(innerState):
             switch event {
             case let .restoreICloud(event):
-                let nextInnerState = try await innerState <- (
-                    event,
-                    .init(icloudAccountProvider: provider.icloudAccountProvider)
-                )
+                let nextInnerState = try await innerState <- (event, .init(icloudAccountProvider: provider.icloudAccountProvider))
 
                 if case let .finish(result) = nextInnerState {
                     switch result {
                     case let .successful(account):
                         return .securitySetup(
-                            solPrivateKey: account.phrase.joined(separator: " "),
+                            wallet: OnboardingWallet(seedPhrase: account.phrase.joined(separator: " ")),
                             ethPublicKey: "",
-                            deviceShare: "",
                             SecuritySetupState.initialState
                         )
                     case .back:
@@ -246,29 +236,18 @@ public enum RestoreWalletState: Codable, State, Equatable {
                 throw StateMachineError.invalidEvent
             }
 
-        case let .securitySetup(solPrivateKey, ethPublicKey, deviceShare, innerState):
+        case let .securitySetup(wallet, ethPublicKey, innerState):
             switch event {
             case let .securitySetup(event):
                 let nextInnerState = try await innerState <- (event, .init())
 
                 if case let .finish(result) = nextInnerState {
                     switch result {
-                    case let .success(pincode, isBiometryEnabled):
-                        return .finished(.successful(
-                            OnboardingWallet(
-                                solPrivateKey: solPrivateKey,
-                                deviceShare: deviceShare,
-                                pincode: pincode,
-                                isBiometryEnabled: isBiometryEnabled
-                            )))
+                    case let .success(securityData):
+                        return .finished(.successful(RestoreWalletData(wallet: wallet, security: securityData)))
                     }
                 } else {
-                    return .securitySetup(
-                        solPrivateKey: solPrivateKey,
-                        ethPublicKey: ethPublicKey,
-                        deviceShare: deviceShare,
-                        nextInnerState
-                    )
+                    return .securitySetup(wallet: wallet, ethPublicKey: ethPublicKey, nextInnerState)
                 }
             default:
                 throw StateMachineError.invalidEvent
@@ -281,8 +260,8 @@ public enum RestoreWalletState: Codable, State, Equatable {
 
     private func handleRestoreSocial(provider: RestoreWalletFlowContainer, result: RestoreSocialResult) async throws -> RestoreWalletState {
         switch result {
-        case let .successful(solPrivateKey, ethPublicKey):
-            return .securitySetup(solPrivateKey: solPrivateKey, ethPublicKey: ethPublicKey, deviceShare: "", SecuritySetupState.initialState)
+        case let .successful(seedPhrase, ethPublicKey):
+            return .securitySetup(wallet: OnboardingWallet(seedPhrase: seedPhrase), ethPublicKey: ethPublicKey, SecuritySetupState.initialState)
         case .start:
             return .finished(.breakProcess)
         case let .requireCustom(data):
@@ -332,7 +311,7 @@ extension RestoreWalletState: Step, Continuable {
             return restoreCustomState.continuable
         case let .restoreICloud(restoreICloudState):
             return restoreICloudState.continuable
-        case let .securitySetup(_, _, _, securitySetupState):
+        case let .securitySetup(_, _, securitySetupState):
             return securitySetupState.continuable
         case .finished:
             return false
@@ -351,7 +330,7 @@ extension RestoreWalletState: Step, Continuable {
             return 5 * 100 + restoreSocialState.step
         case let .restoreCustom(restoreCustomState):
             return 6 * 100 + restoreCustomState.step
-        case let .securitySetup(_, _, _, securitySetupState):
+        case let .securitySetup(_, _, securitySetupState):
             return 7 * 100 + securitySetupState.step
         case .finished:
             return 8 * 100

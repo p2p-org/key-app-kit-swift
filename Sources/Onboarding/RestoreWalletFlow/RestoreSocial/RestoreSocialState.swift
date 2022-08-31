@@ -6,7 +6,7 @@ import Foundation
 
 public enum RestoreSocialResult: Codable, Equatable {
     case successful(
-        solPrivateKey: String,
+        seedPhrase: String,
         ethPublicKey: String
     )
     case start
@@ -124,7 +124,7 @@ private extension RestoreSocialState {
                 tokenID: tokenID,
                 deviceShare: deviceShare
             )
-            return .finish(.successful(solPrivateKey: result.privateSOL, ethPublicKey: result.reconstructedETH))
+            return .finish(.successful(seedPhrase: result.privateSOL, ethPublicKey: result.reconstructedETH))
         }
         catch let error as TKeyFacadeError {
             switch error.code {
@@ -150,7 +150,7 @@ private extension RestoreSocialState {
                 tokenID: TokenID(value: tokenID, provider: socialProvider.rawValue),
                 customShare: result.encryptedShare
             )
-            return .finish(.successful(solPrivateKey: result.privateSOL, ethPublicKey: result.reconstructedETH))
+            return .finish(.successful(seedPhrase: result.privateSOL, ethPublicKey: result.reconstructedETH))
         }
         catch let error as TKeyFacadeError {
             return .notFoundCustom(result: result, email: email)
