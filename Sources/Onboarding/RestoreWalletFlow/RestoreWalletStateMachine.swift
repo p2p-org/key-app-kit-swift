@@ -173,6 +173,8 @@ public enum RestoreWalletState: Codable, State, Equatable {
                         } else {
                             return .restoreSocial(nextInnerState, option: .second(result: result))
                         }
+                    case .breakProcess:
+                        return .restore
                     }
                 } else {
                     return .restoreCustom(nextInnerState)

@@ -18,6 +18,7 @@ public enum RestoreCustomResult: Codable, Equatable {
     case expiredSocialTryAgain(result: RestoreWalletResult, provider: SocialProvider, email: String)
     case start
     case help
+    case breakProcess
 }
 
 public enum RestoreCustomEvent {
@@ -67,6 +68,9 @@ public enum RestoreCustomState: Codable, State, Equatable {
             case .enterPhoneNumber(let phone):
                 let solPrivateKey = try NaclSign.KeyPair.keyPair().secretKey
                 return try await sendOTP(phone: phone, solPrivateKey: solPrivateKey, social: social, attempt: .init(0), provider: provider)
+
+            case .back:
+                return .finish(result: .breakProcess)
 
             default:
                 throw StateMachineError.invalidEvent
