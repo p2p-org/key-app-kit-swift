@@ -7,7 +7,7 @@ import SolanaSwift
 import TweetNacl
 
 public enum RestoreWalletFlowResult: Codable, Equatable {
-    case successful(OnboardingWallet)
+    case successful(RestoreWalletData)
     case needHelp
     case breakProcess
 }
@@ -19,7 +19,6 @@ public struct RestoreWalletFlowContainer {
     let deviceShare: String?
     let authService: SocialAuthService
     let apiGatewayClient: APIGatewayClient
-    let securityStatusProvider: SecurityStatusProvider
     let icloudAccountProvider: ICloudAccountProvider
 
     public init(
@@ -27,14 +26,12 @@ public struct RestoreWalletFlowContainer {
         deviceShare: String?,
         authService: SocialAuthService,
         apiGatewayClient: APIGatewayClient,
-        securityStatusProvider: SecurityStatusProvider,
         icloudAccountProvider: ICloudAccountProvider
     ) {
         self.tKeyFacade = tKeyFacade
         self.deviceShare = deviceShare
         self.authService = authService
         self.apiGatewayClient = apiGatewayClient
-        self.securityStatusProvider = securityStatusProvider
         self.icloudAccountProvider = icloudAccountProvider
     }
 }
@@ -44,28 +41,15 @@ public enum RestoreWalletState: Codable, State, Equatable {
     public typealias Provider = RestoreWalletFlowContainer
     public static var initialState: RestoreWalletState = .restore
 
-    public static func createInitialState(provider _: Provider) async -> RestoreWalletState {
-        RestoreWalletState.initialState = .restore
-        return RestoreWalletState.initialState
-    }
-
     case restore
-    case restoreNotFoundDevice(tokenID: TokenID, email: String?)
-    case restoreNotFoundCustom(result: RestoreWalletResult, email: String)
-    
-    case signInKeychain(accounts: [ICloudAccount])
-    case signInSeed
-
+    case restoreICloud(RestoreICloudState)
+    case restoreSeed(RestoreSeedState)
     case restoreSocial(RestoreSocialState, option: RestoreSocialContainer.Option)
     case restoreCustom(RestoreCustomState)
 
-    case noMatch
-
     case securitySetup(
-        email: String,
-        solPrivateKey: String,
+        wallet: OnboardingWallet,
         ethPublicKey: String,
-        deviceShare: String,
         SecuritySetupState
     )
 
@@ -80,26 +64,35 @@ public enum RestoreWalletState: Codable, State, Equatable {
         case .restore:
 
             switch event {
-            case .signInWithKeychain:
-                let rawAccounts = try await provider.icloudAccountProvider.getAll()
-                var accounts: [ICloudAccount] = []
-                for rawAccount in rawAccounts {
-                    accounts
-                        .append(try await .init(
-                            name: rawAccount.name,
-                            phrase: rawAccount.phrase,
-                            derivablePath: rawAccount.derivablePath
-                        ))
-                }
-                return .signInKeychain(accounts: accounts)
+            case let .restoreICloud(event):
+                switch event {
+                case .signIn:
+                    let nextInnerState = try await RestoreICloudState.signIn <- (
+                        RestoreICloudEvent.signIn,
+                        .init(icloudAccountProvider: provider.icloudAccountProvider)
+                    )
 
-            case .signInWithSeed:
-                return .signInSeed
+                    if case let .chooseWallet(accounts) = nextInnerState {
+                        return .restoreICloud(.chooseWallet(accounts: accounts))
+                    } else {
+                        return .restoreICloud(.signIn)
+                    }
+                default:
+                    throw StateMachineError.invalidEvent
+                }
+
+            case let .restoreSeed(event):
+                switch event {
+                case .signInWithSeed:
+                    return .restoreSeed(.signInSeed)
+                default:
+                    throw StateMachineError.invalidEvent
+                }
 
             case let .restoreCustom(event):
                 switch event {
                 case .enterPhone:
-                    return .restoreCustom(.enterPhone(tokenID: nil))
+                    return .restoreCustom(.enterPhone(phone: nil, social: nil))
                 default:
                     throw StateMachineError.invalidEvent
                 }
@@ -115,62 +108,6 @@ public enum RestoreWalletState: Codable, State, Equatable {
 
             case .back:
                 return .finished(.breakProcess)
-
-            case .start:
-                return .finished(.breakProcess)
-
-            default:
-                throw StateMachineError.invalidEvent
-            }
-
-        case let .restoreNotFoundDevice(tokenID, email):
-            switch event {
-
-            case let .restoreCustom(event):
-                switch event {
-                case .enterPhone:
-                    return .restoreCustom(.enterPhone(tokenID: tokenID))
-                default:
-                    throw StateMachineError.invalidEvent
-                }
-
-            case let .restoreSocial(event):
-                switch event {
-                case let .signInDevice(socialProvider):
-                    return try await handleSignInDeviceEvent(provider: provider, socialProvider: socialProvider, event: event)
-
-                default:
-                    throw StateMachineError.invalidEvent
-                }
-
-            case .start:
-                return .finished(.breakProcess)
-
-            default:
-                throw StateMachineError.invalidEvent
-            }
-            
-        case let .restoreNotFoundCustom(result, email):
-            switch event {
-
-            case let .restoreSocial(event):
-                let innerState = RestoreSocialState.social(result: result)
-                switch event {
-                case let .signInCustom(socialProvider):
-                    let nextInnerState = try await innerState <- (
-                        event,
-                        .init(option: .second(result: result), tKeyFacade: provider.tKeyFacade, authService: provider.authService)
-                    )
-
-                    if case let .finish(result) = nextInnerState {
-                        return try await handleRestoreSocial(provider: provider, result: result)
-                    } else {
-                        return .restoreNotFoundCustom(result: result, email: email)
-                    }
-
-                default:
-                    throw StateMachineError.invalidEvent
-                }
 
             case .start:
                 return .finished(.breakProcess)
@@ -201,18 +138,41 @@ public enum RestoreWalletState: Codable, State, Equatable {
             case let .restoreCustom(event):
                 let nextInnerState = try await innerState <- (
                     event,
-                    .init(tKeyFacade: provider.tKeyFacade, apiGatewayClient: provider.apiGatewayClient, deviceShare: provider.deviceShare)
+                    .init(
+                        tKeyFacade: provider.tKeyFacade,
+                        apiGatewayClient: provider.apiGatewayClient,
+                        authService: provider.authService,
+                        deviceShare: provider.deviceShare
+                    )
                 )
 
                 if case let .finish(result) = nextInnerState {
                     switch result {
-                    case let .successful(solPrivateKey, ethPublicKey):
-                        let initial = await SecuritySetupState.createInitialState(provider: provider.securityStatusProvider)
-                        return .securitySetup(email: "", solPrivateKey: solPrivateKey, ethPublicKey: ethPublicKey, deviceShare: "", initial)
-                    case let .requireSocial(result):
+                    case let .successful(seedPhrase, ethPublicKey):
+                        return .securitySetup(wallet: OnboardingWallet(seedPhrase: seedPhrase), ethPublicKey: ethPublicKey, SecuritySetupState.initialState)
+                    case let .requireSocialCustom(result):
                         return .restoreSocial(.social(result: result), option: .second(result: result))
-                    case .noMatch:
-                        return .noMatch
+                    case let .requireSocialDevice(socialProvider):
+                        return try await handleSignInDeviceEvent(provider: provider, socialProvider: socialProvider, event: .signInDevice(socialProvider: socialProvider))
+                    case .help:
+                        return .finished(.needHelp)
+                    case .start:
+                        return .finished(.breakProcess)
+                    case let .expiredSocialTryAgain(result, socialProvider, email):
+                        let event = RestoreSocialEvent.signInCustom(socialProvider: socialProvider)
+                        let innerState = RestoreSocialState.expiredSocialTryAgain(result: result, provider: socialProvider, email: email)
+                        let nextInnerState = try await innerState <- (
+                            event,
+                            .init(option: .second(result: result), tKeyFacade: provider.tKeyFacade, authService: provider.authService)
+                        )
+
+                        if case let .finish(result) = nextInnerState {
+                            return try await handleRestoreSocial(provider: provider, result: result)
+                        } else {
+                            return .restoreSocial(nextInnerState, option: .second(result: result))
+                        }
+                    case .breakProcess:
+                        return .restore
                     }
                 } else {
                     return .restoreCustom(nextInnerState)
@@ -222,82 +182,90 @@ public enum RestoreWalletState: Codable, State, Equatable {
                 throw StateMachineError.invalidEvent
             }
 
-        case let .securitySetup(email, solPrivateKey, ethPublicKey, deviceShare, innerState):
+        case let .restoreSeed(innerState):
             switch event {
-            case let .securitySetup(event):
-                let nextInnerState = try await innerState <- (event, provider.securityStatusProvider)
+            case let .restoreSeed(event):
+                let nextInnerState = try await innerState <- (event, .init())
 
                 if case let .finish(result) = nextInnerState {
                     switch result {
-                    case let .success(pincode, withBiometric):
-                        return .finished(.successful(OnboardingWallet(
-                            solPrivateKey: solPrivateKey,
-                            deviceShare: deviceShare,
-                            pincode: pincode ?? "000000",
-                            useBiometric: withBiometric)
-                        ))
+                    case let .successful(phrase, derivablePath):
+                        let account = try await Account(
+                            phrase: phrase,
+                            network: .mainnetBeta,
+                            derivablePath: derivablePath
+                        )
+                        return .securitySetup(
+                            wallet: OnboardingWallet(seedPhrase: phrase.joined(separator: " "), derivablePath: derivablePath),
+                            ethPublicKey: "",
+                            SecuritySetupState.initialState
+                        )
+                    case .back:
+                        return .restore
                     }
                 } else {
-                    return .securitySetup(
-                        email: email,
-                        solPrivateKey: solPrivateKey,
-                        ethPublicKey: ethPublicKey,
-                        deviceShare: deviceShare,
-                        nextInnerState
-                    )
+                    return .restoreSeed(nextInnerState)
+                }
+
+            default:
+                throw StateMachineError.invalidEvent
+            }
+
+        case let .restoreICloud(innerState):
+            switch event {
+            case let .restoreICloud(event):
+                let nextInnerState = try await innerState <- (event, .init(icloudAccountProvider: provider.icloudAccountProvider))
+
+                if case let .finish(result) = nextInnerState {
+                    switch result {
+                    case let .successful(account):
+                        return .securitySetup(
+                            wallet: OnboardingWallet(seedPhrase: account.phrase.joined(separator: " ")),
+                            ethPublicKey: "",
+                            SecuritySetupState.initialState
+                        )
+                    case .back:
+                        return .restore
+                    }
+                }
+                else {
+                    return .restoreICloud(nextInnerState)
+                }
+
+            default:
+                throw StateMachineError.invalidEvent
+            }
+
+        case let .securitySetup(wallet, ethPublicKey, innerState):
+            switch event {
+            case let .securitySetup(event):
+                let nextInnerState = try await innerState <- (event, .init())
+
+                if case let .finish(result) = nextInnerState {
+                    switch result {
+                    case let .success(securityData):
+                        return .finished(.successful(RestoreWalletData(wallet: wallet, security: securityData)))
+                    }
+                } else {
+                    return .securitySetup(wallet: wallet, ethPublicKey: ethPublicKey, nextInnerState)
                 }
             default:
                 throw StateMachineError.invalidEvent
             }
 
-        case .signInKeychain:
-            switch event {
-            case let .restoreICloudAccount(account):
-                let account = try await Account(
-                    phrase: account.phrase.components(separatedBy: " "),
-                    network: .mainnetBeta,
-                    derivablePath: account.derivablePath
-                )
-                return .securitySetup(
-                    email: "",
-                    solPrivateKey: Base58.encode(account.secretKey),
-                    ethPublicKey: "",
-                    deviceShare: "",
-                    await SecuritySetupState.createInitialState(provider: provider.securityStatusProvider)
-                )
-            case let .back:
-                return .restore
-            default:
-                throw StateMachineError.invalidEvent
-            }
-
-        case .signInSeed:
-            throw StateMachineError.invalidEvent
-
-        case .noMatch:
-            switch event {
-            case .start:
-                return .finished(.breakProcess)
-            case .help:
-                return .finished(.needHelp)
-            default:
-                throw StateMachineError.invalidEvent
-            }
-
-        case let .finished(result):
+        case .finished:
             throw StateMachineError.invalidEvent
         }
     }
 
     private func handleRestoreSocial(provider: RestoreWalletFlowContainer, result: RestoreSocialResult) async throws -> RestoreWalletState {
         switch result {
-        case let .successful(solPrivateKey, ethPublicKey):
-            let initial = await SecuritySetupState.createInitialState(provider: provider.securityStatusProvider)
-            return .securitySetup(email: "", solPrivateKey: solPrivateKey, ethPublicKey: ethPublicKey, deviceShare: "", initial)
-        case let .notFoundDevice(tokenID, email):
-            return .restoreNotFoundDevice(tokenID: tokenID, email: email)
-        case let .notFoundCustom(result, email):
-            return .restoreNotFoundCustom(result: result, email: email)
+        case let .successful(seedPhrase, ethPublicKey):
+            return .securitySetup(wallet: OnboardingWallet(seedPhrase: seedPhrase), ethPublicKey: ethPublicKey, SecuritySetupState.initialState)
+        case .start:
+            return .finished(.breakProcess)
+        case let .requireCustom(data):
+            return .restoreCustom(.enterPhone(phone: nil, social: data))
         }
     }
 
@@ -323,15 +291,10 @@ public enum RestoreWalletEvent {
     case start
     case help
 
-    // Icloud flow
-    case signInWithKeychain
-    case restoreICloudAccount(account: ICloudAccount)
-
-    case signInWithSeed
-
     case restoreSocial(RestoreSocialEvent)
     case restoreCustom(RestoreCustomEvent)
-
+    case restoreSeed(RestoreSeedEvent)
+    case restoreICloud(RestoreICloudEvent)
     case securitySetup(SecuritySetupEvent)
 }
 
@@ -340,23 +303,17 @@ extension RestoreWalletState: Step, Continuable {
         switch self {
         case .restore:
             return false
-        case .restoreNotFoundDevice:
-            return false
-        case .restoreNotFoundCustom:
-            return false
-        case .signInKeychain:
-            return false
-        case .signInSeed:
-            return false
+        case let .restoreSeed(restoreSeedState):
+            return restoreSeedState.continuable
         case let .restoreSocial(restoreSocialState, _):
             return restoreSocialState.continuable
         case let .restoreCustom(restoreCustomState):
             return restoreCustomState.continuable
-        case let .securitySetup(_, _, _, _, securitySetupState):
+        case let .restoreICloud(restoreICloudState):
+            return restoreICloudState.continuable
+        case let .securitySetup(_, _, securitySetupState):
             return securitySetupState.continuable
         case .finished:
-            return false
-        case .noMatch:
             return false
         }
     }
@@ -365,25 +322,18 @@ extension RestoreWalletState: Step, Continuable {
         switch self {
         case .restore:
             return 1 * 100
-        case .restoreNotFoundDevice:
-            return 2 * 100
-        case .restoreNotFoundCustom:
-            return 3 * 100
-        case .signInKeychain:
-            return 4 * 100
-        case .signInSeed:
-            return 5 * 100
+        case let .restoreICloud(restoreICloudState):
+            return 3 * 100 + restoreICloudState.step
+        case let .restoreSeed(restoreSeedState):
+            return 4 * 100 + restoreSeedState.step
         case let .restoreSocial(restoreSocialState, _):
-            return 6 * 100 + restoreSocialState.step
+            return 5 * 100 + restoreSocialState.step
         case let .restoreCustom(restoreCustomState):
-            return 7 * 100 + restoreCustomState.step
-        case let .securitySetup(_, _, _, _, securitySetupState):
-            return 8 * 100 + securitySetupState.step
-        case .noMatch:
-            return 9 * 100
+            return 6 * 100 + restoreCustomState.step
+        case let .securitySetup(_, _, securitySetupState):
+            return 7 * 100 + securitySetupState.step
         case .finished:
-            return 10 * 100
+            return 8 * 100
         }
     }
 }
-

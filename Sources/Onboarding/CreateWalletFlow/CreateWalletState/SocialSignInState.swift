@@ -7,7 +7,7 @@ import Foundation
 public enum SocialSignInResult: Codable, Equatable {
     case successful(
         email: String,
-        solPrivateKey: String,
+        seedPhrase: String,
         ethPublicKey: String,
         deviceShare: String,
         customShare: String,
@@ -39,11 +39,7 @@ public enum SocialSignInState: Codable, State, Equatable {
     case finish(SocialSignInResult)
     
     public static var initialState: SocialSignInState = .socialSelection
-    
-    public static func createInitialState(provider: SocialSignInContainer) async -> SocialSignInState {
-        SocialSignInState.initialState
-    }
-    
+
     public func accept(
         currentState: SocialSignInState,
         event: SocialSignInEvent,
@@ -80,7 +76,7 @@ public enum SocialSignInState: Codable, State, Equatable {
                 return .finish(
                     .successful(
                         email: email,
-                        solPrivateKey: result.privateSOL,
+                        seedPhrase: result.privateSOL,
                         ethPublicKey: result.reconstructedETH,
                         deviceShare: result.deviceShare,
                         customShare: result.customShare,
@@ -119,7 +115,7 @@ public enum SocialSignInState: Codable, State, Equatable {
                 return .finish(
                     .successful(
                         email: email,
-                        solPrivateKey: result.privateSOL,
+                        seedPhrase: result.privateSOL,
                         ethPublicKey: result.reconstructedETH,
                         deviceShare: result.deviceShare,
                         customShare: result.customShare,

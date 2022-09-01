@@ -2,7 +2,8 @@
 // Use of this source code is governed by a MIT-style license that can be
 // found in the LICENSE file.
 
-public protocol SocialAuthService {
-    func auth(type: SocialProvider) async throws -> (tokenID: String, email: String)
-    func isExpired(token: String) -> Bool
+public struct CreateWalletData: Codable, Equatable {
+    public let deviceShare: String
+    public let wallet: OnboardingWallet
+    public let security: SecurityData
 }

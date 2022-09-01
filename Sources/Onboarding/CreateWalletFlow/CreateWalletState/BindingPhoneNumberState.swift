@@ -13,11 +13,6 @@ public enum BindingPhoneNumberResult: Codable {
     case breakProcess
 }
 
-public enum BindingPhoneBlockReason: Codable {
-    case blockEnterPhoneNumber
-    case blockEnterOTP
-}
-
 public enum BindingPhoneNumberEvent {
     case enterPhoneNumber(phoneNumber: String, channel: BindingPhoneNumberChannel)
     case enterOTP(opt: String)
@@ -28,30 +23,34 @@ public enum BindingPhoneNumberEvent {
 }
 
 public struct BindingPhoneNumberData: Codable, Equatable {
-    let solanaPublicKey: String
+    let seedPhrase: String
     let ethereumId: String
     let customShare: String
     let payload: String
+
+    var sendingThrottle: Throttle = .init(maxAttempt: 5, timeInterval: 60 * 10)
 }
 
 public enum BindingPhoneNumberState: Codable, State, Equatable {
     public typealias Event = BindingPhoneNumberEvent
     public typealias Provider = APIGatewayClient
 
-    case enterPhoneNumber(initialPhoneNumber: String?, data: BindingPhoneNumberData)
-    case enterOTP(channel: BindingPhoneNumberChannel, phoneNumber: String, data: BindingPhoneNumberData)
-    case block(until: Date, reason: BindingPhoneBlockReason, phoneNumber: String, data: BindingPhoneNumberData)
+    case enterPhoneNumber(initialPhoneNumber: String?, didSend: Bool, data: BindingPhoneNumberData)
+    case enterOTP(
+        resendAttempt: Wrapper<Int>,
+        channel: BindingPhoneNumberChannel,
+        phoneNumber: String,
+        data: BindingPhoneNumberData
+    )
+    case block(until: Date, reason: PhoneFlowBlockReason, phoneNumber: String, data: BindingPhoneNumberData)
     case broken(code: Int)
     case finish(_ result: BindingPhoneNumberResult)
 
     public static var initialState: BindingPhoneNumberState = .enterPhoneNumber(
         initialPhoneNumber: nil,
-        data: .init(solanaPublicKey: "", ethereumId: "", customShare: "", payload: "")
+        didSend: false,
+        data: .init(seedPhrase: "", ethereumId: "", customShare: "", payload: "")
     )
-
-    public static func createInitialState(provider _: Provider) async -> BindingPhoneNumberState {
-        BindingPhoneNumberState.initialState
-    }
 
     public func accept(
         currentState: BindingPhoneNumberState,
@@ -59,11 +58,30 @@ public enum BindingPhoneNumberState: Codable, State, Equatable {
         provider: APIGatewayClient
     ) async throws -> BindingPhoneNumberState {
         switch currentState {
-        case let .enterPhoneNumber(_, data):
+        case let .enterPhoneNumber(initialPhoneNumber, didSend, data):
             switch event {
             case let .enterPhoneNumber(phoneNumber, channel):
+                if initialPhoneNumber == phoneNumber, didSend {
+                    return .enterOTP(
+                        resendAttempt: .init(0),
+                        channel: .sms,
+                        phoneNumber: phoneNumber,
+                        data: data
+                    )
+                }
+
+                if !data.sendingThrottle.process() {
+                    data.sendingThrottle.reset()
+                    return .block(
+                        until: Date() + blockTime,
+                        reason: .blockEnterPhoneNumber,
+                        phoneNumber: phoneNumber,
+                        data: data
+                    )
+                }
+
                 let account = try await Account(
-                    phrase: data.solanaPublicKey.components(separatedBy: " "),
+                    phrase: data.seedPhrase.components(separatedBy: " "),
                     network: .mainnetBeta,
                     derivablePath: .default
                 )
@@ -76,6 +94,13 @@ public enum BindingPhoneNumberState: Codable, State, Equatable {
                         channel: channel,
                         timestampDevice: Date()
                     )
+
+                    return .enterOTP(
+                        resendAttempt: Wrapper(0),
+                        channel: channel,
+                        phoneNumber: phoneNumber,
+                        data: data
+                    )
                 } catch let error as APIGatewayError {
                     switch error._code {
                     // case -32056:
@@ -84,7 +109,7 @@ public enum BindingPhoneNumberState: Codable, State, Equatable {
                         return .broken(code: error._code)
                     case -32053:
                         return .block(
-                            until: Date() + (60 * 10),
+                            until: Date() + blockTime,
                             reason: .blockEnterPhoneNumber,
                             phoneNumber: phoneNumber,
                             data: data
@@ -93,20 +118,14 @@ public enum BindingPhoneNumberState: Codable, State, Equatable {
                         throw error
                     }
                 }
-
-                return .enterOTP(
-                    channel: channel,
-                    phoneNumber: phoneNumber,
-                    data: data
-                )
             default:
                 throw StateMachineError.invalidEvent
             }
-        case let .enterOTP(channel, phoneNumber, data):
+        case .enterOTP(var resendAttempt, let channel, let phoneNumber, let data):
             switch event {
             case let .enterOTP(opt):
                 let account = try await Account(
-                    phrase: data.solanaPublicKey.components(separatedBy: " "),
+                    phrase: data.seedPhrase.components(separatedBy: " "),
                     network: .mainnetBeta,
                     derivablePath: .default
                 )
@@ -129,7 +148,7 @@ public enum BindingPhoneNumberState: Codable, State, Equatable {
                         return .broken(code: error._code)
                     case -32053:
                         return .block(
-                            until: Date() + (60 * 10),
+                            until: Date() + blockTime,
                             reason: .blockEnterOTP,
                             phoneNumber: phoneNumber,
                             data: data
@@ -141,8 +160,19 @@ public enum BindingPhoneNumberState: Codable, State, Equatable {
 
                 return .finish(.success)
             case .resendOTP:
+                if resendAttempt.value >= 4 {
+                    return .block(
+                        until: Date() + blockTime,
+                        reason: .blockEnterPhoneNumber,
+                        phoneNumber: phoneNumber,
+                        data: data
+                    )
+                }
+
+                resendAttempt.value = resendAttempt.value + 1
+
                 let account = try await Account(
-                    phrase: data.solanaPublicKey.components(separatedBy: " "),
+                    phrase: data.seedPhrase.components(separatedBy: " "),
                     network: .mainnetBeta,
                     derivablePath: .default
                 )
@@ -159,6 +189,7 @@ public enum BindingPhoneNumberState: Codable, State, Equatable {
             case .back:
                 return .enterPhoneNumber(
                     initialPhoneNumber: phoneNumber,
+                    didSend: true,
                     data: data
                 )
             default:
@@ -181,11 +212,13 @@ public enum BindingPhoneNumberState: Codable, State, Equatable {
                 case .blockEnterPhoneNumber:
                     return .enterPhoneNumber(
                         initialPhoneNumber: phoneNumber,
+                        didSend: false,
                         data: data
                     )
                 case .blockEnterOTP:
                     return .enterPhoneNumber(
                         initialPhoneNumber: phoneNumber,
+                        didSend: false,
                         data: data
                     )
                 }
@@ -198,7 +231,12 @@ public enum BindingPhoneNumberState: Codable, State, Equatable {
 }
 
 extension BindingPhoneNumberState: Step, Continuable {
-    public var continuable: Bool { true }
+    public var continuable: Bool {
+        switch self {
+        case .broken: return false
+        default: return true
+        }
+    }
 
     public var step: Float {
         switch self {

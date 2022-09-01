@@ -8,10 +8,9 @@ import Foundation
 public protocol State: Equatable {
     associatedtype Event
     associatedtype Provider
-    
+
     static var initialState: Self { get }
-    static func createInitialState(provider: Provider) async -> Self
-    
+
     func accept(currentState: Self, event: Event, provider: Provider) async throws -> Self
 }
 
