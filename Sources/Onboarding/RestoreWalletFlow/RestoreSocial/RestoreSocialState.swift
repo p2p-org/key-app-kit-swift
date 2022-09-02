@@ -120,6 +120,7 @@ private extension RestoreSocialState {
         let (value, email) = try await provider.authService.auth(type: socialProvider)
         let tokenID = TokenID(value: value, provider: socialProvider.rawValue)
         do {
+            try await provider.tKeyFacade.initialize()
             let result = try await provider.tKeyFacade.signIn(
                 tokenID: tokenID,
                 deviceShare: deviceShare
@@ -146,6 +147,7 @@ private extension RestoreSocialState {
     func handleSignInCustom(result: RestoreWalletResult, socialProvider: SocialProvider, provider: RestoreSocialContainer) async throws -> RestoreSocialState {
         let (tokenID, email) = try await provider.authService.auth(type: socialProvider)
         do {
+            try await provider.tKeyFacade.initialize()
             let result = try await provider.tKeyFacade.signIn(
                 tokenID: TokenID(value: tokenID, provider: socialProvider.rawValue),
                 customShare: result.encryptedShare

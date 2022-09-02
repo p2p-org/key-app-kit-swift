@@ -11,7 +11,7 @@ public struct TKeyJSFacadeConfiguration {
     let torusEndpoint: String
     let torusNetwork: String
     let torusVerifierMapping: [String: String]
-    
+
     public init(
         metadataEndpoint: String,
         torusEndpoint: String,
@@ -82,7 +82,7 @@ public class TKeyJSFacade: TKeyFacade {
                 [
                     "metadataEndpoint": config.metadataEndpoint,
                     "torusEndpoint": config.torusEndpoint,
-                    "torusNetwork": config.torusNetwork
+                    "torusNetwork": config.torusNetwork,
                 ].merging(configuration, uniquingKeysWith: { $1 }),
             ]
         )
@@ -126,7 +126,12 @@ public class TKeyJSFacade: TKeyFacade {
 
     public func signIn(tokenID: TokenID, deviceShare: String) async throws -> SignInResult {
         do {
-            let facade = try await getFacade(configuration: [:])
+            let facade = try await getFacade(configuration: [
+                "type": "signin",
+                "torusLoginType": tokenID.provider,
+                "torusVerifier": config.torusVerifierMapping[tokenID.provider],
+
+            ])
             let value = try await facade.invokeAsyncMethod(
                 "triggerSignInNoCustom",
                 withArguments: [tokenID.value, deviceShare]
@@ -134,9 +139,9 @@ public class TKeyJSFacade: TKeyFacade {
             guard
                 let result = try await value.toDictionary(),
                 let privateSOL = result["privateSOL"] as? String,
-                let reconstructedETH = result["reconstructedETH"] as? String
+                let reconstructedETH = result["ethAddress"] as? String
             else { throw Error.invalidReturnValue }
-            
+
             return .init(
                 privateSOL: privateSOL,
                 reconstructedETH: reconstructedETH
@@ -151,7 +156,11 @@ public class TKeyJSFacade: TKeyFacade {
 
     public func signIn(tokenID: TokenID, customShare: String) async throws -> SignInResult {
         do {
-            let facade = try await getFacade(configuration: [:])
+            let facade = try await getFacade(configuration: [
+                "type": "signin",
+                "torusLoginType": tokenID.provider,
+                "torusVerifier": config.torusVerifierMapping[tokenID.provider],
+            ])
             let value = try await facade.invokeAsyncMethod(
                 "triggerSignInNoDevice",
                 withArguments: [tokenID.value, customShare]
@@ -161,13 +170,12 @@ public class TKeyJSFacade: TKeyFacade {
                 let privateSOL = result["privateSOL"] as? String,
                 let reconstructedETH = result["reconstructedETH"] as? String
             else { throw Error.invalidReturnValue }
-            
+
             return .init(
                 privateSOL: privateSOL,
                 reconstructedETH: reconstructedETH
             )
-        }
-        catch let JSBError.jsError(error) {
+        } catch let JSBError.jsError(error) {
             let parsedError = parseFacadeJSError(error: error)
             throw parsedError ?? JSBError.jsError(error)
         } catch {
@@ -177,23 +185,26 @@ public class TKeyJSFacade: TKeyFacade {
 
     public func signIn(deviceShare: String, customShare: String) async throws -> SignInResult {
         do {
-            let facade = try await getFacade(configuration: [:])
+            let facade = try await getFacade(configuration: [
+                "type": "signin",
+                "torusLoginType": "google",
+                "torusVerifier": config.torusVerifierMapping["google"],
+            ])
             let value = try await facade.invokeAsyncMethod(
                 "triggerSignInNoTorus",
-                withArguments: [deviceShare, customShare, ]
+                withArguments: [deviceShare, customShare]
             )
             guard
                 let result = try await value.toDictionary(),
                 let privateSOL = result["privateSOL"] as? String,
                 let reconstructedETH = result["reconstructedETH"] as? String
             else { throw Error.invalidReturnValue }
-            
+
             return .init(
                 privateSOL: privateSOL,
                 reconstructedETH: reconstructedETH
             )
-        }
-        catch let JSBError.jsError(error) {
+        } catch let JSBError.jsError(error) {
             let parsedError = parseFacadeJSError(error: error)
             throw parsedError ?? JSBError.jsError(error)
         } catch {
