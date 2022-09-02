@@ -189,7 +189,7 @@ public class TKeyJSFacade: TKeyFacade {
             ])
             let value = try await facade.invokeAsyncMethod(
                 "triggerSignInNoTorus",
-                withArguments: [deviceShare, customShare]
+                withArguments: [deviceShare, customShare, "encryptedMnemonic"]
             )
             guard
                 let privateSOL = try await value.valueForKey("privateSOL").toString(),
