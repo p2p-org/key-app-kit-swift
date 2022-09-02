@@ -90,7 +90,6 @@ public class TKeyJSFacade: TKeyFacade {
 
     public func signUp(tokenID: TokenID) async throws -> SignUpResult {
         do {
-            print(config)
             let facade = try await getFacade(configuration: [
                 "type": "signup",
                 "useNewEth": true,
@@ -101,7 +100,7 @@ public class TKeyJSFacade: TKeyFacade {
 
             guard
                 let privateSOL = try await value.valueForKey("privateSOL").toString(),
-                let reconstructedETH = try await value.valueForKey("ethPublic").toString(),
+                let reconstructedETH = try await value.valueForKey("ethAddress").toString(),
                 let deviceShare = try await value.valueForKey("deviceShare").toJSON(),
                 let customShare = try await value.valueForKey("customShare").toJSON(),
                 let metadata = try await value.valueForKey("metadata").toJSON()
@@ -137,9 +136,8 @@ public class TKeyJSFacade: TKeyFacade {
                 withArguments: [tokenID.value, deviceShare]
             )
             guard
-                let result = try await value.toDictionary(),
-                let privateSOL = result["privateSOL"] as? String,
-                let reconstructedETH = result["ethAddress"] as? String
+                let privateSOL = try await value.valueForKey("privateSOL").toString(),
+                let reconstructedETH = try await value.valueForKey("ethAddress").toString()
             else { throw Error.invalidReturnValue }
 
             return .init(
@@ -166,9 +164,8 @@ public class TKeyJSFacade: TKeyFacade {
                 withArguments: [tokenID.value, customShare]
             )
             guard
-                let result = try await value.toDictionary(),
-                let privateSOL = result["privateSOL"] as? String,
-                let reconstructedETH = result["reconstructedETH"] as? String
+                let privateSOL = try await value.valueForKey("privateSOL").toString(),
+                let reconstructedETH = try await value.valueForKey("ethAddress").toString()
             else { throw Error.invalidReturnValue }
 
             return .init(
@@ -195,9 +192,8 @@ public class TKeyJSFacade: TKeyFacade {
                 withArguments: [deviceShare, customShare]
             )
             guard
-                let result = try await value.toDictionary(),
-                let privateSOL = result["privateSOL"] as? String,
-                let reconstructedETH = result["reconstructedETH"] as? String
+                let privateSOL = try await value.valueForKey("privateSOL").toString(),
+                let reconstructedETH = try await value.valueForKey("ethAddress").toString()
             else { throw Error.invalidReturnValue }
 
             return .init(
