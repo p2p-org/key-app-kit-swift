@@ -92,6 +92,7 @@ public enum RestoreCustomState: Codable, State, Equatable {
                     }
                     else if let deviceShare = provider.deviceShare {
                         do {
+                            try await provider.tKeyFacade.initialize()
                             let finalResult = try await provider.tKeyFacade.signIn(deviceShare: deviceShare, customShare: result.encryptedShare)
                             return .finish(result: .successful(seedPhrase: finalResult.privateSOL, ethPublicKey: finalResult.reconstructedETH))
                         }
@@ -210,11 +211,13 @@ public enum RestoreCustomState: Codable, State, Equatable {
 
     private func restore(with tokenID: TokenID, customShare: String, deviceShare: String, tKey: TKeyFacade) async throws -> RestoreCustomState {
         do {
+            try await tKey.initialize()
             let finalResult = try await tKey.signIn(tokenID: tokenID, customShare: customShare)
             return .finish(result: .successful(seedPhrase: finalResult.privateSOL, ethPublicKey: finalResult.reconstructedETH))
         }
         catch {
             do {
+                try await tKey.initialize()
                 let finalResult = try await tKey.signIn(deviceShare: deviceShare, customShare: customShare)
                 return .finish(result: .successful(seedPhrase: finalResult.privateSOL, ethPublicKey: finalResult.reconstructedETH))
             }
