@@ -86,7 +86,7 @@ public enum CreateWalletFlowState: Codable, State, Equatable {
                                 didSend: false,
                                 data: .init(
                                     seedPhrase: seedPhrase,
-                                    ethereumId: ethPublicKey,
+                                    ethAddress: ethPublicKey,
                                     customShare: customShare,
                                     payload: metaData
                                 )
@@ -134,7 +134,7 @@ public enum CreateWalletFlowState: Codable, State, Equatable {
                 throw StateMachineError.invalidEvent
             }
 
-        case let .securitySetup(email, wallet, ethPublicKey, deviceShare, innerState):
+        case let .securitySetup(email, wallet, ethAddress, deviceShare, innerState):
             switch event {
             case let .securitySetup(event):
                 let nextInnerState = try await innerState <- (event, .init())
@@ -144,6 +144,7 @@ public enum CreateWalletFlowState: Codable, State, Equatable {
                     case let .success(securityData):
                         return .finish(
                             .newWallet(CreateWalletData(
+                                ethAddress: ethAddress,
                                 deviceShare: deviceShare,
                                 wallet: wallet,
                                 security: securityData
@@ -154,7 +155,7 @@ public enum CreateWalletFlowState: Codable, State, Equatable {
                     return .securitySetup(
                         email: email,
                         wallet: wallet,
-                        ethPublicKey: ethPublicKey,
+                        ethPublicKey: ethAddress,
                         deviceShare: deviceShare,
                         nextInnerState
                     )

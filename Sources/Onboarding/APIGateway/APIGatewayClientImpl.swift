@@ -23,7 +23,6 @@ public class APIGatewayClientImpl: APIGatewayClient {
     private func createDefaultRequest(method: String = "POST") -> URLRequest {
         var request = URLRequest(url: endpoint)
         request.httpMethod = method
-        request.allHTTPHeaderFields
         request.setValue("P2PWALLET_MOBILE", forHTTPHeaderField: "CHANNEL_ID")
         request.setValue("application/json", forHTTPHeaderField: "Accept")
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
@@ -31,28 +30,15 @@ public class APIGatewayClientImpl: APIGatewayClient {
         return request
     }
 
-    private func prepare(solanaPrivateKey: String, ethereumId: String) throws -> (
-        solanaSecretKey: Data,
-        solanaPublicKey: Data,
-        ethAddress: String
-    ) {
+    private func prepare(solanaPrivateKey: String) throws -> (solanaSecretKey: Data, solanaPublicKey: Data) {
         let solanaSecretKey = Data(Base58.decode(solanaPrivateKey))
         let solanaKeypair = try NaclSign.KeyPair.keyPair(fromSecretKey: solanaSecretKey)
-        let ethAddress = "0x" + EthereumHelper
-            .generatePublicAddress(from: Data(hex: ethereumId))
-            .hexString
-            .lowercased()
-
-        return (
-            solanaSecretKey: solanaSecretKey,
-            solanaPublicKey: solanaKeypair.publicKey,
-            ethAddress: ethAddress
-        )
+        return (solanaSecretKey: solanaSecretKey, solanaPublicKey: solanaKeypair.publicKey)
     }
 
     public func registerWallet(
         solanaPrivateKey: String,
-        ethereumId: String,
+        ethAddress: String,
         phone: String,
         channel: APIGatewayChannel,
         timestampDevice: Date
@@ -61,10 +47,8 @@ public class APIGatewayClientImpl: APIGatewayClient {
 
         // Prepare
         var request = createDefaultRequest()
-        let (solanaSecretKey, solanaPublicKey, ethAddress) = try prepare(
-            solanaPrivateKey: solanaPrivateKey,
-            ethereumId: ethereumId
-        )
+        let (solanaSecretKey, solanaPublicKey) = try prepare(solanaPrivateKey: solanaPrivateKey)
+        
         // Create rpc request
         let rpcRequest = JSONRPCRequest(
             id: requestID,
@@ -87,7 +71,6 @@ public class APIGatewayClientImpl: APIGatewayClient {
         requestID += 1
 
         request.httpBody = try JSONEncoder().encode(rpcRequest)
-        print(request.cURL(pretty: true))
 
         // Request
         let responseData = try await networkManager.requestData(request: request)
@@ -103,7 +86,7 @@ public class APIGatewayClientImpl: APIGatewayClient {
 
     public func confirmRegisterWallet(
         solanaPrivateKey: String,
-        ethereumId: String,
+        ethAddress: String,
         share: String,
         encryptedPayload: String,
         phone: String,
@@ -114,10 +97,7 @@ public class APIGatewayClientImpl: APIGatewayClient {
 
         // Prepare
         var request = createDefaultRequest()
-        let (solanaSecretKey, solanaPublicKey, ethAddress) = try prepare(
-            solanaPrivateKey: solanaPrivateKey,
-            ethereumId: ethereumId
-        )
+        let (solanaSecretKey, solanaPublicKey) = try prepare(solanaPrivateKey: solanaPrivateKey)
 
         // Create rpc request
         let rpcRequest = JSONRPCRequest(

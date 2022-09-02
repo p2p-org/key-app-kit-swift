@@ -11,7 +11,7 @@ public class APIGatewayClientImplMock: APIGatewayClient {
 
     public func registerWallet(
         solanaPrivateKey _: String,
-        ethereumId _: String,
+        ethAddress _: String,
         phone: String,
         channel _: APIGatewayChannel,
         timestampDevice _: Date
@@ -29,7 +29,7 @@ public class APIGatewayClientImplMock: APIGatewayClient {
 
     public func confirmRegisterWallet(
         solanaPrivateKey _: String,
-        ethereumId _: String,
+        ethAddress _: String,
         share _: String,
         encryptedPayload _: String,
         phone _: String,

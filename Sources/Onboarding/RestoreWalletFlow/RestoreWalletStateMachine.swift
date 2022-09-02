@@ -49,7 +49,7 @@ public enum RestoreWalletState: Codable, State, Equatable {
 
     case securitySetup(
         wallet: OnboardingWallet,
-        ethPublicKey: String,
+        ethPublicKey: String?,
         SecuritySetupState
     )
 
@@ -100,7 +100,11 @@ public enum RestoreWalletState: Codable, State, Equatable {
             case let .restoreSocial(event):
                 switch event {
                 case let .signInDevice(socialProvider):
-                    return try await handleSignInDeviceEvent(provider: provider, socialProvider: socialProvider, event: event)
+                    return try await handleSignInDeviceEvent(
+                        provider: provider,
+                        socialProvider: socialProvider,
+                        event: event
+                    )
 
                 default:
                     throw StateMachineError.invalidEvent
@@ -149,21 +153,37 @@ public enum RestoreWalletState: Codable, State, Equatable {
                 if case let .finish(result) = nextInnerState {
                     switch result {
                     case let .successful(seedPhrase, ethPublicKey):
-                        return .securitySetup(wallet: OnboardingWallet(seedPhrase: seedPhrase), ethPublicKey: ethPublicKey, SecuritySetupState.initialState)
+                        return .securitySetup(
+                            wallet: OnboardingWallet(seedPhrase: seedPhrase),
+                            ethPublicKey: ethPublicKey,
+                            SecuritySetupState.initialState
+                        )
                     case let .requireSocialCustom(result):
                         return .restoreSocial(.social(result: result), option: .second(result: result))
                     case let .requireSocialDevice(socialProvider):
-                        return try await handleSignInDeviceEvent(provider: provider, socialProvider: socialProvider, event: .signInDevice(socialProvider: socialProvider))
+                        return try await handleSignInDeviceEvent(
+                            provider: provider,
+                            socialProvider: socialProvider,
+                            event: .signInDevice(socialProvider: socialProvider)
+                        )
                     case .help:
                         return .finished(.needHelp)
                     case .start:
                         return .finished(.breakProcess)
                     case let .expiredSocialTryAgain(result, socialProvider, email):
                         let event = RestoreSocialEvent.signInCustom(socialProvider: socialProvider)
-                        let innerState = RestoreSocialState.expiredSocialTryAgain(result: result, provider: socialProvider, email: email)
+                        let innerState = RestoreSocialState.expiredSocialTryAgain(
+                            result: result,
+                            provider: socialProvider,
+                            email: email
+                        )
                         let nextInnerState = try await innerState <- (
                             event,
-                            .init(option: .second(result: result), tKeyFacade: provider.tKeyFacade, authService: provider.authService)
+                            .init(
+                                option: .second(result: result),
+                                tKeyFacade: provider.tKeyFacade,
+                                authService: provider.authService
+                            )
                         )
 
                         if case let .finish(result) = nextInnerState {
@@ -190,14 +210,12 @@ public enum RestoreWalletState: Codable, State, Equatable {
                 if case let .finish(result) = nextInnerState {
                     switch result {
                     case let .successful(phrase, derivablePath):
-                        let account = try await Account(
-                            phrase: phrase,
-                            network: .mainnetBeta,
-                            derivablePath: derivablePath
-                        )
                         return .securitySetup(
-                            wallet: OnboardingWallet(seedPhrase: phrase.joined(separator: " "), derivablePath: derivablePath),
-                            ethPublicKey: "",
+                            wallet: OnboardingWallet(
+                                seedPhrase: phrase.joined(separator: " "),
+                                derivablePath: derivablePath
+                            ),
+                            ethPublicKey: nil,
                             SecuritySetupState.initialState
                         )
                     case .back:
@@ -214,21 +232,23 @@ public enum RestoreWalletState: Codable, State, Equatable {
         case let .restoreICloud(innerState):
             switch event {
             case let .restoreICloud(event):
-                let nextInnerState = try await innerState <- (event, .init(icloudAccountProvider: provider.icloudAccountProvider))
+                let nextInnerState = try await innerState <- (
+                    event,
+                    .init(icloudAccountProvider: provider.icloudAccountProvider)
+                )
 
                 if case let .finish(result) = nextInnerState {
                     switch result {
                     case let .successful(account):
                         return .securitySetup(
                             wallet: OnboardingWallet(seedPhrase: account.phrase.joined(separator: " ")),
-                            ethPublicKey: "",
+                            ethPublicKey: nil,
                             SecuritySetupState.initialState
                         )
                     case .back:
                         return .restore
                     }
-                }
-                else {
+                } else {
                     return .restoreICloud(nextInnerState)
                 }
 
@@ -244,7 +264,15 @@ public enum RestoreWalletState: Codable, State, Equatable {
                 if case let .finish(result) = nextInnerState {
                     switch result {
                     case let .success(securityData):
-                        return .finished(.successful(RestoreWalletData(wallet: wallet, security: securityData)))
+                        return .finished(
+                            .successful(
+                                RestoreWalletData(
+                                    ethAddress: ethPublicKey,
+                                    wallet: wallet,
+                                    security: securityData
+                                )
+                            )
+                        )
                     }
                 } else {
                     return .securitySetup(wallet: wallet, ethPublicKey: ethPublicKey, nextInnerState)
@@ -258,10 +286,17 @@ public enum RestoreWalletState: Codable, State, Equatable {
         }
     }
 
-    private func handleRestoreSocial(provider: RestoreWalletFlowContainer, result: RestoreSocialResult) async throws -> RestoreWalletState {
+    private func handleRestoreSocial(
+        provider _: RestoreWalletFlowContainer,
+        result: RestoreSocialResult
+    ) async throws -> RestoreWalletState {
         switch result {
         case let .successful(seedPhrase, ethPublicKey):
-            return .securitySetup(wallet: OnboardingWallet(seedPhrase: seedPhrase), ethPublicKey: ethPublicKey, SecuritySetupState.initialState)
+            return .securitySetup(
+                wallet: OnboardingWallet(seedPhrase: seedPhrase),
+                ethPublicKey: ethPublicKey,
+                SecuritySetupState.initialState
+            )
         case .start:
             return .finished(.breakProcess)
         case let .requireCustom(data):
@@ -269,13 +304,21 @@ public enum RestoreWalletState: Codable, State, Equatable {
         }
     }
 
-    private func handleSignInDeviceEvent(provider: RestoreWalletFlowContainer, socialProvider: SocialProvider, event: RestoreSocialEvent) async throws -> RestoreWalletState {
+    private func handleSignInDeviceEvent(
+        provider: RestoreWalletFlowContainer,
+        socialProvider: SocialProvider,
+        event _: RestoreSocialEvent
+    ) async throws -> RestoreWalletState {
         guard let deviceShare = provider.deviceShare else { throw StateMachineError.invalidEvent }
         let event = RestoreSocialEvent.signInDevice(socialProvider: socialProvider)
         let innerState = RestoreSocialState.signIn(deviceShare: deviceShare)
         let nextInnerState = try await innerState <- (
             event,
-            .init(option: .first(deviceShare: deviceShare), tKeyFacade: provider.tKeyFacade, authService: provider.authService)
+            .init(
+                option: .first(deviceShare: deviceShare),
+                tKeyFacade: provider.tKeyFacade,
+                authService: provider.authService
+            )
         )
 
         if case let .finish(result) = nextInnerState {

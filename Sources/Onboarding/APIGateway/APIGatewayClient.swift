@@ -53,14 +53,14 @@ public protocol APIGatewayClient {
     ///
     /// - Parameters:
     ///   - solanaPrivateKey: Base58 key.
-    ///   - ethereumId: Ethereum public key.
+    ///   - ethAddress: Ethereum address.
     ///   - phone: E.164 phone number format.
     ///   - channel: The channel through which the otp code will be delivered.
     ///   - timestampDevice: Timestamp of request.
     /// - Throws: ``APIGatewayError``
     func registerWallet(
         solanaPrivateKey: String,
-        ethereumId: String,
+        ethAddress: String,
         phone: String,
         channel: APIGatewayChannel,
         timestampDevice: Date
@@ -70,7 +70,7 @@ public protocol APIGatewayClient {
     ///
     /// - Parameters:
     ///   - solanaPrivateKey: Base58 key.
-    ///   - ethereumId: Ethereum public key.
+    ///   - ethAddress: Ethereum address.
     ///   - share: TKey share.
     ///   - encryptedPayload: Encrypted mnemonic (base64).
     ///   - phone: E.164 phone number format.
@@ -78,7 +78,7 @@ public protocol APIGatewayClient {
     ///   - timestampDevice:
     func confirmRegisterWallet(
         solanaPrivateKey: String,
-        ethereumId: String,
+        ethAddress: String,
         share: String,
         encryptedPayload: String,
         phone: String,
@@ -90,7 +90,9 @@ public protocol APIGatewayClient {
     ///
     /// The user will get a share after success confirmation (by calling ``confirmRestoreWallet``).
     /// - Parameters:
+    ///   - solPrivateKey: Solana private key
     ///   - phone: E.164 phone number format.
+    ///   - channel: OTP delivery channel
     ///   - timestampDevice:
     func restoreWallet(
         solPrivateKey: Data,
@@ -107,8 +109,12 @@ public protocol APIGatewayClient {
     ///   - phone: E.164 phone number format.
     ///   - otpCode: delivered OTP code
     ///   - timestampDevice:
-    func confirmRestoreWallet(solanaPrivateKey: Data, phone: String, otpCode: String,
-                              timestampDevice: Date) async throws -> RestoreWalletResult
+    func confirmRestoreWallet(
+        solanaPrivateKey: Data,
+        phone: String,
+        otpCode: String,
+        timestampDevice: Date
+    ) async throws -> RestoreWalletResult
 
     func isValidOTPFormat(code: String) -> Bool
 }

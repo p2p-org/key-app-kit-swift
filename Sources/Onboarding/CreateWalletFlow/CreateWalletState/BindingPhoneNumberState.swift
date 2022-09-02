@@ -24,7 +24,7 @@ public enum BindingPhoneNumberEvent {
 
 public struct BindingPhoneNumberData: Codable, Equatable {
     let seedPhrase: String
-    let ethereumId: String
+    let ethAddress: String
     let customShare: String
     let payload: String
 
@@ -49,7 +49,7 @@ public enum BindingPhoneNumberState: Codable, State, Equatable {
     public static var initialState: BindingPhoneNumberState = .enterPhoneNumber(
         initialPhoneNumber: nil,
         didSend: false,
-        data: .init(seedPhrase: "", ethereumId: "", customShare: "", payload: "")
+        data: .init(seedPhrase: "", ethAddress: "", customShare: "", payload: "")
     )
 
     public func accept(
@@ -89,7 +89,7 @@ public enum BindingPhoneNumberState: Codable, State, Equatable {
                 do {
                     try await provider.registerWallet(
                         solanaPrivateKey: Base58.encode(account.secretKey),
-                        ethereumId: data.ethereumId,
+                        ethAddress: data.ethAddress,
                         phone: phoneNumber,
                         channel: channel,
                         timestampDevice: Date()
@@ -133,7 +133,7 @@ public enum BindingPhoneNumberState: Codable, State, Equatable {
                 do {
                     try await provider.confirmRegisterWallet(
                         solanaPrivateKey: Base58.encode(account.secretKey),
-                        ethereumId: data.ethereumId,
+                        ethAddress: data.ethAddress,
                         share: data.customShare,
                         encryptedPayload: data.payload,
                         phone: phoneNumber,
@@ -179,7 +179,7 @@ public enum BindingPhoneNumberState: Codable, State, Equatable {
 
                 try await provider.registerWallet(
                     solanaPrivateKey: Base58.encode(account.secretKey),
-                    ethereumId: data.ethereumId,
+                    ethAddress: data.ethAddress,
                     phone: phoneNumber,
                     channel: channel,
                     timestampDevice: Date()

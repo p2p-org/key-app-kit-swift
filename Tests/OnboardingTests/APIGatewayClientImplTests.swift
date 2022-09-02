@@ -11,7 +11,7 @@ class APIGatewayClientImplTests: XCTestCase {
         let client = APIGatewayClientImpl(endpoint: "localhost", networkManager: URLSessionMock())
         try await client.registerWallet(
             solanaPrivateKey: privateKey,
-            ethereumId: "123",
+            ethAddress: "123",
             phone: "+442071838750",
             channel: .sms,
             timestampDevice: Date()
