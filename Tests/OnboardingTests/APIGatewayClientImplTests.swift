@@ -6,17 +6,17 @@ import XCTest
 @testable import Onboarding
 
 class APIGatewayClientImplTests: XCTestCase {
-    func testRegisterWallet() async throws {
-        let privateKey = "52y2jQVwqQXkNW9R9MsKMcv9ZnJnDwzJqLX4d8noB4LEpuezFQLvAb2rioKsLCChte9ELNYwN29GzVjVVUmvfQ4v"
-        let client = APIGatewayClientImpl(endpoint: "localhost", networkManager: URLSessionMock())
-        try await client.registerWallet(
-            solanaPrivateKey: privateKey,
-            ethAddress: "123",
-            phone: "+442071838750",
-            channel: .sms,
-            timestampDevice: Date()
-        )
-    }
+    // func testRegisterWallet() async throws {
+    //     let privateKey = "52y2jQVwqQXkNW9R9MsKMcv9ZnJnDwzJqLX4d8noB4LEpuezFQLvAb2rioKsLCChte9ELNYwN29GzVjVVUmvfQ4v"
+    //     let client = APIGatewayClientImpl(endpoint: "localhost", networkManager: URLSessionMock())
+    //     try await client.registerWallet(
+    //         solanaPrivateKey: privateKey,
+    //         ethAddress: "123",
+    //         phone: "+442071838750",
+    //         channel: .sms,
+    //         timestampDevice: Date()
+    //     )
+    // }
 }
 
 private func secureRandomData(count: Int) throws -> Data {

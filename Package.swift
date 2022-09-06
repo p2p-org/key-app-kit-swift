@@ -149,9 +149,9 @@ let package = Package(
             name: "Onboarding",
             dependencies: [
                 "JSBridge",
-                .product(name: "TweetNacl", package: "tweetnacl-swiftwrap"),
+                // .product(name: "TweetNacl", package: "tweetnacl-swiftwrap"),
                 .product(name: "SolanaSwift", package: "solana-swift"),
-                .product(name: "CryptoSwift", package: "CryptoSwift"),
+                // .product(name: "CryptoSwift", package: "CryptoSwift"),
                 
             ],
             resources: [
