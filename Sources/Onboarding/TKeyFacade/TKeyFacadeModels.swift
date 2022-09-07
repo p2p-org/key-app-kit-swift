@@ -4,18 +4,11 @@
 
 import Foundation
 
-import Foundation
-
-public enum Provider {
-    case google
-    case apple
-}
-
-public struct TokenID {
+public struct TokenID: Codable, Equatable {
     public let value: String
-    public let provider: Provider
+    public let provider: String
     
-    public init(value: String, provider: Provider) {
+    public init(value: String, provider: String) {
         self.value = value
         self.provider = provider
     }
@@ -27,6 +20,10 @@ public struct SignUpResult: Codable {
     public let privateSOL: String
     public let reconstructedETH: String
     public let deviceShare: String
+    public let customShare: String
+    
+    /// Ecies meta data
+    public let metaData: String
 }
 
 public struct SignInResult: Codable {

@@ -6,7 +6,7 @@ import PackageDescription
 let package = Package(
     name: "KeyAppKit",
     platforms: [
-        .macOS(.v10_15),
+        .macOS(.v12),
         .iOS(.v13),
         .tvOS(.v13),
         .watchOS(.v6),
@@ -14,7 +14,7 @@ let package = Package(
     ],
     products: [
         .library(name: "Cache", targets: ["Cache"]),
-        
+
         .library(
             name: "KeyAppKitLogger",
             targets: ["KeyAppKitLogger"]
@@ -23,36 +23,36 @@ let package = Package(
             name: "TransactionParser",
             targets: ["TransactionParser"]
         ),
-        
+
         .library(
             name: "NameService",
             targets: ["NameService"]
         ),
-        
+
         // Analytics manager for wallet
         .library(
             name: "AnalyticsManager",
             targets: ["AnalyticsManager"]
         ),
-        
+
         // Price service for wallet
         .library(
             name: "SolanaPricesAPIs",
             targets: ["SolanaPricesAPIs"]
         ),
-        
+
         // JSBridge
         .library(
             name: "JSBridge",
             targets: ["JSBridge"]
         ),
-        
+
         // Countries
         .library(
             name: "CountriesAPI",
             targets: ["CountriesAPI"]
         ),
-        
+
         // Tkey
         .library(
             name: "Onboarding",
@@ -66,10 +66,10 @@ let package = Package(
     targets: [
         // Cache
         .target(name: "Cache"),
-        
+
         // KeyAppKitLogger
         .target(name: "KeyAppKitLogger"),
-        
+
         // Transaction Parser
         .target(
             name: "TransactionParser",
@@ -127,12 +127,12 @@ let package = Package(
             name: "JSBridge"
         ),
         .testTarget(name: "JSBridgeTests", dependencies: ["JSBridge"]),
-        
+
         // Countries
         .target(
             name: "CountriesAPI",
             resources: [
-                .process("Resources/countries.json")
+                .process("Resources/countries.json"),
             ]
         ),
         .testTarget(
@@ -145,18 +145,26 @@ let package = Package(
         // TKey
         .target(
             name: "Onboarding",
-            dependencies: ["JSBridge"],
+            dependencies: [
+                "JSBridge",
+                .product(name: "SolanaSwift", package: "solana-swift"),
+
+            ],
             resources: [
-                .process("Resource/bundle.js"),
                 .process("Resource/bundle.js.map"),
-                .process("Resource/index.html")
+                .process("Resource/index.html"),
             ]
         ),
-        .testTarget(name: "OnboardingTests", dependencies: ["Onboarding"])
+        .testTarget(name: "OnboardingTests", dependencies: ["Onboarding"]),
+
+        // Solend
+        .target(
+            name: "Solend"
+        ),
     ]
 )
 
 #if swift(>=5.6)
     // For generating docs purpose
-    // package.dependencies.append(.package(url: "https://github.com/apple/swift-docc-plugin", from: "1.0.0"))
+    package.dependencies.append(.package(url: "https://github.com/apple/swift-docc-plugin", from: "1.0.0"))
 #endif

@@ -20,6 +20,7 @@ Pod::Spec.new do |s|
   s.swift_version = '5.5'
   s.resources = "Sources/Onboarding/Resource/**/*"
   s.dependency 'JSBridge'
+  s.dependency 'SolanaSwift', '~> 2'
 
   s.pod_target_xcconfig = {
     'SWIFT_OPTIMIZATION_LEVEL' => '-O'

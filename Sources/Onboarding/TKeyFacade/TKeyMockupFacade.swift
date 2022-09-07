@@ -5,21 +5,32 @@
 import Foundation
 import JSBridge
 import WebKit
+import SolanaSwift
 
 public class TKeyMockupFacade: TKeyFacade {
     public init() {}
 
     public func initialize() async throws {}
 
-    public func signUp(tokenID: TokenID) async throws -> SignUpResult {
-        .init(privateSOL: "somePrivateKey", reconstructedETH: "someEthPublicKey", deviceShare: "someDeviceShare")
+    public func signUp(tokenID _: TokenID) async throws -> SignUpResult {
+        return .init(
+            privateSOL: Mnemonic().phrase.joined(separator: " "),
+            reconstructedETH: "someEthPublicKey",
+            deviceShare: "someDeviceShare",
+            customShare: "someCustomShare",
+            metaData: "someMetadata"
+        )
     }
 
-    public func signIn(tokenID: TokenID, deviceShare: String) async throws -> SignInResult {
-        .init(privateSOL: "somePrivateKey", reconstructedETH: "someEthPublicKey")
+    public func signIn(tokenID _: TokenID, deviceShare _: String) async throws -> SignInResult {
+        .init(privateSOL: Mnemonic().phrase.joined(separator: " "), reconstructedETH: "someEthPublicKey")
     }
 
-    public func signIn(tokenID: TokenID, withCustomShare _: String) async throws -> SignInResult {
-        .init(privateSOL: "somePrivateKey", reconstructedETH: "someCustomShare")
+    public func signIn(tokenID: TokenID, customShare: String) async throws -> SignInResult {
+        .init(privateSOL: Mnemonic().phrase.joined(separator: " "), reconstructedETH: "someEthPublicKey")
+    }
+
+    public func signIn(deviceShare: String, customShare: String) async throws -> SignInResult {
+        .init(privateSOL: Mnemonic().phrase.joined(separator: " "), reconstructedETH: "someEthPublicKey")
     }
 }

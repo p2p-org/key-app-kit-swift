@@ -90,7 +90,7 @@ public class JSBValue: JSBridge, CustomStringConvertible {
                                 .webkit
                                 .messageHandlers
                                 .\(JSBContext.kPromiseCallback)
-                                .postMessage({id: \(id), error: error.toString()})
+                                .postMessage({id: \(id), error: JSON.stringify(error)})
                          }
                      );
                  0;
@@ -100,8 +100,7 @@ public class JSBValue: JSBridge, CustomStringConvertible {
 
                 await context.wkWebView.evaluateJavaScript(script) { _, error in
                     guard let error = error else { return }
-                    print(error)
-                    Task { await context.promiseDispatchTable.resolveWithError(for: id, error: error) }
+                    Task { try await context.promiseDispatchTable.resolveWithError(for: id, error: error) }
                 }
             }
         }
@@ -111,6 +110,7 @@ public class JSBValue: JSBridge, CustomStringConvertible {
     public func invokeNew<T: CustomStringConvertible>(withArguments args: [T]) async throws -> JSBValue {
         let context = try await getContext()
         let result = JSBValue(in: context)
+        debugPrint("\(result.name) = new \(name)(\(try parseArgs(args)));")
         try await context.evaluate("\(result.name) = new \(name)(\(try parseArgs(args)));")
         return result
     }
@@ -173,6 +173,11 @@ public class JSBValue: JSBridge, CustomStringConvertible {
     /// Get value from reference as Dictionary
     public func toDictionary() async throws -> [String: Any]? {
         try await currentContext?.evaluate("\(name)")
+    }
+    
+    /// Get value from reference as Dictionary
+    public func toJSON() async throws -> String? {
+        try await currentContext?.evaluate("JSON.stringify(\(name))")
     }
 
     /// Current context that contains this JSBValue
