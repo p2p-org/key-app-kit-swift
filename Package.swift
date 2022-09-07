@@ -14,7 +14,7 @@ let package = Package(
     ],
     products: [
         .library(name: "Cache", targets: ["Cache"]),
-        
+
         .library(
             name: "KeyAppKitLogger",
             targets: ["KeyAppKitLogger"]
@@ -23,36 +23,36 @@ let package = Package(
             name: "TransactionParser",
             targets: ["TransactionParser"]
         ),
-        
+
         .library(
             name: "NameService",
             targets: ["NameService"]
         ),
-        
+
         // Analytics manager for wallet
         .library(
             name: "AnalyticsManager",
             targets: ["AnalyticsManager"]
         ),
-        
+
         // Price service for wallet
         .library(
             name: "SolanaPricesAPIs",
             targets: ["SolanaPricesAPIs"]
         ),
-        
+
         // JSBridge
         .library(
             name: "JSBridge",
             targets: ["JSBridge"]
         ),
-        
+
         // Countries
         .library(
             name: "CountriesAPI",
             targets: ["CountriesAPI"]
         ),
-        
+
         // Tkey
         .library(
             name: "Onboarding",
@@ -62,16 +62,14 @@ let package = Package(
     dependencies: [
         .package(url: "https://github.com/p2p-org/solana-swift", from: "2.1.1"),
         .package(url: "https://github.com/amplitude/Amplitude-iOS", from: "8.3.0"),
-        .package(url: "https://github.com/bitmark-inc/tweetnacl-swiftwrap.git", from: "1.0.2"),
-        .package(url: "https://github.com/krzyzanowskim/CryptoSwift.git", .upToNextMajor(from: "1.5.1"))
     ],
     targets: [
         // Cache
         .target(name: "Cache"),
-        
+
         // KeyAppKitLogger
         .target(name: "KeyAppKitLogger"),
-        
+
         // Transaction Parser
         .target(
             name: "TransactionParser",
@@ -129,12 +127,12 @@ let package = Package(
             name: "JSBridge"
         ),
         .testTarget(name: "JSBridgeTests", dependencies: ["JSBridge"]),
-        
+
         // Countries
         .target(
             name: "CountriesAPI",
             resources: [
-                .process("Resources/countries.json")
+                .process("Resources/countries.json"),
             ]
         ),
         .testTarget(
@@ -149,17 +147,20 @@ let package = Package(
             name: "Onboarding",
             dependencies: [
                 "JSBridge",
-                // .product(name: "TweetNacl", package: "tweetnacl-swiftwrap"),
                 .product(name: "SolanaSwift", package: "solana-swift"),
-                // .product(name: "CryptoSwift", package: "CryptoSwift"),
-                
+
             ],
             resources: [
                 .process("Resource/bundle.js.map"),
-                .process("Resource/index.html")
+                .process("Resource/index.html"),
             ]
         ),
-        .testTarget(name: "OnboardingTests", dependencies: ["Onboarding"])
+        .testTarget(name: "OnboardingTests", dependencies: ["Onboarding"]),
+
+        // Solend
+        .target(
+            name: "Solend"
+        ),
     ]
 )
 
