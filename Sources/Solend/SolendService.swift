@@ -5,10 +5,14 @@
 import Foundation
 import P2pSdk
 
-protocol SolendService {
-    
-}
+protocol SolendService {}
 
 class SolendServiceImpl: SolendService {
+    private let solendSdk: SolendSdk = SolendSdkFFI()
+
     init() {}
+
+    func getCollateralAccounts(rpcURL: String, owner: String) async throws -> [CollateralAccount] {
+        try await solendSdk.getCollateralAccounts(rpcURL: rpcURL, owner: owner)
+    }
 }

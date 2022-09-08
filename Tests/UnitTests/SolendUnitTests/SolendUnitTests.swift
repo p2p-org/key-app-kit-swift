@@ -1,16 +1,13 @@
 import P2pSdk
-@testable import Solend
 import XCTest
+@testable import Solend
 
 class SolendUnitTests: XCTestCase {
-    func testGetSolendMarketInfo() throws {
+    func testGetSolendMarketInfo() async throws {
         let service = SolendServiceImpl()
-        
-        let result = get_solend_collateral_accounts(
-            "https://api.mainnet-beta.solana.com/",
-            "GccETn3yYfwVmgmfvcggsEAUKd5zqFTiKF5skj2bGYU7"
-        )
-        let string = String(cString: result!)
-        print(string)
+        print(try await service.getCollateralAccounts(
+            rpcURL: "https://api.mainnet-beta.solana.com",
+            owner: "GccETn3yYfwVmgmfvcggsEAUKd5zqFTiKF5skj2bGYU7"
+        ))
     }
 }

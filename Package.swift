@@ -62,7 +62,7 @@ let package = Package(
         // Solend
         .library(
             name: "Solend",
-            targets: ["Solend"]
+            targets: ["Solend", "p2p"]
         ),
     ],
     dependencies: [
