@@ -6,17 +6,29 @@ import XCTest
 @testable import Onboarding
 
 class APIGatewayClientImplTests: XCTestCase {
-    // func testRegisterWallet() async throws {
-    //     let privateKey = "52y2jQVwqQXkNW9R9MsKMcv9ZnJnDwzJqLX4d8noB4LEpuezFQLvAb2rioKsLCChte9ELNYwN29GzVjVVUmvfQ4v"
-    //     let client = APIGatewayClientImpl(endpoint: "localhost", networkManager: URLSessionMock())
-    //     try await client.registerWallet(
-    //         solanaPrivateKey: privateKey,
-    //         ethAddress: "123",
-    //         phone: "+442071838750",
-    //         channel: .sms,
-    //         timestampDevice: Date()
-    //     )
-    // }
+    func testRegisterWallet() async throws {
+        let privateKey = "52y2jQVwqQXkNW9R9MsKMcv9ZnJnDwzJqLX4d8noB4LEpuezFQLvAb2rioKsLCChte9ELNYwN29GzVjVVUmvfQ4v"
+        let client = APIGatewayClientImpl(endpoint: "localhost", networkManager: URLSessionMock())
+        try await client.registerWallet(
+            solanaPrivateKey: privateKey,
+            ethAddress: "123",
+            phone: "+442071838750",
+            channel: .sms,
+            timestampDevice: Date()
+        )
+    }
+
+    func testConfirmRestoreWallet() async throws {
+        let privateKey = "52y2jQVwqQXkNW9R9MsKMcv9ZnJnDwzJqLX4d8noB4LEpuezFQLvAb2rioKsLCChte9ELNYwN29GzVjVVUmvfQ4v"
+        let solanaSecretKey = Data(Base58.decode(privateKey))
+        let client = APIGatewayClientImpl(endpoint: "localhost", networkManager: URLSessionMock())
+        _ = try await client.confirmRestoreWallet(
+            solanaPrivateKey: solanaSecretKey,
+            phone: "+442071838750",
+            otpCode: "1234",
+            timestampDevice: Date()
+        )
+    }
 }
 
 private func secureRandomData(count: Int) throws -> Data {
@@ -28,7 +40,7 @@ private func secureRandomData(count: Int) throws -> Data {
         count,
         &bytes
     )
-    
+
     // A status of errSecSuccess indicates success
     if status == errSecSuccess {
         // Convert bytes to Data
