@@ -366,13 +366,30 @@ extension RestoreWalletState: Step, Continuable {
         case .restore:
             return 1 * 100
         case let .restoreICloud(restoreICloudState):
-            return 3 * 100 + restoreICloudState.step
+            return 2 * 100 + restoreICloudState.step
         case let .restoreSeed(restoreSeedState):
-            return 4 * 100 + restoreSeedState.step
-        case let .restoreSocial(restoreSocialState, _):
-            return 5 * 100 + restoreSocialState.step
+            return 3 * 100 + restoreSeedState.step
+
+        // Social before custom
+        case let .restoreSocial(.signIn(deviceShare), option: _):
+            return 4 * 100 + RestoreSocialState.signIn(deviceShare: deviceShare).step
+        case let .restoreSocial(.notFoundDevice(data, code, deviceShare), option: _):
+            return 4 * 100 + RestoreSocialState.notFoundDevice(data: data, code: code, deviceShare: deviceShare).step
+
+        // Custom
         case let .restoreCustom(restoreCustomState):
-            return 6 * 100 + restoreCustomState.step
+            return 5 * 100 + restoreCustomState.step
+
+        // Social after custom
+        case let .restoreSocial(.social(result), option: _):
+            return 6 * 100 + RestoreSocialState.social(result: result).step
+        case let .restoreSocial(.notFoundCustom(result, email), option: _):
+            return 6 * 100 + RestoreSocialState.notFoundCustom(result: result, email: email).step
+        case let .restoreSocial(.expiredSocialTryAgain(result, provider, email), option: _):
+            return 6 * 100 + RestoreSocialState.expiredSocialTryAgain(result: result, provider: provider, email: email).step
+        case let .restoreSocial(.finish(finishResult), option: _):
+            return 6 * 100 + RestoreSocialState.finish(finishResult).step
+
         case let .securitySetup(_, _, securitySetupState):
             return 7 * 100 + securitySetupState.step
         case .finished:
