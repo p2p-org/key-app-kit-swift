@@ -190,6 +190,24 @@ public enum AnalyticsEvent: MirrorableEnum {
     case tokenListViewed(lastScreen: String, tokenListLocation: String)
     case tokenListSearching(searchString: String)
     case tokenChosen(tokenName: String)
+    
+    // buy
+    case buyCurrencyChanged(_ currency: String)
+    case buyCoinChanged(_ coin: String)
+    case buyTotalShowed
+    case buyChosenMethodPayment(_ method: String)
+    case buyButtonPressed(
+        sumCurrency: String,
+        sumCoin: String,
+        currency: String,
+        coin: String,
+        paymentMethod: String,
+        isBankTransfer: Bool,
+        typeBankTransfer: String?
+    )
+    case buyStatusTransaction(success: Bool)
+    case buyScreenShowed(fromScreen: String)
+    case moonPayWindowClosed
 }
 
 extension AnalyticsEvent {
