@@ -3,7 +3,6 @@
 // found in the LICENSE file.
 
 import Foundation
-import P2pSdk
 
 protocol SolendService {
     

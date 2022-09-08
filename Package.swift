@@ -157,7 +157,6 @@ let package = Package(
 
             ],
             resources: [
-                .process("Resource/bundle.js.map"),
                 .process("Resource/index.html"),
             ]
         ),
@@ -169,7 +168,7 @@ let package = Package(
         ),
         .testTarget(
             name: "SolendUnitTests",
-            dependencies: ["Solend"],
+            dependencies: ["p2p"],
             path: "Tests/UnitTests/SolendUnitTests"
         ),
         
