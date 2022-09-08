@@ -164,11 +164,12 @@ let package = Package(
 
         // Solend
         .target(
-            name: "Solend"
+            name: "Solend",
+            dependencies: ["p2p"]
         ),
         .testTarget(
             name: "SolendUnitTests",
-            dependencies: ["p2p", "Solend"],
+            dependencies: ["Solend"],
             path: "Tests/UnitTests/SolendUnitTests"
         ),
         
