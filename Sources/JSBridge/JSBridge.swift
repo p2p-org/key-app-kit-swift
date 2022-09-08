@@ -25,7 +25,7 @@ public protocol JSBridge {
     ///   - method: method name
     ///   - args: arguments that method accepts
     /// - Returns: Reference to value
-    func invokeMethod<T: CustomStringConvertible>(_ method: String, withArguments args: [T]) async throws -> JSBValue
+    func invokeMethod(_ method: String, withArguments args: [CustomStringConvertible]) async throws -> JSBValue
 
     /// Invoke async method. [await object.method()].
     ///
@@ -33,11 +33,11 @@ public protocol JSBridge {
     ///   - method: method name
     ///   - args: arguments that method accepts
     /// - Returns: Reference to value
-    func invokeAsyncMethod<T: CustomStringConvertible>(
+    func invokeAsyncMethod(
         _ method: String,
-        withArguments args: [T]
+        withArguments args: [CustomStringConvertible]
     ) async throws -> JSBValue
-    
+
     /// Invoke initialize. [new object]
-    func invokeNew<T: CustomStringConvertible>(withArguments args: [T]) async throws -> JSBValue
+    func invokeNew(withArguments args: [CustomStringConvertible]) async throws -> JSBValue
 }

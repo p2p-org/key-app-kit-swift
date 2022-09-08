@@ -3,6 +3,7 @@
 // found in the LICENSE file.
 
 import Foundation
+import SolanaSwift
 
 public enum SocialSignInResult: Codable, Equatable {
     case successful(
@@ -31,13 +32,13 @@ public struct SocialSignInContainer {
 public enum SocialSignInState: Codable, State, Equatable {
     public typealias Event = SocialSignInEvent
     public typealias Provider = SocialSignInContainer
-    
+
     case socialSelection
     case socialSignInAccountWasUsed(signInProvider: SocialProvider, usedEmail: String)
     @available(*, deprecated, message: "This case is deprecated")
     case socialSignInTryAgain(signInProvider: SocialProvider, usedEmail: String)
     case finish(SocialSignInResult)
-    
+
     public static var initialState: SocialSignInState = .socialSelection
 
     public func accept(
@@ -60,7 +61,7 @@ public enum SocialSignInState: Codable, State, Equatable {
             throw StateMachineError.invalidEvent
         }
     }
-    
+
     internal func socialSelectionEventHandler(
         currentState _: Self, event: Event,
         provider: Provider
@@ -71,8 +72,11 @@ public enum SocialSignInState: Codable, State, Equatable {
             do {
                 try await provider.tKeyFacade.initialize()
                 let result = try await provider.tKeyFacade
-                    .signUp(tokenID: .init(value: tokenID, provider: socialProvider.rawValue))
-                
+                    .signUp(
+                        tokenID: .init(value: tokenID, provider: socialProvider.rawValue),
+                        privateInput: Mnemonic().phrase.joined(separator: " ")
+                    )
+
                 return .finish(
                     .successful(
                         email: email,
@@ -87,8 +91,8 @@ public enum SocialSignInState: Codable, State, Equatable {
                 switch error.code {
                 case 1009:
                     return .socialSignInAccountWasUsed(signInProvider: socialProvider, usedEmail: email)
-               // case 1666:
-               //     return .socialSignInTryAgain(signInProvider: socialProvider, usedEmail: email)
+                // case 1666:
+                //     return .socialSignInTryAgain(signInProvider: socialProvider, usedEmail: email)
                 default:
                     throw error
                 }
@@ -99,7 +103,7 @@ public enum SocialSignInState: Codable, State, Equatable {
             throw StateMachineError.invalidEvent
         }
     }
-    
+
     internal func socialTryAgainEventHandler(
         currentState _: Self, event: Event,
         provider: Provider
@@ -110,8 +114,11 @@ public enum SocialSignInState: Codable, State, Equatable {
             do {
                 let result = try await provider
                     .tKeyFacade
-                    .signUp(tokenID: .init(value: tokenID, provider: socialProvider.rawValue))
-                
+                    .signUp(
+                        tokenID: .init(value: tokenID, provider: socialProvider.rawValue),
+                        privateInput: Mnemonic().phrase.joined(separator: " ")
+                    )
+
                 return .finish(
                     .successful(
                         email: email,
@@ -136,7 +143,7 @@ public enum SocialSignInState: Codable, State, Equatable {
             throw StateMachineError.invalidEvent
         }
     }
-    
+
     internal func socialSignInAccountWasUsedHandler(
         currentState: Self, event: Event,
         provider: Provider
@@ -154,7 +161,7 @@ public enum SocialSignInState: Codable, State, Equatable {
 
 extension SocialSignInState: Step, Continuable {
     public var continuable: Bool { false }
-    
+
     public var step: Float {
         switch self {
         case .socialSelection:

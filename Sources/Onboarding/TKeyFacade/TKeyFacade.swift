@@ -5,10 +5,10 @@
 public protocol TKeyFacade {
     func initialize() async throws
     
-    func signUp(tokenID: TokenID) async throws -> SignUpResult
+    func signUp(tokenID: TokenID, privateInput: String) async throws -> SignUpResult
     func signIn(tokenID: TokenID, deviceShare: String) async throws -> SignInResult
-    func signIn(tokenID: TokenID, customShare: String) async throws -> SignInResult
-    func signIn(deviceShare: String, customShare: String) async throws -> SignInResult
+    func signIn(tokenID: TokenID, customShare: String, encryptedMnemonic: String) async throws -> SignInResult
+    func signIn(deviceShare: String, customShare: String, encryptedMnemonic: String) async throws -> SignInResult
 }
 
 struct TKeyFacadeError: Error, Codable {

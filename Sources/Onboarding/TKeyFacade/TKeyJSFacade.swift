@@ -88,13 +88,14 @@ public class TKeyJSFacade: TKeyFacade {
         )
     }
 
-    public func signUp(tokenID: TokenID) async throws -> SignUpResult {
+    public func signUp(tokenID: TokenID, privateInput: String) async throws -> SignUpResult {
         do {
             let facade = try await getFacade(configuration: [
                 "type": "signup",
                 "useNewEth": true,
                 "torusLoginType": tokenID.provider,
-                "torusVerifier": config.torusVerifierMapping[tokenID.provider],
+                "torusVerifier": config.torusVerifierMapping[tokenID.provider]!,
+                "privateInput": privateInput,
             ])
             let value = try await facade.invokeAsyncMethod("triggerSilentSignup", withArguments: [tokenID.value])
 
@@ -128,7 +129,7 @@ public class TKeyJSFacade: TKeyFacade {
             let facade = try await getFacade(configuration: [
                 "type": "signin",
                 "torusLoginType": tokenID.provider,
-                "torusVerifier": config.torusVerifierMapping[tokenID.provider],
+                "torusVerifier": config.torusVerifierMapping[tokenID.provider]!,
 
             ])
             let value = try await facade.invokeAsyncMethod(
@@ -152,16 +153,18 @@ public class TKeyJSFacade: TKeyFacade {
         }
     }
 
-    public func signIn(tokenID: TokenID, customShare: String) async throws -> SignInResult {
+    public func signIn(tokenID: TokenID, customShare: String, encryptedMnemonic: String) async throws -> SignInResult {
         do {
             let facade = try await getFacade(configuration: [
                 "type": "signin",
                 "torusLoginType": tokenID.provider,
-                "torusVerifier": config.torusVerifierMapping[tokenID.provider],
+                "torusVerifier": config.torusVerifierMapping[tokenID.provider]!,
             ])
+            
+            let encryptedMnemonic = try await JSBValue(jsonString: encryptedMnemonic, in: context)
             let value = try await facade.invokeAsyncMethod(
                 "triggerSignInNoDevice",
-                withArguments: [tokenID.value, customShare]
+                withArguments: [tokenID.value, customShare, encryptedMnemonic]
             )
             guard
                 let privateSOL = try await value.valueForKey("privateSOL").toString(),
@@ -180,13 +183,15 @@ public class TKeyJSFacade: TKeyFacade {
         }
     }
 
-    public func signIn(deviceShare: String, customShare: String) async throws -> SignInResult {
+    public func signIn(deviceShare: String, customShare: String, encryptedMnemonic: String) async throws -> SignInResult {
         do {
+            // It doesn't matter which login type and torus verifier
             let facade = try await getFacade(configuration: [
                 "type": "signin",
                 "torusLoginType": "google",
-                "torusVerifier": config.torusVerifierMapping["google"],
+                "torusVerifier": config.torusVerifierMapping["google"]!,
             ])
+
             let value = try await facade.invokeAsyncMethod(
                 "triggerSignInNoTorus",
                 withArguments: [deviceShare, customShare, "encryptedMnemonic"]
@@ -218,7 +223,7 @@ public class TKeyJSFacade: TKeyFacade {
     internal func parseFacadeJSError(error: Any) -> TKeyFacadeError? {
         guard
             let errorStr = error as? String,
-            let error = try? errorStr.data(using: .utf8)
+            let error = errorStr.data(using: .utf8)
         else { return nil }
 
         return try? JSONDecoder().decode(TKeyFacadeError.self, from: error)

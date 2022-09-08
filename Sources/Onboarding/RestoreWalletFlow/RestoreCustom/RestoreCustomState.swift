@@ -61,13 +61,18 @@ public enum RestoreCustomState: Codable, State, Equatable {
         event: RestoreCustomEvent,
         provider: RestoreCustomContainer
     ) async throws -> RestoreCustomState {
-
         switch currentState {
         case let .enterPhone(phone, social):
             switch event {
-            case .enterPhoneNumber(let phone):
+            case let .enterPhoneNumber(phone):
                 let solPrivateKey = try NaclSign.KeyPair.keyPair().secretKey
-                return try await sendOTP(phone: phone, solPrivateKey: solPrivateKey, social: social, attempt: .init(0), provider: provider)
+                return try await sendOTP(
+                    phone: phone,
+                    solPrivateKey: solPrivateKey,
+                    social: social,
+                    attempt: .init(0),
+                    provider: provider
+                )
 
             case .back:
                 return .finish(result: .breakProcess)
@@ -78,7 +83,7 @@ public enum RestoreCustomState: Codable, State, Equatable {
 
         case .enterOTP(let phone, let solPrivateKey, let social, var attempt):
             switch event {
-            case .enterOTP(let otp):
+            case let .enterOTP(otp):
                 do {
                     let result = try await provider.apiGatewayClient.confirmRestoreWallet(
                         solanaPrivateKey: solPrivateKey,
@@ -87,29 +92,37 @@ public enum RestoreCustomState: Codable, State, Equatable {
                         timestampDevice: Date()
                     )
 
-                    if let tokenID = social?.tokenID, !provider.authService.isExpired(token: tokenID.value), let deviceShare = provider.deviceShare {
-                        return try await restore(with: tokenID, customShare: result.encryptedShare, deviceShare: deviceShare, tKey: provider.tKeyFacade)
-                    }
-                    else if let deviceShare = provider.deviceShare {
+                    if let tokenID = social?.tokenID, !provider.authService.isExpired(token: tokenID.value),
+                       let deviceShare = provider.deviceShare
+                    {
+                        return try await restore(
+                            with: tokenID,
+                            customShare: result.encryptedShare,
+                            encryptedMnemonic: result.encryptedPayload,
+                            deviceShare: deviceShare,
+                            tKey: provider.tKeyFacade
+                        )
+                    } else if let deviceShare = provider.deviceShare {
                         do {
                             try await provider.tKeyFacade.initialize()
-                            let finalResult = try await provider.tKeyFacade.signIn(deviceShare: deviceShare, customShare: result.encryptedShare)
-                            return .finish(result: .successful(seedPhrase: finalResult.privateSOL, ethPublicKey: finalResult.reconstructedETH))
-                        }
-                        catch {
+                            let finalResult = try await provider.tKeyFacade.signIn(
+                                deviceShare: deviceShare,
+                                customShare: result.encryptedShare,
+                                encryptedMnemonic: result.encryptedPayload
+                            )
+                            return .finish(result: .successful(seedPhrase: finalResult.privateSOL,
+                                                               ethPublicKey: finalResult.reconstructedETH))
+                        } catch {
                             if let social = social, provider.authService.isExpired(token: social.tokenID.value) {
                                 return .expiredSocialTryAgain(result: result, social: social)
-                            }
-                            else {
+                            } else {
                                 return .noMatch
                             }
                         }
-                    }
-                    else {
+                    } else {
                         return .finish(result: .requireSocialCustom(result: result))
                     }
-                }
-                catch let error as APIGatewayError {
+                } catch let error as APIGatewayError {
                     switch error._code {
                     case -32700, -32600, -32601, -32602, -32603, -32052:
                         return .broken(code: error.rawValue)
@@ -129,14 +142,19 @@ public enum RestoreCustomState: Codable, State, Equatable {
                     )
                 }
                 attempt.value = attempt.value + 1
-                return try await sendOTP(phone: phone, solPrivateKey: solPrivateKey, social: social, attempt: attempt, provider: provider)
-                
+                return try await sendOTP(
+                    phone: phone,
+                    solPrivateKey: solPrivateKey,
+                    social: social,
+                    attempt: attempt,
+                    provider: provider
+                )
+
             case .back:
                 return .enterPhone(phone: phone, social: social)
 
             default:
                 throw StateMachineError.invalidEvent
-
             }
 
         case let .otpNotDeliveredTrySocial(phone):
@@ -167,11 +185,10 @@ public enum RestoreCustomState: Codable, State, Equatable {
             switch event {
             case .enterPhone:
                 return .enterPhone(phone: nil, social: nil)
-            case .requireSocial(let provider):
+            case let .requireSocial(provider):
                 if trySocial {
                     return .finish(result: .requireSocialDevice(provider: provider))
-                }
-                else {
+                } else {
                     throw StateMachineError.invalidEvent
                 }
             case .start:
@@ -193,7 +210,7 @@ public enum RestoreCustomState: Codable, State, Equatable {
 
         case let .expiredSocialTryAgain(result, social):
             switch event {
-            case .requireSocial(let provider):
+            case let .requireSocial(provider):
                 return .finish(result: .expiredSocialTryAgain(result: result, provider: provider, email: social.email))
             case .start:
                 return .finish(result: .start)
@@ -201,7 +218,7 @@ public enum RestoreCustomState: Codable, State, Equatable {
                 throw StateMachineError.invalidEvent
             }
 
-        case .finish(let result):
+        case let .finish(result):
             switch event {
             default:
                 throw StateMachineError.invalidEvent
@@ -209,25 +226,53 @@ public enum RestoreCustomState: Codable, State, Equatable {
         }
     }
 
-    private func restore(with tokenID: TokenID, customShare: String, deviceShare: String, tKey: TKeyFacade) async throws -> RestoreCustomState {
+    private func restore(
+        with tokenID: TokenID,
+        customShare: String,
+        encryptedMnemonic: String,
+        deviceShare: String,
+        tKey: TKeyFacade
+    ) async throws -> RestoreCustomState {
         do {
             try await tKey.initialize()
-            let finalResult = try await tKey.signIn(tokenID: tokenID, customShare: customShare)
-            return .finish(result: .successful(seedPhrase: finalResult.privateSOL, ethPublicKey: finalResult.reconstructedETH))
-        }
-        catch {
+            let finalResult = try await tKey.signIn(
+                tokenID: tokenID,
+                customShare: customShare,
+                encryptedMnemonic: encryptedMnemonic
+            )
+            return .finish(
+                result: .successful(
+                    seedPhrase: finalResult.privateSOL,
+                    ethPublicKey: finalResult.reconstructedETH
+                )
+            )
+        } catch {
             do {
                 try await tKey.initialize()
-                let finalResult = try await tKey.signIn(deviceShare: deviceShare, customShare: customShare)
-                return .finish(result: .successful(seedPhrase: finalResult.privateSOL, ethPublicKey: finalResult.reconstructedETH))
-            }
-            catch {
+                let finalResult = try await tKey.signIn(
+                    deviceShare: deviceShare,
+                    customShare: customShare,
+                    encryptedMnemonic: encryptedMnemonic
+                )
+                return .finish(
+                    result: .successful(
+                        seedPhrase: finalResult.privateSOL,
+                        ethPublicKey: finalResult.reconstructedETH
+                    )
+                )
+            } catch {
                 return .noMatch
             }
         }
     }
 
-    private func sendOTP(phone: String, solPrivateKey: Data, social: RestoreSocialData?, attempt: Wrapper<Int>, provider: RestoreCustomContainer) async throws -> RestoreCustomState {
+    private func sendOTP(
+        phone: String,
+        solPrivateKey: Data,
+        social: RestoreSocialData?,
+        attempt: Wrapper<Int>,
+        provider: RestoreCustomContainer
+    ) async throws -> RestoreCustomState {
         do {
             try await provider.apiGatewayClient.restoreWallet(
                 solPrivateKey: solPrivateKey,
@@ -236,8 +281,7 @@ public enum RestoreCustomState: Codable, State, Equatable {
                 timestampDevice: Date()
             )
             return .enterOTP(phone: phone, solPrivateKey: solPrivateKey, social: social, attempt: attempt)
-        }
-        catch let error as APIGatewayError {
+        } catch let error as APIGatewayError {
             switch error._code {
             case -32058, -32700, -32600, -32601, -32602, -32603, -32052:
                 return .broken(code: error.rawValue)
@@ -246,8 +290,7 @@ public enum RestoreCustomState: Codable, State, Equatable {
             case -32054:
                 if let deviceShare = provider.deviceShare {
                     return .otpNotDeliveredTrySocial(phone: phone)
-                }
-                else {
+                } else {
                     return .otpNotDelivered(phone: phone)
                 }
             case -32053:
