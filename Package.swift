@@ -167,6 +167,11 @@ let package = Package(
         .target(
             name: "Solend"
         ),
+        .testTarget(
+            name: "SolendUnitTests",
+            dependencies: ["Solend"],
+            path: "Tests/UnitTests/SolendUnitTests"
+        ),
         
         // MARK: - Frameworks
         .binaryTarget(
