@@ -62,7 +62,7 @@ let package = Package(
         // Solend
         .library(
             name: "Solend",
-            targets: ["Solend", "p2p"]
+            targets: ["Solend"]
         ),
     ],
     dependencies: [
@@ -168,7 +168,7 @@ let package = Package(
         ),
         .testTarget(
             name: "SolendUnitTests",
-            dependencies: ["p2p"],
+            dependencies: ["p2p", "Solend"],
             path: "Tests/UnitTests/SolendUnitTests"
         ),
         

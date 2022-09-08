@@ -7,3 +7,7 @@ import Foundation
 protocol SolendService {
     
 }
+
+class SolendServiceImpl: SolendService {
+    init() {}
+}
