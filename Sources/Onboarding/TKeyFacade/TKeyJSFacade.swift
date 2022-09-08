@@ -25,7 +25,7 @@ public struct TKeyJSFacadeConfiguration {
     }
 }
 
-public class TKeyJSFacade: TKeyFacade {
+public actor TKeyJSFacade: TKeyFacade {
     enum Error: Swift.Error {
         case canNotFindJSScript
         case facadeIsNotReady
@@ -160,7 +160,7 @@ public class TKeyJSFacade: TKeyFacade {
                 "torusLoginType": tokenID.provider,
                 "torusVerifier": config.torusVerifierMapping[tokenID.provider]!,
             ])
-            
+
             let encryptedMnemonic = try await JSBValue(jsonString: encryptedMnemonic, in: context)
             let value = try await facade.invokeAsyncMethod(
                 "triggerSignInNoDevice",
@@ -183,7 +183,9 @@ public class TKeyJSFacade: TKeyFacade {
         }
     }
 
-    public func signIn(deviceShare: String, customShare: String, encryptedMnemonic: String) async throws -> SignInResult {
+    public func signIn(deviceShare: String, customShare: String,
+                       encryptedMnemonic: String) async throws -> SignInResult
+    {
         do {
             // It doesn't matter which login type and torus verifier
             let facade = try await getFacade(configuration: [
@@ -192,9 +194,10 @@ public class TKeyJSFacade: TKeyFacade {
                 "torusVerifier": config.torusVerifierMapping["google"]!,
             ])
 
+            let encryptedMnemonic = try await JSBValue(jsonString: encryptedMnemonic, in: context)
             let value = try await facade.invokeAsyncMethod(
                 "triggerSignInNoTorus",
-                withArguments: [deviceShare, customShare, "encryptedMnemonic"]
+                withArguments: [deviceShare, customShare, encryptedMnemonic]
             )
             guard
                 let privateSOL = try await value.valueForKey("privateSOL").toString(),

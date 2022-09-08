@@ -110,8 +110,12 @@ public enum RestoreCustomState: Codable, State, Equatable {
                                 customShare: result.encryptedShare,
                                 encryptedMnemonic: result.encryptedPayload
                             )
-                            return .finish(result: .successful(seedPhrase: finalResult.privateSOL,
-                                                               ethPublicKey: finalResult.reconstructedETH))
+                            return .finish(
+                                result: .successful(
+                                    seedPhrase: finalResult.privateSOL,
+                                    ethPublicKey: finalResult.reconstructedETH
+                                )
+                            )
                         } catch {
                             if let social = social, provider.authService.isExpired(token: social.tokenID.value) {
                                 return .expiredSocialTryAgain(result: result, social: social)
