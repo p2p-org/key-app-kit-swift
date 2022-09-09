@@ -23,8 +23,9 @@ public enum RestoreSocialEvent {
 
 public struct RestoreSocialContainer {
     public enum Option: Equatable, Codable {
-        case first(deviceShare: String)
-        case second(result: RestoreWalletResult)
+        case device(share: String)
+        case customResult(result: RestoreWalletResult)
+        case customDevice(share: String)
     }
 
     let option: Option
@@ -105,8 +106,9 @@ public enum RestoreSocialState: Codable, State, Equatable {
         case let .expiredSocialTryAgain(result, socialProvider, email):
             do {
                 return try await handleSignInCustom(result: result, socialProvider: socialProvider, provider: provider)
-            } catch {
-                if case let .first(share) = provider.option {
+            }
+            catch {
+                if case let .device(share) = provider.option {
                     do {
                         return try await handleSignInDevice(
                             deviceShare: share,

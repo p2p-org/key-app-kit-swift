@@ -100,10 +100,11 @@ public enum RestoreWalletState: Codable, State, Equatable {
             case let .restoreSocial(event):
                 switch event {
                 case let .signInDevice(socialProvider):
+                    guard let share = provider.deviceShare else { throw StateMachineError.invalidEvent }
                     return try await handleSignInDeviceEvent(
                         provider: provider,
                         socialProvider: socialProvider,
-                        event: event
+                        option: .device(share: share)
                     )
 
                 default:
@@ -159,12 +160,13 @@ public enum RestoreWalletState: Codable, State, Equatable {
                             SecuritySetupState.initialState
                         )
                     case let .requireSocialCustom(result):
-                        return .restoreSocial(.social(result: result), option: .second(result: result))
+                        return .restoreSocial(.social(result: result), option: .customResult(result: result))
                     case let .requireSocialDevice(socialProvider):
+                        guard let share = provider.deviceShare else { throw StateMachineError.invalidEvent }
                         return try await handleSignInDeviceEvent(
                             provider: provider,
                             socialProvider: socialProvider,
-                            event: .signInDevice(socialProvider: socialProvider)
+                            option: .customDevice(share: share)
                         )
                     case .help:
                         return .finished(.needHelp)
@@ -180,7 +182,7 @@ public enum RestoreWalletState: Codable, State, Equatable {
                         let nextInnerState = try await innerState <- (
                             event,
                             .init(
-                                option: .second(result: result),
+                                option: .customResult(result: result),
                                 tKeyFacade: provider.tKeyFacade,
                                 authService: provider.authService
                             )
@@ -189,7 +191,7 @@ public enum RestoreWalletState: Codable, State, Equatable {
                         if case let .finish(result) = nextInnerState {
                             return try await handleRestoreSocial(provider: provider, result: result)
                         } else {
-                            return .restoreSocial(nextInnerState, option: .second(result: result))
+                            return .restoreSocial(nextInnerState, option: .customResult(result: result))
                         }
                     case .breakProcess:
                         return .restore
@@ -307,7 +309,7 @@ public enum RestoreWalletState: Codable, State, Equatable {
     private func handleSignInDeviceEvent(
         provider: RestoreWalletFlowContainer,
         socialProvider: SocialProvider,
-        event _: RestoreSocialEvent
+        option: RestoreSocialContainer.Option
     ) async throws -> RestoreWalletState {
         guard let deviceShare = provider.deviceShare else { throw StateMachineError.invalidEvent }
         let event = RestoreSocialEvent.signInDevice(socialProvider: socialProvider)
@@ -315,7 +317,7 @@ public enum RestoreWalletState: Codable, State, Equatable {
         let nextInnerState = try await innerState <- (
             event,
             .init(
-                option: .first(deviceShare: deviceShare),
+                option: option,
                 tKeyFacade: provider.tKeyFacade,
                 authService: provider.authService
             )
@@ -324,7 +326,7 @@ public enum RestoreWalletState: Codable, State, Equatable {
         if case let .finish(result) = nextInnerState {
             return try await handleRestoreSocial(provider: provider, result: result)
         } else {
-            return .restoreSocial(nextInnerState, option: .first(deviceShare: deviceShare))
+            return .restoreSocial(nextInnerState, option: option)
         }
     }
 }
@@ -373,7 +375,7 @@ extension RestoreWalletState: Step, Continuable {
         // Social before custom
         case let .restoreSocial(.signIn(deviceShare), option: _):
             return 4 * 100 + RestoreSocialState.signIn(deviceShare: deviceShare).step
-        case let .restoreSocial(.notFoundDevice(data, code, deviceShare), option: _):
+        case let .restoreSocial(.notFoundDevice(data, code, deviceShare), .device):
             return 4 * 100 + RestoreSocialState.notFoundDevice(data: data, code: code, deviceShare: deviceShare).step
 
         // Custom
@@ -389,6 +391,10 @@ extension RestoreWalletState: Step, Continuable {
             return 6 * 100 + RestoreSocialState.expiredSocialTryAgain(result: result, provider: provider, email: email).step
         case let .restoreSocial(.finish(finishResult), option: _):
             return 6 * 100 + RestoreSocialState.finish(finishResult).step
+        case let .restoreSocial(.notFoundDevice(data, code, deviceShare), .customResult):
+            return 6 * 100 + RestoreSocialState.notFoundDevice(data: data, code: code, deviceShare: deviceShare).step
+        case let .restoreSocial(.notFoundDevice(data, code, deviceShare), .customDevice):
+            return 6 * 100 + RestoreSocialState.notFoundDevice(data: data, code: code, deviceShare: deviceShare).step
 
         case let .securitySetup(_, _, securitySetupState):
             return 7 * 100 + securitySetupState.step
