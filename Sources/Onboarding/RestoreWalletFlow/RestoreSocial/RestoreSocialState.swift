@@ -45,17 +45,25 @@ public enum RestoreSocialState: Codable, State, Equatable {
 
     public static var initialState: RestoreSocialState = .signIn(deviceShare: "")
 
-    public func accept(currentState: RestoreSocialState, event: RestoreSocialEvent, provider: RestoreSocialContainer) async throws -> RestoreSocialState {
+    public func accept(
+        currentState: RestoreSocialState,
+        event: RestoreSocialEvent,
+        provider: RestoreSocialContainer
+    ) async throws -> RestoreSocialState {
         switch currentState {
         case let .signIn(deviceShare):
             switch event {
             case let .signInDevice(socialProvider):
-                return try await handleSignInDevice(deviceShare: deviceShare, socialProvider: socialProvider, provider: provider)
+                return try await handleSignInDevice(
+                    deviceShare: deviceShare,
+                    socialProvider: socialProvider,
+                    provider: provider
+                )
             default:
                 throw StateMachineError.invalidEvent
             }
 
-        case .social(let result):
+        case let .social(result):
             switch event {
             case let .signInCustom(socialProvider):
                 return try await handleSignInCustom(result: result, socialProvider: socialProvider, provider: provider)
@@ -65,12 +73,11 @@ public enum RestoreSocialState: Codable, State, Equatable {
 
             default:
                 throw StateMachineError.invalidEvent
-
             }
 
         case let .notFoundCustom(result, email):
             switch event {
-            case .signInCustom(let socialProvider):
+            case let .signInCustom(socialProvider):
                 return try await handleSignInCustom(result: result, socialProvider: socialProvider, provider: provider)
 
             case .start:
@@ -81,8 +88,12 @@ public enum RestoreSocialState: Codable, State, Equatable {
 
         case let .notFoundDevice(data, code, deviceShare):
             switch event {
-            case .signInDevice(let socialProvider):
-                return try await handleSignInDevice(deviceShare: deviceShare, socialProvider: socialProvider, provider: provider)
+            case let .signInDevice(socialProvider):
+                return try await handleSignInDevice(
+                    deviceShare: deviceShare,
+                    socialProvider: socialProvider,
+                    provider: provider
+                )
             case .start:
                 return .finish(.start)
             case .requireCustom:
@@ -94,17 +105,18 @@ public enum RestoreSocialState: Codable, State, Equatable {
         case let .expiredSocialTryAgain(result, socialProvider, email):
             do {
                 return try await handleSignInCustom(result: result, socialProvider: socialProvider, provider: provider)
-            }
-            catch {
+            } catch {
                 if case let .first(share) = provider.option {
                     do {
-                        return try await handleSignInDevice(deviceShare: share, socialProvider: socialProvider, provider: provider)
-                    }
-                    catch {
+                        return try await handleSignInDevice(
+                            deviceShare: share,
+                            socialProvider: socialProvider,
+                            provider: provider
+                        )
+                    } catch {
                         return .notFoundCustom(result: result, email: email)
                     }
-                }
-                else {
+                } else {
                     return .notFoundCustom(result: result, email: email)
                 }
             }
@@ -116,7 +128,11 @@ public enum RestoreSocialState: Codable, State, Equatable {
 }
 
 private extension RestoreSocialState {
-    func handleSignInDevice(deviceShare: String, socialProvider: SocialProvider, provider: RestoreSocialContainer) async throws -> RestoreSocialState {
+    func handleSignInDevice(
+        deviceShare: String,
+        socialProvider: SocialProvider,
+        provider: RestoreSocialContainer
+    ) async throws -> RestoreSocialState {
         let (value, email) = try await provider.authService.auth(type: socialProvider)
         let tokenID = TokenID(value: value, provider: socialProvider.rawValue)
         do {
@@ -126,8 +142,7 @@ private extension RestoreSocialState {
                 deviceShare: deviceShare
             )
             return .finish(.successful(seedPhrase: result.privateSOL, ethPublicKey: result.reconstructedETH))
-        }
-        catch let error as TKeyFacadeError {
+        } catch let error as TKeyFacadeError {
             switch error.code {
             case 1009, 1019:
                 return .notFoundDevice(
@@ -138,26 +153,28 @@ private extension RestoreSocialState {
             default:
                 throw error
             }
-        }
-        catch {
+        } catch {
             throw error
         }
     }
 
-    func handleSignInCustom(result: RestoreWalletResult, socialProvider: SocialProvider, provider: RestoreSocialContainer) async throws -> RestoreSocialState {
+    func handleSignInCustom(
+        result: RestoreWalletResult,
+        socialProvider: SocialProvider,
+        provider: RestoreSocialContainer
+    ) async throws -> RestoreSocialState {
         let (tokenID, email) = try await provider.authService.auth(type: socialProvider)
         do {
             try await provider.tKeyFacade.initialize()
             let result = try await provider.tKeyFacade.signIn(
                 tokenID: TokenID(value: tokenID, provider: socialProvider.rawValue),
-                customShare: result.encryptedShare
+                customShare: result.encryptedShare,
+                encryptedMnemonic: result.encryptedPayload
             )
             return .finish(.successful(seedPhrase: result.privateSOL, ethPublicKey: result.reconstructedETH))
-        }
-        catch let error as TKeyFacadeError {
+        } catch let _ as TKeyFacadeError {
             return .notFoundCustom(result: result, email: email)
-        }
-        catch {
+        } catch {
             throw error
         }
     }

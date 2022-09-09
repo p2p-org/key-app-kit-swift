@@ -157,10 +157,7 @@ let package = Package(
         ),
         .testTarget(name: "OnboardingTests", dependencies: ["Onboarding"]),
 
-        // Solend
-        .target(
-            name: "Solend"
-        ),
+        
     ]
 )
 

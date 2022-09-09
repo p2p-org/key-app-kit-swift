@@ -4,17 +4,17 @@
 
 import Foundation
 import JSBridge
-import WebKit
 import SolanaSwift
+import WebKit
 
 public class TKeyMockupFacade: TKeyFacade {
     public init() {}
 
     public func initialize() async throws {}
 
-    public func signUp(tokenID _: TokenID) async throws -> SignUpResult {
-        return .init(
-            privateSOL: Mnemonic().phrase.joined(separator: " "),
+    public func signUp(tokenID _: TokenID, privateInput: String) async throws -> SignUpResult {
+        .init(
+            privateSOL: privateInput,
             reconstructedETH: "someEthPublicKey",
             deviceShare: "someDeviceShare",
             customShare: "someCustomShare",
@@ -26,11 +26,19 @@ public class TKeyMockupFacade: TKeyFacade {
         .init(privateSOL: Mnemonic().phrase.joined(separator: " "), reconstructedETH: "someEthPublicKey")
     }
 
-    public func signIn(tokenID: TokenID, customShare: String) async throws -> SignInResult {
+    public func signIn(
+        tokenID _: TokenID,
+        customShare _: String,
+        encryptedMnemonic _: String
+    ) async throws -> SignInResult {
         .init(privateSOL: Mnemonic().phrase.joined(separator: " "), reconstructedETH: "someEthPublicKey")
     }
 
-    public func signIn(deviceShare: String, customShare: String) async throws -> SignInResult {
+    public func signIn(
+        deviceShare _: String,
+        customShare _: String,
+        encryptedMnemonic _: String
+    ) async throws -> SignInResult {
         .init(privateSOL: Mnemonic().phrase.joined(separator: " "), reconstructedETH: "someEthPublicKey")
     }
 }
