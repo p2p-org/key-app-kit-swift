@@ -375,8 +375,10 @@ extension RestoreWalletState: Step, Continuable {
         // Social before custom
         case let .restoreSocial(.signIn(deviceShare), option: _):
             return 4 * 100 + RestoreSocialState.signIn(deviceShare: deviceShare).step
-        case let .restoreSocial(.notFoundDevice(data, code, deviceShare), .device):
-            return 4 * 100 + RestoreSocialState.notFoundDevice(data: data, code: code, deviceShare: deviceShare).step
+        case let .restoreSocial(.notFoundDevice(data, deviceShare), .device):
+            return 4 * 100 + RestoreSocialState.notFoundDevice(data: data, deviceShare: deviceShare).step
+        case let .restoreSocial(.notFoundSocial(data, deviceShare), option: _):
+            return 4 * 100 + RestoreSocialState.notFoundSocial(data: data, deviceShare: deviceShare).step
 
         // Custom
         case let .restoreCustom(restoreCustomState):
@@ -391,10 +393,10 @@ extension RestoreWalletState: Step, Continuable {
             return 6 * 100 + RestoreSocialState.expiredSocialTryAgain(result: result, provider: provider, email: email).step
         case let .restoreSocial(.finish(finishResult), option: _):
             return 6 * 100 + RestoreSocialState.finish(finishResult).step
-        case let .restoreSocial(.notFoundDevice(data, code, deviceShare), .customResult):
-            return 6 * 100 + RestoreSocialState.notFoundDevice(data: data, code: code, deviceShare: deviceShare).step
-        case let .restoreSocial(.notFoundDevice(data, code, deviceShare), .customDevice):
-            return 6 * 100 + RestoreSocialState.notFoundDevice(data: data, code: code, deviceShare: deviceShare).step
+        case let .restoreSocial(.notFoundDevice(data, deviceShare), .customResult):
+            return 6 * 100 + RestoreSocialState.notFoundDevice(data: data, deviceShare: deviceShare).step
+        case let .restoreSocial(.notFoundDevice(data, deviceShare), .customDevice):
+            return 6 * 100 + RestoreSocialState.notFoundDevice(data: data, deviceShare: deviceShare).step
 
         case let .securitySetup(_, _, securitySetupState):
             return 7 * 100 + securitySetupState.step
