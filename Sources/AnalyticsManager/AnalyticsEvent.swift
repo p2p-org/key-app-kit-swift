@@ -192,17 +192,17 @@ public enum AnalyticsEvent: MirrorableEnum {
     case tokenChosen(tokenName: String)
     
     // buy
-    case buyCurrencyChanged(_ currency: String)
-    case buyCoinChanged(_ coin: String)
+    case buyCurrencyChanged(fromCurrencyToCurrency: String)
+    case buyCoinChanged(fromCoinToCoin: String)
     case buyTotalShowed
-    case buyChosenMethodPayment(_ method: String)
+    case buyChosenMethodPayment(type: String)
     case buyButtonPressed(
         sumCurrency: String,
         sumCoin: String,
         currency: String,
         coin: String,
         paymentMethod: String,
-        isBankTransfer: Bool,
+        bankTransfer: Bool,
         typeBankTransfer: String?
     )
     case buyStatusTransaction(success: Bool)
@@ -213,10 +213,21 @@ public enum AnalyticsEvent: MirrorableEnum {
 extension AnalyticsEvent {
     /// eventName is snakeCased of event minus params, for example: firstInOpen(scene: String) becomes first_in_open
     var eventName: String? {
-        mirror.label.snakeCased()
+        mirror.label.snakeAndFirstUppercased
     }
 
-    var params: [AnyHashable: Any]? {
-        mirror.params.isEmpty ? nil : mirror.params
+    var params: [String: Any]? {
+        guard !mirror.params.isEmpty else { return nil }
+        let formatted = mirror.params.map { ($0.key.snakeAndFirstUppercased ?? "", $0.value) }
+        return Dictionary(uniqueKeysWithValues: formatted)
+    }
+}
+
+// MARK: - Snake case with First uppercase
+
+private extension String {
+    var snakeAndFirstUppercased: String? {
+        guard let snakeCase = snakeCased() else { return nil }
+        return snakeCase.prefix(1).uppercased() + snakeCase.dropFirst()
     }
 }
