@@ -58,7 +58,7 @@ let package = Package(
             name: "Onboarding",
             targets: ["Onboarding"]
         ),
-        
+
         // Solend
         .library(
             name: "Solend",
@@ -165,19 +165,28 @@ let package = Package(
         // Solend
         .target(
             name: "Solend",
-            dependencies: ["p2p"]
+            dependencies: ["P2P"]
         ),
         .testTarget(
             name: "SolendUnitTests",
             dependencies: ["Solend"],
             path: "Tests/UnitTests/SolendUnitTests"
         ),
-        
-        // MARK: - Frameworks
+
+        // MARK: - P2P SDK
+
+        .target(name: "P2P", dependencies: ["p2p"]),
+
+        .testTarget(
+            name: "P2PTestsIntegrationTests",
+            dependencies: ["P2P"],
+            path: "Tests/IntegrationTests/P2PTestsIntegrationTests"
+        ),
+
         .binaryTarget(
             name: "p2p",
-            path: "Sources/RelaySDK/p2p.xcframework"
-        )
+            path: "Frameworks/p2p.xcframework"
+        ),
     ]
 )
 
