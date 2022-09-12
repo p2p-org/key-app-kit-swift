@@ -48,6 +48,7 @@ public enum RestoreCustomState: Codable, State, Equatable {
     case otpNotDeliveredTrySocial(phone: String)
     case otpNotDelivered(phone: String)
     case noMatch
+    case notFoundDevice
     case tryAnother(wrongNumber: String, trySocial: Bool)
     case expiredSocialTryAgain(result: RestoreWalletResult, social: RestoreSocialData)
     case broken(code: Int)
@@ -119,7 +120,11 @@ public enum RestoreCustomState: Codable, State, Equatable {
                         } catch {
                             if let social = social, provider.authService.isExpired(token: social.tokenID.value) {
                                 return .expiredSocialTryAgain(result: result, social: social)
-                            } else {
+                            }
+                            else if provider.deviceShare != nil, (error as? TKeyFacadeError)?.code == 1009 {
+                                return .notFoundDevice
+                            }
+                            else {
                                 return .noMatch
                             }
                         }
@@ -222,7 +227,19 @@ public enum RestoreCustomState: Codable, State, Equatable {
                 throw StateMachineError.invalidEvent
             }
 
-        case let .finish(result):
+        case .notFoundDevice:
+            switch event {
+            case .enterPhone:
+                return .enterPhone(phone: nil, social: nil)
+            case .requireSocial(let provider):
+                return .finish(result: .requireSocialDevice(provider: provider))
+            case .start:
+                return .finish(result: .start)
+            default:
+                throw StateMachineError.invalidEvent
+            }
+
+        case .finish:
             switch event {
             default:
                 throw StateMachineError.invalidEvent
@@ -322,16 +339,18 @@ extension RestoreCustomState: Step, Continuable {
             return 4
         case .noMatch:
             return 5
-        case .broken:
+        case .notFoundDevice:
             return 6
-        case .tryAnother:
+        case .broken:
             return 7
-        case .block:
+        case .tryAnother:
             return 8
-        case .expiredSocialTryAgain:
+        case .block:
             return 9
-        case .finish:
+        case .expiredSocialTryAgain:
             return 10
+        case .finish:
+            return 11
         }
     }
 }
