@@ -7,35 +7,70 @@ import XCTest
 
 class SocialSignInTests: XCTestCase {
     func testSocialSignIn() async throws {
-        let stateMachine = CreateWalletStateMachine(initialState: .socialSignIn(SocialSignInState.socialSelection), provider: CreateWalletFlowContainer.init(authService: SocialAuthServiceMock(), apiGatewayClient: APIGatewayClientImplMock(), tKeyFacade: TKeyMockupFacade()))
+        let stateMachine: StateMachine<SocialSignInState> = StateMachine(
+            initialState: .socialSelection,
+            provider: SocialSignInContainer(tKeyFacade: TKeyMockupFacade(), authService: SocialAuthServiceMock())
+        )
 
-        var nextState = try await stateMachine.accept(event: .socialSignInEvent(.signIn(socialProvider: .apple)))
-        print("Current state: \(stateMachine.currentState)")
+        var nextState = try await stateMachine.accept(event: .signIn(socialProvider: .apple))
+        guard case .finish(.successful) = nextState else {
+            XCTFail("Expected .finish(.successful), but was \(nextState)")
+            return
+        }
     }
 
-    func testSocialSignInBreakProcess() async throws {
-        let stateMachine = CreateWalletStateMachine(initialState: .socialSignIn(SocialSignInState.socialSignInTryAgain(signInProvider: .apple, usedEmail: "someUsedEmail")), provider: CreateWalletFlowContainer.init(authService: SocialAuthServiceMock(), apiGatewayClient: APIGatewayClientImplMock(), tKeyFacade: TKeyMockupFacade()))
+    func testSocialSignInBack() async throws {
+        let stateMachine: StateMachine<SocialSignInState> = StateMachine(
+            initialState: .socialSignInTryAgain(signInProvider: .apple, usedEmail: "abc@gmail.com"),
+            provider: SocialSignInContainer(tKeyFacade: TKeyMockupFacade(), authService: SocialAuthServiceMock())
+        )
 
-        var nextState = try await stateMachine.accept(event: .socialSignInEvent(.signInBack))
-        print("Current state: \(stateMachine.currentState)")
+        var nextState = try await stateMachine.accept(event: .signInBack)
+        guard case .finish(.breakProcess) = nextState else {
+            XCTFail("Expected .finish(.successful), but was \(nextState)")
+            return
+        }
     }
 
     func testSocialSignInSwitchRestoreFlow() async throws {
-        let stateMachine = CreateWalletStateMachine(initialState: .socialSignIn(SocialSignInState.socialSignInAccountWasUsed(signInProvider: .apple, usedEmail: "someUsedEmail")), provider: CreateWalletFlowContainer.init(authService: SocialAuthServiceMock(), apiGatewayClient: APIGatewayClientImplMock(), tKeyFacade: TKeyMockupFacade()))
+        let stateMachine: StateMachine<SocialSignInState> = StateMachine(
+            initialState: .socialSignInAccountWasUsed(signInProvider: .apple, usedEmail: "abc@gmail.com"),
+            provider: SocialSignInContainer(tKeyFacade: TKeyMockupFacade(), authService: SocialAuthServiceMock())
+        )
 
-        var nextState = try await stateMachine.accept(event: .socialSignInEvent(.restore(authProvider: .apple, email: "someEmail")))
-        print("Current state: \(stateMachine.currentState)")
+        var nextState = try await stateMachine
+            .accept(event: .restore(authProvider: .apple, email: "someEmail"))
+
+        guard case .finish(.switchToRestoreFlow) = nextState else {
+            XCTFail("Expected .finish(.successful), but was \(nextState)")
+            return
+        }
     }
 
     func testSocialSignIn2() async throws {
-        let stateMachine = CreateWalletStateMachine(initialState: .socialSignIn(SocialSignInState.finish(.breakProcess)), provider: CreateWalletFlowContainer.init(authService: SocialAuthServiceMock(), apiGatewayClient: APIGatewayClientImplMock(), tKeyFacade: TKeyMockupFacade()))
+        let stateMachine: StateMachine<SocialSignInState> = StateMachine(
+            initialState: .finish(.breakProcess),
+            provider: SocialSignInContainer(tKeyFacade: TKeyMockupFacade(), authService: SocialAuthServiceMock())
+        )
         do {
-            var nextState = try await stateMachine.accept(event: .socialSignInEvent(.signIn(socialProvider: .apple)))
+            var nextState = try await stateMachine.accept(event: .signIn(socialProvider: .apple))
             print("Current state: \(stateMachine.currentState)")
             XCTFail()
-        } catch {
+        } catch {}
+    }
 
+    func testSocialTryAgainEventHandler() async throws {
+        let state: SocialSignInState = .socialSignInTryAgain(signInProvider: .apple, usedEmail: "abc@gmail.com")
+
+//        let nextState = try await state.socialTryAgainEventHandler(currentState: state, event: .signIn(socialProvider: .apple), provider: .init(tKeyFacade: TKeyMockupFacade(), authService: SocialAuthServiceMock()))
+        let nextState = try await state <- (
+            event: .signIn(socialProvider: .apple),
+            provider: .init(tKeyFacade: TKeyMockupFacade(), authService: SocialAuthServiceMock())
+        )
+
+        guard case .finish(.successful) = nextState else {
+            XCTFail("Expected .finish(.successful), but was \(nextState)")
+            return
         }
-
     }
 }

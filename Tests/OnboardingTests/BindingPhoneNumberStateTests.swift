@@ -7,21 +7,71 @@ import XCTest
 
 class BindingPhoneNumberTests: XCTestCase {
     func testBindingPhoneNumber() async throws {
-        let stateMachine = CreateWalletStateMachine(initialState: .bindingPhoneNumber(email: "someEmail", seedPhrase: "someSeedPhrase", ethPublicKey: "someEthPublicKey", deviceShare: "someDeviceShare", BindingPhoneNumberState.initialState), provider: CreateWalletFlowContainer.init(authService: SocialAuthServiceMock(), apiGatewayClient: APIGatewayClientImplMock(), tKeyFacade: TKeyMockupFacade()))
+        let stateMachine: StateMachine<BindingPhoneNumberState> = StateMachine(
+            initialState: .enterPhoneNumber(
+                initialPhoneNumber: "1234567890",
+                didSend: false,
+                data: .init(seedPhrase: "", ethAddress: "", customShare: "", payload: "")
+            ),
+            provider: APIGatewayClientImplMock()
+        )
 
-        var nextState = try await stateMachine.accept(event: .bindingPhoneNumberEvent(.enterPhoneNumber(phoneNumber: "somePhoneNumber", channel: BindingPhoneNumberChannel.call)))
+        var nextState = try await stateMachine
+            .accept(event: .enterPhoneNumber(phoneNumber: "1234567890",
+                                             channel: BindingPhoneNumberChannel.sms))
+        print("Current state: \(stateMachine.currentState)")
+    }
+
+    func testBindingPhoneNumber3() async throws {
+        let stateMachine: StateMachine<BindingPhoneNumberState> = StateMachine(
+            initialState: .enterPhoneNumber(
+                initialPhoneNumber: "1234567890",
+                didSend: false,
+                data: .init(seedPhrase: "", ethAddress: "", customShare: "", payload: "")
+            ),
+            provider: APIGatewayClientImplMock()
+        )
+
+        var nextState = try await stateMachine.accept(event: .enterOTP(opt: "000000"))
         print("Current state: \(stateMachine.currentState)")
     }
 
     func testBindingPhoneNumber2() async throws {
-        let stateMachine = CreateWalletStateMachine(initialState: .bindingPhoneNumber(email: "someEmail", seedPhrase: "someSeedPhrase", ethPublicKey: "someEthPublicKey", deviceShare: "someDeviceShare", BindingPhoneNumberState.enterOTP(resendAttempt: Wrapper(0), channel: .sms, phoneNumber: "79182585928", data: .init(seedPhrase: "", ethAddress: "", customShare: "", payload: ""))), provider: CreateWalletFlowContainer.init(authService: SocialAuthServiceMock(), apiGatewayClient: APIGatewayClientImplMock(), tKeyFacade: TKeyMockupFacade()))
+        let stateMachine: StateMachine<BindingPhoneNumberState> = StateMachine(
+            initialState: .enterOTP(
+                resendAttempt: .init(0),
+                channel: .sms,
+                phoneNumber: "1234567890",
+                data: .init(seedPhrase: "", ethAddress: "", customShare: "", payload: "")
+            ),
+            provider: APIGatewayClientImplMock()
+        )
 
-        var nextState = try await stateMachine.accept(event: .bindingPhoneNumberEvent(.enterOTP(opt: "000000")))
+        var nextState = try await stateMachine.accept(event: .enterOTP(opt: "000000"))
         print("Current state: \(stateMachine.currentState)")
     }
 
     func testBindingPhoneNumberBreakProcess() async throws {
-        let stateMachine = CreateWalletStateMachine(initialState: .bindingPhoneNumber(email: "someEmail", seedPhrase: "someSeedPhrase", ethPublicKey: "someEthPublicKey", deviceShare: "someDeviceShare", BindingPhoneNumberState.block(until: .now, reason: .blockEnterPhoneNumber, phoneNumber: "79182585928", data: .init(seedPhrase: "", ethAddress: "", customShare: "", payload: ""))), provider: CreateWalletFlowContainer.init(authService: SocialAuthServiceMock(), apiGatewayClient: APIGatewayClientImplMock(), tKeyFacade: TKeyMockupFacade()))
+        let stateMachine = CreateWalletStateMachine(
+            initialState: .bindingPhoneNumber(email: "someEmail", seedPhrase: "someSeedPhrase",
+                                              ethPublicKey: "someEthPublicKey", deviceShare: "someDeviceShare",
+                                              BindingPhoneNumberState.block(
+                                                  until: .now,
+                                                  reason: .blockEnterPhoneNumber,
+                                                  phoneNumber: "79182585928",
+                                                  data: .init(
+                                                      seedPhrase: "",
+                                                      ethAddress: "",
+                                                      customShare: "",
+                                                      payload: ""
+                                                  )
+                                              )),
+            provider: CreateWalletFlowContainer(
+                authService: SocialAuthServiceMock(),
+                apiGatewayClient: APIGatewayClientImplMock(),
+                tKeyFacade: TKeyMockupFacade()
+            )
+        )
 
         var nextState = try await stateMachine.accept(event: .bindingPhoneNumberEvent(.home))
         print("Current state: \(stateMachine.currentState)")
