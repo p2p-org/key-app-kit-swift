@@ -6,33 +6,40 @@ import XCTest
 @testable import Onboarding
 
 class OnboardingStateMachineTests: XCTestCase {
-    // func testGeneralFlow() async throws {
-    //     let stateMachine = CreateWalletStateMachine(provider: TKeyMockupFacade())
-    //
-    //     // Sign in with apple
-    //     var nextState = try await stateMachine.accept(event: .signIn(tokenID: "SomeTokenID", authProvider: .apple))
-    //     print("Current state: \(stateMachine.currentState)")
-    //
-    //     switch nextState {
-    //     case .enterPhoneNumber: break
-    //     default: XCTFail("Expected .enterPhoneNumber state")
-    //     }
-    //
-    //     // Enter phone number
-    //     nextState = try await stateMachine.accept(event: .enterPhoneNumber(phoneNumber: "999999999"))
-    //     print("Current state: \(stateMachine.currentState)")
-    //
-    //     // Enter verify code
-    //     nextState = try await stateMachine.accept(event: .enterSmsConfirmationCode(code: "1234"))
-    //     print("Current state: \(stateMachine.currentState)")
-    //
-    //     // Enter pincode
-    //     nextState = try await stateMachine.accept(event: .enterPincode(pincode: "1234"))
-    //     print("Current state: \(stateMachine.currentState)")
-    //
-    //     switch nextState {
-    //     case .finish: break
-    //     default: XCTFail("Expected .enterPhoneNumber state")
-    //     }
-    // }
+     func testSocialSignIn() async throws {
+         let stateMachine = CreateWalletStateMachine(initialState: .socialSignIn(SocialSignInState.socialSelection), provider: CreateWalletFlowContainer.init(authService: SocialAuthServiceMock(), apiGatewayClient: APIGatewayClientImplMock(), tKeyFacade: TKeyMockupFacade()))
+
+         var nextState = try await stateMachine.accept(event: .socialSignInEvent(.signIn(socialProvider: .apple)))
+         print("Current state: \(stateMachine.currentState)")
+     }
+
+    func testSocialSignInBreakProcess() async throws {
+        let stateMachine = CreateWalletStateMachine(initialState: .socialSignIn(SocialSignInState.socialSignInTryAgain(signInProvider: .apple, usedEmail: "someUsedEmail")), provider: CreateWalletFlowContainer.init(authService: SocialAuthServiceMock(), apiGatewayClient: APIGatewayClientImplMock(), tKeyFacade: TKeyMockupFacade()))
+
+        var nextState = try await stateMachine.accept(event: .socialSignInEvent(.signInBack))
+        print("Current state: \(stateMachine.currentState)")
+    }
+
+    func testSocialSignInSwitchRestoreFlow() async throws {
+        let stateMachine = CreateWalletStateMachine(initialState: .socialSignIn(SocialSignInState.socialSignInAccountWasUsed(signInProvider: .apple, usedEmail: "someUsedEmail")), provider: CreateWalletFlowContainer.init(authService: SocialAuthServiceMock(), apiGatewayClient: APIGatewayClientImplMock(), tKeyFacade: TKeyMockupFacade()))
+
+        var nextState = try await stateMachine.accept(event: .socialSignInEvent(.restore(authProvider: .apple, email: "someEmail")))
+        print("Current state: \(stateMachine.currentState)")
+    }
+
+    func testSocialSignIn2() async throws {
+        let stateMachine = CreateWalletStateMachine(initialState: .socialSignIn(SocialSignInState.finish(.breakProcess)), provider: CreateWalletFlowContainer.init(authService: SocialAuthServiceMock(), apiGatewayClient: APIGatewayClientImplMock(), tKeyFacade: TKeyMockupFacade()))
+
+        var nextState = try await stateMachine.accept(event: .socialSignInEvent(.signIn(socialProvider: .apple)))
+        print("Current state: \(stateMachine.currentState)")
+    }
+
+    func testBindingPhoneNumber() async throws {
+        let stateMachine = CreateWalletStateMachine(initialState: .bindingPhoneNumber(email: "someEmail", seedPhrase: "someSeedPhrase", ethPublicKey: "someEthPublicKey", deviceShare: "someDeviceShare", BindingPhoneNumberState.initialState), provider: CreateWalletFlowContainer.init(authService: SocialAuthServiceMock(), apiGatewayClient: APIGatewayClientImplMock(), tKeyFacade: TKeyMockupFacade()))
+
+        var nextState = try await stateMachine.accept(event: .bindingPhoneNumberEvent(.enterPhoneNumber(phoneNumber: "somePhoneNumber", channel: BindingPhoneNumberChannel.call)))
+        print("Current state: \(stateMachine.currentState)")
+    }
+
+
 }
