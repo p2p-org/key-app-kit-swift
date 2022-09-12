@@ -176,7 +176,7 @@ let package = Package(
         // MARK: - Frameworks
         .binaryTarget(
             name: "p2p",
-            path: "Sources/RelaySDK/p2p.xcframework.zip"
+            path: "Sources/RelaySDK/p2p.xcframework"
         )
     ]
 )
