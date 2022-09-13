@@ -43,8 +43,8 @@ public enum RestoreCustomState: Codable, State, Equatable {
 
     case enterPhone(phone: String?, social: RestoreSocialData?)
     case enterOTP(phone: String, solPrivateKey: Data, social: RestoreSocialData?, attempt: Wrapper<Int>)
-    case otpNotDeliveredTrySocial(phone: String)
-    case otpNotDelivered(phone: String)
+    case otpNotDeliveredTrySocial(phone: String, code: Int)
+    case otpNotDelivered(phone: String, code: Int)
     case noMatch
     case notFoundDevice
     case tryAnother(wrongNumber: String, trySocial: Bool)
@@ -164,7 +164,7 @@ public enum RestoreCustomState: Codable, State, Equatable {
                 throw StateMachineError.invalidEvent
             }
 
-        case let .otpNotDeliveredTrySocial(phone):
+        case let .otpNotDeliveredTrySocial(phone, _):
             switch event {
             case .back:
                 return .enterPhone(phone: nil, social: nil)
@@ -304,9 +304,9 @@ public enum RestoreCustomState: Codable, State, Equatable {
                 return .tryAnother(wrongNumber: phone, trySocial: provider.deviceShare != nil)
             case -32054:
                 if let deviceShare = provider.deviceShare {
-                    return .otpNotDeliveredTrySocial(phone: phone)
+                    return .otpNotDeliveredTrySocial(phone: phone, code: error.rawValue)
                 } else {
-                    return .otpNotDelivered(phone: phone)
+                    return .otpNotDelivered(phone: phone, code: error.rawValue)
                 }
             case -32053:
                 return .block(until: Date() + blockTime, social: social, reason: .blockEnterPhoneNumber)
