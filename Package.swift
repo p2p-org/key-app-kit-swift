@@ -165,7 +165,7 @@ let package = Package(
         // Solend
         .target(
             name: "Solend",
-            dependencies: ["P2P"]
+            dependencies: ["P2PSwift"]
         ),
         .testTarget(
             name: "SolendUnitTests",
@@ -175,11 +175,11 @@ let package = Package(
 
         // MARK: - P2P SDK
 
-        .target(name: "P2P", dependencies: ["p2p"]),
+        .target(name: "P2PSwift", dependencies: ["p2p"]),
 
         .testTarget(
             name: "P2PTestsIntegrationTests",
-            dependencies: ["P2P"],
+            dependencies: ["P2PSwift"],
             path: "Tests/IntegrationTests/P2PTestsIntegrationTests"
         ),
 

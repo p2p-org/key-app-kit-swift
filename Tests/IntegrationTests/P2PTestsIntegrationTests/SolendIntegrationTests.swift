@@ -1,5 +1,5 @@
 import XCTest
-@testable import P2P
+@testable import P2PSwift
 
 class SolendIntegrationTests: XCTestCase {
     func testGetSolendMarketInfo() async throws {
@@ -84,7 +84,7 @@ class SolendIntegrationTests: XCTestCase {
             amount: 10,
             symbol: "USDC",
             ownerAddress: "HkLNnxTFst1oLrKAJc3w6Pq8uypRnqLMrC68iBP6qUPu",
-            environment: "production",
+            environment: .production,
             lendingMarketAddress: "7RCz8wb6WXxUhAigok9ttgrVgDFFFbibcirECzWSBauM",
             blockHash: "78Ms4zEJkgbCyPjsdn7UyXyttUjVMMHogd1ZVqxPrRfk",
             freeTransactionsCount: 3,

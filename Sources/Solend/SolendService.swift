@@ -3,7 +3,7 @@
 // found in the LICENSE file.
 
 import Foundation
-import P2P
+import P2PSwift
 
 protocol SolendService {}
 
