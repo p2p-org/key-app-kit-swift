@@ -200,7 +200,7 @@ public enum RestoreCustomState: Codable, State, Equatable {
                 throw StateMachineError.invalidEvent
             }
 
-        case let .block(until, social, reason):
+        case let .block(until, social, _):
             switch event {
             case .start:
                 return .finish(result: .start)
@@ -303,7 +303,7 @@ public enum RestoreCustomState: Codable, State, Equatable {
             case -32060:
                 return .tryAnother(wrongNumber: phone, trySocial: provider.deviceShare != nil)
             case -32054:
-                if let deviceShare = provider.deviceShare {
+                if provider.deviceShare != nil {
                     return .otpNotDeliveredTrySocial(phone: phone, code: error.rawValue)
                 } else {
                     return .otpNotDelivered(phone: phone, code: error.rawValue)
