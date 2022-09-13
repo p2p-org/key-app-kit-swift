@@ -5,6 +5,7 @@
 import Foundation
 
 public typealias SolanaRawTransaction = String
+public typealias SolendSymbol = String
 
 public enum SolendEnvironment: String {
     case production

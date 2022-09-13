@@ -154,7 +154,6 @@ let package = Package(
             dependencies: [
                 "JSBridge",
                 .product(name: "SolanaSwift", package: "solana-swift"),
-
             ],
             resources: [
                 .process("Resource/index.html"),
@@ -165,7 +164,10 @@ let package = Package(
         // Solend
         .target(
             name: "Solend",
-            dependencies: ["P2PSwift"]
+            dependencies: [
+                "P2PSwift",
+                .product(name: "SolanaSwift", package: "solana-swift"),
+            ]
         ),
         .testTarget(
             name: "SolendUnitTests",

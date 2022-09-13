@@ -40,11 +40,11 @@ public class SolendFFIWrapper: Solend {
     }
 
     public func getMarketInfo(
-        tokens: [String],
+        symbols: [SolendSymbol],
         pool: String
-    ) async throws -> [(token: String, marketInfo: SolendMarketInfo)] {
+    ) async throws -> [(token: SolendSymbol, marketInfo: SolendMarketInfo)] {
         let jsonResult: String = try await execute {
-            get_solend_market_info(tokens.joined(separator: ","), pool)
+            get_solend_market_info(symbols.joined(separator: ","), pool)
         }
 
         // Decode
@@ -143,7 +143,7 @@ public class SolendFFIWrapper: Solend {
 
     public func getUserDepositBySymbol(
         owner: String,
-        symbol: String,
+        symbol: SolendSymbol,
         poolAddress: String
     ) async throws -> SolendUserDeposit {
         let jsonResult: String = try await execute {
@@ -176,7 +176,7 @@ public class SolendFFIWrapper: Solend {
         rpcUrl: String,
         owner: String,
         tokenAmount: UInt64,
-        tokenSymbol: String
+        tokenSymbol: SolendSymbol
     ) async throws -> SolendDepositFee {
         let jsonResult: String = try await execute {
             get_solend_deposit_fees(rpcUrl, owner, tokenAmount, tokenSymbol)
@@ -200,7 +200,7 @@ public class SolendFFIWrapper: Solend {
         solanaRpcUrl: String,
         relayProgramId: String,
         amount: UInt64,
-        symbol: String,
+        symbol: SolendSymbol,
         ownerAddress: String,
         environment: SolendEnvironment,
         lendingMarketAddress: String,
@@ -251,7 +251,7 @@ public class SolendFFIWrapper: Solend {
         solanaRpcUrl: String,
         relayProgramId: String,
         amount: UInt64,
-        symbol: String,
+        symbol: SolendSymbol,
         ownerAddress: String,
         environment: SolendEnvironment,
         lendingMarketAddress: String,

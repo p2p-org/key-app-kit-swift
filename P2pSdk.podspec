@@ -1,5 +1,5 @@
 Pod::Spec.new do |s|
-  s.name             = 'P2P'
+  s.name             = 'P2pSdk'
   s.version          = '1.0.0'
   s.summary          = 'A library in rust'
 
@@ -14,11 +14,7 @@ Pod::Spec.new do |s|
 
   s.ios.deployment_target = '13.0'
 
-  s.source_files = 'Frameworks/p2p.xcframework'
-  s.ios.vendored_frameworks = "p2p.xcframework"
+  s.source_files = "Frameworks/p2p.xcframework/**/*"
+  s.vendored_frameworks = "p2p.xcframework"
   s.swift_version = '5.5'
-
-  s.pod_target_xcconfig = {
-    'SWIFT_OPTIMIZATION_LEVEL' => '-O'
-  }
 end

@@ -14,7 +14,7 @@ class SolendIntegrationTests: XCTestCase {
 
     func testGetMarketInfo() async throws {
         let solend = SolendFFIWrapper()
-        let result = try await solend.getMarketInfo(tokens: ["USDT", "USDC"], pool: "main")
+        let result = try await solend.getMarketInfo(symbols: ["USDT", "USDC"], pool: "main")
         print(result)
         // XCTAssertEqual(result.count, 2)
     }

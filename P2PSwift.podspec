@@ -15,10 +15,5 @@ Pod::Spec.new do |s|
   s.ios.deployment_target = '13.0'
 
   s.source_files = 'Sources/P2PSwift/**/*'
-  s.dependency 'P2P'
   s.swift_version = '5.5'
-
-  s.pod_target_xcconfig = {
-    'SWIFT_OPTIMIZATION_LEVEL' => '-O'
-  }
 end

@@ -10,9 +10,9 @@ public protocol Solend {
     /// Fetch market info
     ///
     /// - Parameters:
-    ///   - tokens: Token symbol. Example: USDT, USDC, SOL
+    ///   - symbols: Token symbol. Example: USDT, USDC, SOL
     ///   - pool: Solend pool. Example: main
-    func getMarketInfo(tokens: [String], pool: String) async throws -> [(token: String, marketInfo: SolendMarketInfo)]
+    func getMarketInfo(symbols: [SolendSymbol], pool: String) async throws -> [(token: SolendSymbol, marketInfo: SolendMarketInfo)]
 
     /// Fetch user deposit
     ///
@@ -29,13 +29,13 @@ public protocol Solend {
     ///   - poolAddress: lending market address
     /// - Returns:
     /// - Throws:
-    func getUserDepositBySymbol(owner: String, symbol: String, poolAddress: String) async throws -> SolendUserDeposit
+    func getUserDepositBySymbol(owner: String, symbol: SolendSymbol, poolAddress: String) async throws -> SolendUserDeposit
 
     func getDepositFee(
         rpcUrl: String,
         owner: String,
         tokenAmount: UInt64,
-        tokenSymbol: String
+        tokenSymbol: SolendSymbol
     ) async throws -> SolendDepositFee
 
     /// Create a deposit transaction
@@ -58,7 +58,7 @@ public protocol Solend {
         solanaRpcUrl: String,
         relayProgramId: String,
         amount: UInt64,
-        symbol: String,
+        symbol: SolendSymbol,
         ownerAddress: String,
         environment: SolendEnvironment,
         lendingMarketAddress: String,
@@ -89,7 +89,7 @@ public protocol Solend {
         solanaRpcUrl: String,
         relayProgramId: String,
         amount: UInt64,
-        symbol: String,
+        symbol: SolendSymbol,
         ownerAddress: String,
         environment: SolendEnvironment,
         lendingMarketAddress: String,
