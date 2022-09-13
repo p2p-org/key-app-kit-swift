@@ -37,4 +37,69 @@ class SolendIntegrationTests: XCTestCase {
         )
         XCTAssertEqual(result.symbol, "USDC")
     }
+
+    func testGetDepositFee() async throws {
+        let solend = SolendFFIWrapper()
+        let result = try await solend.getDepositFee(
+            rpcUrl: "https://api.mainnet-beta.solana.com",
+            owner: "GccETn3yYfwVmgmfvcggsEAUKd5zqFTiKF5skj2bGYU7",
+            tokenAmount: 100_000,
+            tokenSymbol: "USDC"
+        )
+        XCTAssertEqual(result.fee, 5000)
+    }
+
+    func testCreateDepositTransaction() async throws {
+        let solend = SolendFFIWrapper()
+        let result = try await solend.createDepositTransaction(
+            solanaRpcUrl: "https://api.mainnet-beta.solana.com",
+            relayProgramId: "FG4Y3yX4AAchp1HvNZ7LfzFTewF2f6nDoMDCohTFrdpT",
+            amount: 10,
+            symbol: "USDC",
+            ownerAddress: "HkLNnxTFst1oLrKAJc3w6Pq8uypRnqLMrC68iBP6qUPu",
+            environment: .production,
+            lendingMarketAddress: "7RCz8wb6WXxUhAigok9ttgrVgDFFFbibcirECzWSBauM",
+            blockHash: "78Ms4zEJkgbCyPjsdn7UyXyttUjVMMHogd1ZVqxPrRfk",
+            freeTransactionsCount: 3,
+            needToUseRelay: true,
+            payInFeeToken: .init(
+                senderAccount: "4tqJeGMJpaBdaWwbmREsQCFTjWqscfjUGeHuq8buGvTZ",
+                recipientAccount: "BCxDhVmRK4aGVhNyF6fnTvAC8QBwZiTGXMnxroCcskdu",
+                mint: "FANTafPFBAt93BNJVpdu25pGPmca3RfwdsDsRrT3LX1r",
+                authority: "HkLNnxTFst1oLrKAJc3w6Pq8uypRnqLMrC68iBP6qUPu",
+                exchangeRate: 0.1,
+                decimals: 2
+            ),
+            feePayerAddress: "FG4Y3yX4AAchp1HvNZ7LfzFTewF2f6nDoMDCohTFrdpT"
+        )
+        
+        XCTAssertEqual(result.count, 1)
+    }
+    
+    func testCreateWithdrawTransaction() async throws {
+        let solend = SolendFFIWrapper()
+        let result = try await solend.createWithdrawTransaction(
+            solanaRpcUrl: "https://api.mainnet-beta.solana.com",
+            relayProgramId: "FG4Y3yX4AAchp1HvNZ7LfzFTewF2f6nDoMDCohTFrdpT",
+            amount: 10,
+            symbol: "USDC",
+            ownerAddress: "HkLNnxTFst1oLrKAJc3w6Pq8uypRnqLMrC68iBP6qUPu",
+            environment: "production",
+            lendingMarketAddress: "7RCz8wb6WXxUhAigok9ttgrVgDFFFbibcirECzWSBauM",
+            blockHash: "78Ms4zEJkgbCyPjsdn7UyXyttUjVMMHogd1ZVqxPrRfk",
+            freeTransactionsCount: 3,
+            needToUseRelay: true,
+            payInFeeToken: .init(
+                senderAccount: "4tqJeGMJpaBdaWwbmREsQCFTjWqscfjUGeHuq8buGvTZ",
+                recipientAccount: "BCxDhVmRK4aGVhNyF6fnTvAC8QBwZiTGXMnxroCcskdu",
+                mint: "FANTafPFBAt93BNJVpdu25pGPmca3RfwdsDsRrT3LX1r",
+                authority: "HkLNnxTFst1oLrKAJc3w6Pq8uypRnqLMrC68iBP6qUPu",
+                exchangeRate: 0.1,
+                decimals: 2
+            ),
+            feePayerAddress: "FG4Y3yX4AAchp1HvNZ7LfzFTewF2f6nDoMDCohTFrdpT"
+        )
+        
+        XCTAssertEqual(result.count, 1)
+    }
 }

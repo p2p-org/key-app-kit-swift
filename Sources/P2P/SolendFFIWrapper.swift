@@ -172,8 +172,134 @@ public class SolendFFIWrapper: Solend {
         }
     }
 
+    public func getDepositFee(
+        rpcUrl: String,
+        owner: String,
+        tokenAmount: UInt64,
+        tokenSymbol: String
+    ) async throws -> SolendDepositFee {
+        let jsonResult: String = try await execute {
+            get_solend_deposit_fees(rpcUrl, owner, tokenAmount, tokenSymbol)
+        }
+
+        do {
+            let response = try JSONDecoder().decode(
+                SolendResponse<SolendDepositFee>.self,
+                from: jsonResult.data(using: .utf8)!
+            )
+
+            if let error = response.error { throw SolendError.message(error) }
+            if let success = response.success { return success }
+            throw SolendError.invalidJson
+        } catch {
+            throw SolendError.invalidJson
+        }
+    }
+
+    public func createDepositTransaction(
+        solanaRpcUrl: String,
+        relayProgramId: String,
+        amount: UInt64,
+        symbol: String,
+        ownerAddress: String,
+        environment: SolendEnvironment,
+        lendingMarketAddress: String,
+        blockHash: String,
+        freeTransactionsCount: UInt32,
+        needToUseRelay: Bool,
+        payInFeeToken: SolendPayFeeInToken,
+        feePayerAddress: String
+    ) async throws -> [String] {
+        let payInFeeTokenJson = String(data: try JSONEncoder().encode(payInFeeToken), encoding: .utf8)!
+
+        let jsonResult: String = try await execute {
+            create_solend_deposit_transactions(
+                solanaRpcUrl,
+                relayProgramId,
+                amount,
+                symbol,
+                ownerAddress,
+                environment.rawValue,
+                lendingMarketAddress,
+                blockHash,
+                freeTransactionsCount,
+                needToUseRelay,
+                payInFeeTokenJson,
+                feePayerAddress
+            )
+        }
+
+        struct Success: Codable {
+            let transactions: [String]
+        }
+
+        do {
+            let response = try JSONDecoder().decode(
+                SolendResponse<Success>.self,
+                from: jsonResult.data(using: .utf8)!
+            )
+
+            if let error = response.error { throw SolendError.message(error) }
+            if let success = response.success { return success.transactions }
+            throw SolendError.invalidJson
+        } catch {
+            throw SolendError.invalidJson
+        }
+    }
+
+    public func createWithdrawTransaction(
+        solanaRpcUrl: String,
+        relayProgramId: String,
+        amount: UInt64,
+        symbol: String,
+        ownerAddress: String,
+        environment: SolendEnvironment,
+        lendingMarketAddress: String,
+        blockHash: String,
+        freeTransactionsCount: UInt32,
+        needToUseRelay: Bool,
+        payInFeeToken: SolendPayFeeInToken,
+        feePayerAddress: String
+    ) async throws -> [SolanaRawTransaction] {
+        let payInFeeTokenJson = String(data: try JSONEncoder().encode(payInFeeToken), encoding: .utf8)!
+
+        let jsonResult: String = try await execute {
+            create_solend_withdraw_transactions(
+                solanaRpcUrl,
+                relayProgramId,
+                amount,
+                symbol,
+                ownerAddress,
+                environment.rawValue,
+                lendingMarketAddress,
+                blockHash,
+                freeTransactionsCount,
+                needToUseRelay,
+                payInFeeTokenJson,
+                feePayerAddress
+            )
+        }
+
+        struct Success: Codable {
+            let transactions: [String]
+        }
+
+        do {
+            let response = try JSONDecoder().decode(
+                SolendResponse<Success>.self,
+                from: jsonResult.data(using: .utf8)!
+            )
+
+            if let error = response.error { throw SolendError.message(error) }
+            if let success = response.success { return success.transactions }
+            throw SolendError.invalidJson
+        } catch {
+            throw SolendError.invalidJson
+        }
+    }
+
     // Utils
-    private func execute(_ networkCall: @escaping () -> UnsafeMutablePointer<CChar>?) async throws -> String {
+    internal func execute(_ networkCall: @escaping () -> UnsafeMutablePointer<CChar>?) async throws -> String {
         try await withCheckedThrowingContinuation { continuation in
             SolendFFIWrapper.concurrentQueue.async {
                 do {

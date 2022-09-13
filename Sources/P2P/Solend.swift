@@ -17,9 +17,86 @@ public protocol Solend {
     /// Fetch user deposit
     ///
     /// - Parameters:
-    ///   - owner: wallet address
-    ///   - poolAddress:
+    ///   - owner: user's wallet address
+    ///   - poolAddress: lending market address
     func getUserDeposits(owner: String, poolAddress: String) async throws -> [SolendUserDeposit]
 
+    /// Fetch user deposit for symbol
+    ///
+    /// - Parameters:
+    ///   - owner: user's wallet address
+    ///   - symbol: token symbol. Example: USDT, USDC, SOL
+    ///   - poolAddress: lending market address
+    /// - Returns:
+    /// - Throws:
     func getUserDepositBySymbol(owner: String, symbol: String, poolAddress: String) async throws -> SolendUserDeposit
+
+    func getDepositFee(
+        rpcUrl: String,
+        owner: String,
+        tokenAmount: UInt64,
+        tokenSymbol: String
+    ) async throws -> SolendDepositFee
+
+    /// Create a deposit transaction
+    ///
+    /// - Parameters:
+    ///   - solanaRpcUrl: Solana rpc endpoint
+    ///   - relayProgramId: Relay program address
+    ///   - amount: amount of deposit
+    ///   - symbol: token symbol. Example: USDC, SOL
+    ///   - ownerAddress: user's wallet address
+    ///   - environment:
+    ///   - lendingMarketAddress: solend lending market address
+    ///   - blockHash: latest solana block hash
+    ///   - freeTransactionsCount: the number of free transaction, that be payed by Fee Relay. ``needToUseRelay`` have be true
+    ///   - needToUseRelay: the indicator of usage fee relay
+    ///   - payInFeeToken: the token in user's wallet that will be used for cover fee
+    ///   - feePayerAddress: the fee payer address.
+    /// - Returns: Stringify transaction
+    func createDepositTransaction(
+        solanaRpcUrl: String,
+        relayProgramId: String,
+        amount: UInt64,
+        symbol: String,
+        ownerAddress: String,
+        environment: SolendEnvironment,
+        lendingMarketAddress: String,
+        blockHash: String,
+        freeTransactionsCount: UInt32,
+        needToUseRelay: Bool,
+        payInFeeToken: SolendPayFeeInToken,
+        feePayerAddress: String
+    ) async throws -> [SolanaRawTransaction]
+
+    /// Create a withdraw transaction
+    ///
+    /// - Parameters:
+    ///   - solanaRpcUrl: Solana rpc endpoint
+    ///   - relayProgramId: Relay program address
+    ///   - amount: amount of deposit
+    ///   - symbol: token symbol. Example: USDC, SOL
+    ///   - ownerAddress: user's wallet address
+    ///   - environment:
+    ///   - lendingMarketAddress: solend lending market address
+    ///   - blockHash: latest solana block hash
+    ///   - freeTransactionsCount: the number of free transaction, that be payed by Fee Relay. ``needToUseRelay`` have be true
+    ///   - needToUseRelay: the indicator of usage fee relay
+    ///   - payInFeeToken: the token in user's wallet that will be used for cover fee
+    ///   - feePayerAddress: the fee payer address.
+    /// - Returns: Stringify transaction
+    func createWithdrawTransaction(
+        solanaRpcUrl: String,
+        relayProgramId: String,
+        amount: UInt64,
+        symbol: String,
+        ownerAddress: String,
+        environment: SolendEnvironment,
+        lendingMarketAddress: String,
+        blockHash: String,
+        freeTransactionsCount: UInt32,
+        needToUseRelay: Bool,
+        payInFeeToken: SolendPayFeeInToken,
+        feePayerAddress: String
+    ) async throws -> [SolanaRawTransaction]
 }

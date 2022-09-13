@@ -4,13 +4,20 @@
 
 import Foundation
 
+public typealias SolanaRawTransaction = String
+
+public enum SolendEnvironment: String {
+    case production
+    case devnet
+}
+
 public struct SolendCollateralAccount: Codable {
     public let address: String
     public let mint: String
 }
 
 public struct SolendMarketInfo: Codable {
-    let currentSupply, depositLimit, supplyInterest: String
+    public let currentSupply, depositLimit, supplyInterest: String
 
     enum CodingKeys: String, CodingKey {
         case currentSupply = "current_supply"
@@ -20,6 +27,45 @@ public struct SolendMarketInfo: Codable {
 }
 
 public struct SolendUserDeposit: Codable {
-    let symbol: String
-    let depositedAmount: String
+    public let symbol: String
+    public let depositedAmount: String
+}
+
+public struct SolendDepositFee: Codable {
+    public let fee: UInt64
+    public let rent: UInt64
+}
+
+public struct SolendPayFeeInToken: Codable {
+    public let senderAccount: String
+    public let recipientAccount: String
+    public let mint: String
+    public let authority: String
+    public let exchangeRate: Float64
+    public let decimals: UInt8
+
+    enum CodingKeys: String, CodingKey {
+        case senderAccount = "sender_account_pubkey"
+        case recipientAccount = "recipient_account_pubkey"
+        case mint = "mint_pubkey"
+        case authority = "authority_pubkey"
+        case exchangeRate = "exchange_rate"
+        case decimals
+    }
+
+    public init(
+        senderAccount: String,
+        recipientAccount: String,
+        mint: String,
+        authority: String,
+        exchangeRate: Float64,
+        decimals: UInt8
+    ) {
+        self.senderAccount = senderAccount
+        self.recipientAccount = recipientAccount
+        self.mint = mint
+        self.authority = authority
+        self.exchangeRate = exchangeRate
+        self.decimals = decimals
+    }
 }
