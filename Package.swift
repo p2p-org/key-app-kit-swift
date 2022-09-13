@@ -58,6 +58,12 @@ let package = Package(
             name: "Onboarding",
             targets: ["Onboarding"]
         ),
+
+        // Solend
+        .library(
+            name: "Solend",
+            targets: ["Solend", "p2p"]
+        ),
     ],
     dependencies: [
         .package(url: "https://github.com/p2p-org/solana-swift", from: "2.1.1"),
@@ -151,13 +157,36 @@ let package = Package(
 
             ],
             resources: [
-                .process("Resource/bundle.js.map"),
                 .process("Resource/index.html"),
             ]
         ),
         .testTarget(name: "OnboardingTests", dependencies: ["Onboarding"]),
 
-        
+        // Solend
+        .target(
+            name: "Solend",
+            dependencies: ["P2P"]
+        ),
+        .testTarget(
+            name: "SolendUnitTests",
+            dependencies: ["Solend"],
+            path: "Tests/UnitTests/SolendUnitTests"
+        ),
+
+        // MARK: - P2P SDK
+
+        .target(name: "P2P", dependencies: ["p2p"]),
+
+        .testTarget(
+            name: "P2PTestsIntegrationTests",
+            dependencies: ["P2P"],
+            path: "Tests/IntegrationTests/P2PTestsIntegrationTests"
+        ),
+
+        .binaryTarget(
+            name: "p2p",
+            path: "Frameworks/p2p.xcframework"
+        ),
     ]
 )
 
