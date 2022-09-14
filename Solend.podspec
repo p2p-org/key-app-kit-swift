@@ -16,6 +16,7 @@ Pod::Spec.new do |s|
 
   s.source_files = 'Sources/Solend/**/*'
   s.dependency 'P2PSwift'
+  s.dependency 'SolanaSwift'
   s.swift_version = '5.5'
 
   s.pod_target_xcconfig = {
