@@ -7,18 +7,15 @@ import JSBridge
 import WebKit
 
 public struct TKeyJSFacadeConfiguration {
-    let metadataEndpoint: String
     let torusEndpoint: String
     let torusNetwork: String
     let torusVerifierMapping: [String: String]
 
     public init(
-        metadataEndpoint: String,
         torusEndpoint: String,
         torusNetwork: String,
         torusVerifierMapping: [String: String]
     ) {
-        self.metadataEndpoint = metadataEndpoint
         self.torusEndpoint = torusEndpoint
         self.torusNetwork = torusNetwork
         self.torusVerifierMapping = torusVerifierMapping
@@ -80,7 +77,6 @@ public actor TKeyJSFacade: TKeyFacade {
         return try await library.invokeNew(
             withArguments: [
                 [
-                    "metadataEndpoint": config.metadataEndpoint,
                     "torusEndpoint": config.torusEndpoint,
                     "torusNetwork": config.torusNetwork,
                 ].merging(configuration, uniquingKeysWith: { $1 }),
