@@ -15,7 +15,8 @@ public final class CountriesAPIImpl: CountriesAPI {
             #else
             b = Bundle(for: Self.self)
             #endif
-            let url = b.url(forResource: "countries_2", withExtension: "json")!
+            // Country list source https://github.com/Sonatrix/country-list
+            let url = b.url(forResource: "countries", withExtension: "json")!
             try Task.checkCancellation()
             let data = try Data(contentsOf: url)
             let countries = try JSONDecoder().decode(Countries.self, from: data)
