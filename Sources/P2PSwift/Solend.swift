@@ -5,6 +5,8 @@
 import Foundation
 
 public protocol Solend {
+    func getConfig(environment: SolendEnvironment) async throws -> SolendConfig
+    
     func getCollateralAccounts(rpcURL: String, owner: String) async throws -> [SolendCollateralAccount]
 
     /// Fetch market info
@@ -65,7 +67,7 @@ public protocol Solend {
         blockHash: String,
         freeTransactionsCount: UInt32,
         needToUseRelay: Bool,
-        payInFeeToken: SolendPayFeeInToken,
+        payInFeeToken: SolendPayFeeInToken?,
         feePayerAddress: String
     ) async throws -> [SolanaRawTransaction]
 

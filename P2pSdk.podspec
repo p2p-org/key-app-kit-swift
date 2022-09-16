@@ -16,5 +16,6 @@ Pod::Spec.new do |s|
 
   # s.source_files = "Frameworks/p2p.xcframework/**/*"
   s.vendored_frameworks = "Frameworks/p2p.xcframework"
+   s.pod_target_xcconfig = { 'BUILD_LIBRARY_FOR_DISTRIBUTION' => 'YES' }
   s.swift_version = '5.5'
 end

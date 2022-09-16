@@ -13,7 +13,7 @@ Pod::Spec.new do |s|
   s.source           = { :git => 'https://github.com/p2p-org/key-app-kit-swift.git', :tag => s.version.to_s }
 
   s.ios.deployment_target = '13.0'
-
   s.source_files = 'Sources/P2PSwift/**/*'
+  s.pod_target_xcconfig = { 'BUILD_LIBRARY_FOR_DISTRIBUTION' => 'YES' }
   s.swift_version = '5.5'
 end

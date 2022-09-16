@@ -67,6 +67,7 @@ let package = Package(
     ],
     dependencies: [
         .package(url: "https://github.com/p2p-org/solana-swift", from: "2.1.1"),
+        .package(url: "https://github.com/p2p-org/FeeRelayerSwift", from: "2.1.1"),
         .package(url: "https://github.com/amplitude/Amplitude-iOS", from: "8.3.0"),
     ],
     targets: [
@@ -167,6 +168,7 @@ let package = Package(
             dependencies: [
                 "P2PSwift",
                 .product(name: "SolanaSwift", package: "solana-swift"),
+                .product(name: "FeeRelayerSwift", package: "FeeRelayerSwift"),
             ]
         ),
         .testTarget(
