@@ -8,7 +8,6 @@ import TweetNacl
 
 public enum RestoreWalletFlowResult: Codable, Equatable {
     case successful(RestoreWalletData)
-    case needHelp
     case breakProcess
 }
 
@@ -168,8 +167,6 @@ public enum RestoreWalletState: Codable, State, Equatable {
                             socialProvider: socialProvider,
                             option: .customDevice(share: share)
                         )
-                    case .help:
-                        return .finished(.needHelp)
                     case .start:
                         return .finished(.breakProcess)
                     case let .expiredSocialTryAgain(result, socialProvider, email):
@@ -334,7 +331,6 @@ public enum RestoreWalletState: Codable, State, Equatable {
 public enum RestoreWalletEvent {
     case back
     case start
-    case help
 
     case restoreSocial(RestoreSocialEvent)
     case restoreCustom(RestoreCustomEvent)

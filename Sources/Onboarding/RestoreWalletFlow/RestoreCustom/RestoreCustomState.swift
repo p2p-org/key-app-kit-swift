@@ -17,7 +17,6 @@ public enum RestoreCustomResult: Codable, Equatable {
     case requireSocialDevice(provider: SocialProvider)
     case expiredSocialTryAgain(result: RestoreWalletResult, provider: SocialProvider, email: String)
     case start
-    case help
     case breakProcess
 }
 
@@ -27,7 +26,6 @@ public enum RestoreCustomEvent {
     case enterOTP(otp: String)
     case resendOTP
     case requireSocial(provider: SocialProvider)
-    case help
     case start
     case back
 }
@@ -172,8 +170,6 @@ public enum RestoreCustomState: Codable, State, Equatable {
                 return .enterPhone(phone: nil, social: nil)
             case let .requireSocial(provider):
                 return .finish(result: .requireSocialDevice(provider: provider))
-            case .help:
-                return .finish(result: .help)
             case .start:
                 return .finish(result: .start)
             default:
@@ -182,8 +178,6 @@ public enum RestoreCustomState: Codable, State, Equatable {
 
         case .otpNotDelivered, .broken, .noMatch:
             switch event {
-            case .help:
-                return .finish(result: .help)
             case .back, .start:
                 return .finish(result: .start)
             default:
