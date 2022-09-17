@@ -69,7 +69,7 @@ public protocol Solend {
         needToUseRelay: Bool,
         payInFeeToken: SolendPayFeeInToken?,
         feePayerAddress: String
-    ) async throws -> [SolanaRawTransaction]
+    ) async throws -> [SolanaSerializedTransaction]
 
     /// Create a withdraw transaction
     ///
@@ -98,7 +98,7 @@ public protocol Solend {
         blockHash: String,
         freeTransactionsCount: UInt32,
         needToUseRelay: Bool,
-        payInFeeToken: SolendPayFeeInToken,
+        payInFeeToken: SolendPayFeeInToken?,
         feePayerAddress: String
-    ) async throws -> [SolanaRawTransaction]
+    ) async throws -> [SolanaSerializedTransaction]
 }
