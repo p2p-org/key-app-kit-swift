@@ -19,7 +19,10 @@ class BindingPhoneNumberTests: XCTestCase {
         var nextState = try await stateMachine
                 .accept(event: .enterPhoneNumber(phoneNumber: "1234567890",
                         channel: BindingPhoneNumberChannel.sms))
-        print("Current state: \(stateMachine.currentState)")
+        guard case .enterOTP = nextState else {
+            XCTFail("Expected .enterOTP, but was \(nextState)")
+            return
+        }
     }
 
     func testBindingPhoneNumber3() async throws {
@@ -30,7 +33,10 @@ class BindingPhoneNumberTests: XCTestCase {
 
         var nextState = try await stateMachine
                 .accept(event: .enterPhoneNumber(phoneNumber: "1234567890", channel: .call))
-        print("Current state: \(stateMachine.currentState)")
+        guard case .enterOTP = nextState else {
+            XCTFail("Expected .enterOTP, but was \(nextState)")
+            return
+        }
     }
 
     func testBindingPhoneNumber4() async throws {
@@ -53,7 +59,7 @@ class BindingPhoneNumberTests: XCTestCase {
         }
     }
 
-    func testBindingPhoneNumberBrokenError1() async throws {
+    func testBindingPhoneNumberEnterPhoneNumberError1() async throws {
         let state: BindingPhoneNumberState = .enterPhoneNumber(initialPhoneNumber: "", didSend: false, data: .init(seedPhrase: "", ethAddress: "", customShare: "", payload: ""))
 
         var nextState = try await state <- (
@@ -94,7 +100,7 @@ class BindingPhoneNumberTests: XCTestCase {
 
     }
 
-    func testBindingPhoneNumberBrokenError2() async throws {
+    func testBindingPhoneNumberEnterPhoneNumberError2() async throws {
         let state: BindingPhoneNumberState = .enterPhoneNumber(initialPhoneNumber: "", didSend: false, data: .init(seedPhrase: "", ethAddress: "", customShare: "", payload: ""))
 
         var nextState = try await state <- (
@@ -166,33 +172,181 @@ class BindingPhoneNumberTests: XCTestCase {
         )
 
         var nextState = try await stateMachine.accept(event: .enterOTP(opt: "000000"))
-        print("Current state: \(stateMachine.currentState)")
+        guard case .finish = nextState else {
+            XCTFail("Expected .finish, but was \(nextState)")
+            return
+        }
     }
 
-    func testBindingPhoneNumberBreakProcess() async throws {
-        let stateMachine = CreateWalletStateMachine(
-                initialState: .bindingPhoneNumber(email: "someEmail", seedPhrase: "someSeedPhrase",
-                        ethPublicKey: "someEthPublicKey", deviceShare: "someDeviceShare",
-                        BindingPhoneNumberState.block(
-                                until: .now,
-                                reason: .blockEnterPhoneNumber,
-                                phoneNumber: "79182585928",
-                                data: .init(
-                                        seedPhrase: "",
-                                        ethAddress: "",
-                                        customShare: "",
-                                        payload: ""
-                                )
-                        )),
-                provider: CreateWalletFlowContainer(
-                        authService: SocialAuthServiceMock(),
-                        apiGatewayClient: APIGatewayClientImplMock(),
-                        tKeyFacade: TKeyMockupFacade()
-                )
+    func testBindingPhoneNumberEnterOTPError1() async throws {
+        let state: BindingPhoneNumberState = .enterOTP(resendAttempt: .init(0), channel: .call, phoneNumber: "1234567890", data: .init(seedPhrase: "", ethAddress: "", customShare: "", payload: ""))
+
+        var nextState = try await state <- (
+                event: .enterOTP(opt: "32058"),
+                provider: APIGatewayClientImplMock()
+        )
+        guard case .broken = nextState else {
+            XCTFail("Expected .block, but was \(nextState)")
+            return
+        }
+
+        nextState = try await state <- (
+                event: .enterOTP(opt: "32700"),
+                provider: APIGatewayClientImplMock()
+        )
+        guard case .broken = nextState else {
+            XCTFail("Expected .block, but was \(nextState)")
+            return
+        }
+
+        nextState = try await state <- (
+                event: .enterOTP(opt: "32600"),
+                provider: APIGatewayClientImplMock()
+        )
+        guard case .broken = nextState else {
+            XCTFail("Expected .block, but was \(nextState)")
+            return
+        }
+
+        nextState = try await state <- (
+                event: .enterOTP(opt: "32601"),
+                provider: APIGatewayClientImplMock()
+        )
+        guard case .broken = nextState else {
+            XCTFail("Expected .block, but was \(nextState)")
+            return
+        }
+    }
+
+    func testBindingPhoneNumberEnterOTPError2() async throws {
+        let state: BindingPhoneNumberState = .enterOTP(resendAttempt: .init(0), channel: .call, phoneNumber: "1234567890", data: .init(seedPhrase: "", ethAddress: "", customShare: "", payload: ""))
+
+        var nextState = try await state <- (
+                event: .enterOTP(opt: "32602"),
+                provider: APIGatewayClientImplMock()
+        )
+        guard case .broken = nextState else {
+            XCTFail("Expected .block, but was \(nextState)")
+            return
+        }
+
+        nextState = try await state <- (
+                event: .enterOTP(opt: "32603"),
+                provider: APIGatewayClientImplMock()
+        )
+        guard case .broken = nextState else {
+            XCTFail("Expected .block, but was \(nextState)")
+            return
+        }
+
+        nextState = try await state <- (
+                event: .enterOTP(opt: "32052"),
+                provider: APIGatewayClientImplMock()
+        )
+        guard case .broken = nextState else {
+            XCTFail("Expected .block, but was \(nextState)")
+            return
+        }
+
+        nextState = try await state <- (
+                event: .enterOTP(opt: "32053"),
+                provider: APIGatewayClientImplMock()
+        )
+        guard case .block = nextState else {
+            XCTFail("Expected .block, but was \(nextState)")
+            return
+        }
+    }
+
+    func testBindingPhoneNumberResendOTP1() async throws {
+        let stateMachine: StateMachine<BindingPhoneNumberState> = StateMachine(
+                initialState: .enterOTP(
+                        resendAttempt: .init(4),
+                        channel: .sms,
+                        phoneNumber: "1234567890",
+                        data: .init(seedPhrase: "", ethAddress: "", customShare: "", payload: "")
+                ),
+                provider: APIGatewayClientImplMock()
         )
 
-        var nextState = try await stateMachine.accept(event: .bindingPhoneNumberEvent(.home))
-        print("Current state: \(stateMachine.currentState)")
+        var nextState = try await stateMachine.accept(event: .resendOTP)
+        guard case .block = nextState else {
+            XCTFail("Expected .finish, but was \(nextState)")
+            return
+        }
+    }
+
+    func testBindingPhoneNumberResendOTP2() async throws {
+        let stateMachine: StateMachine<BindingPhoneNumberState> = StateMachine(
+                initialState: .enterOTP(
+                        resendAttempt: .init(0),
+                        channel: .sms,
+                        phoneNumber: "1234567890",
+                        data: .init(seedPhrase: "", ethAddress: "", customShare: "", payload: "")
+                ),
+                provider: APIGatewayClientImplMock()
+        )
+
+        var nextState = try await stateMachine.accept(event: .resendOTP)
+        guard case .enterOTP = nextState else {
+            XCTFail("Expected .finish, but was \(nextState)")
+            return
+        }
+    }
+
+    func testBindingPhoneNumberBroken() async throws {
+        let stateMachine: StateMachine<BindingPhoneNumberState> = StateMachine(
+                initialState: .broken(code: 12345),
+                provider: APIGatewayClientImplMock()
+        )
+
+        var nextState = try await stateMachine.accept(event: .back)
+        guard case .finish(.breakProcess) = nextState else {
+            XCTFail("Expected .finish(.breakProcess), but was \(nextState)")
+            return
+        }
+    }
+
+    func testBindingPhoneNumberBlock() async throws {
+        let stateMachine: StateMachine<BindingPhoneNumberState> = StateMachine(
+                initialState: .block(until: .now, reason: .blockEnterOTP, phoneNumber: "1234567890", data: .init(seedPhrase: "", ethAddress: "", customShare: "", payload: ""))
+                ,
+                provider: APIGatewayClientImplMock()
+        )
+
+        var nextState = try await stateMachine.accept(event: .home)
+        guard case .finish(.breakProcess) = nextState else {
+            XCTFail("Expected .finish(.breakProcess), but was \(nextState)")
+            return
+        }
+    }
+
+    func testBindingPhoneNumberBlockFinish1() async throws {
+        let stateMachine: StateMachine<BindingPhoneNumberState> = StateMachine(
+                initialState: .block(until: .now, reason: .blockEnterOTP, phoneNumber: "", data: .init(seedPhrase: "", ethAddress: "", customShare: "", payload: ""))
+                ,
+                provider: APIGatewayClientImplMock()
+        )
+
+        var nextState = try await stateMachine.accept(event: .blockFinish)
+        guard case .enterPhoneNumber = nextState else {
+            XCTFail("Expected .enterPhoneNumber, but was \(nextState)")
+            return
+        }
+    }
+
+    func testBindingPhoneNumberBlockFinish() async throws {
+        let stateMachine: StateMachine<BindingPhoneNumberState> = StateMachine(
+                initialState: .block(until: .now, reason: .blockEnterPhoneNumber, phoneNumber: "1234567890", data: .init(seedPhrase: "", ethAddress: "", customShare: "", payload: ""))
+                ,
+                provider: APIGatewayClientImplMock()
+        )
+
+        var nextState = try await stateMachine.accept(event: .blockFinish)
+        guard case .enterPhoneNumber = nextState else {
+            XCTFail("Expected .enterPhoneNumber, but was \(nextState)")
+            return
+        }
     }
 }
 
