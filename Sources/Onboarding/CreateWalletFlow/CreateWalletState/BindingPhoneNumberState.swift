@@ -108,6 +108,7 @@ public enum BindingPhoneNumberState: Codable, State, Equatable {
                     case -32058, -32700, -32600, -32601, -32602, -32603, -32052:
                         return .broken(code: error._code)
                     case -32053:
+                        data.sendingThrottle.reset()
                         return .block(
                             until: Date() + blockTime,
                             reason: .blockEnterPhoneNumber,
@@ -121,7 +122,7 @@ public enum BindingPhoneNumberState: Codable, State, Equatable {
             default:
                 throw StateMachineError.invalidEvent
             }
-        case .enterOTP(var resendAttempt, let channel, let phoneNumber, let data):
+        case .enterOTP(let resendAttempt, let channel, let phoneNumber, let data):
             switch event {
             case let .enterOTP(opt):
                 let account = try await Account(
@@ -163,7 +164,7 @@ public enum BindingPhoneNumberState: Codable, State, Equatable {
                 if resendAttempt.value >= 4 {
                     return .block(
                         until: Date() + blockTime,
-                        reason: .blockEnterPhoneNumber,
+                        reason: .blockResend,
                         phoneNumber: phoneNumber,
                         data: data
                     )
@@ -209,7 +210,7 @@ public enum BindingPhoneNumberState: Codable, State, Equatable {
             case .blockFinish:
                 guard Date() > until else { throw StateMachineError.invalidEvent }
                 switch reason {
-                case .blockEnterPhoneNumber:
+                case .blockEnterPhoneNumber, .blockResend:
                     return .enterPhoneNumber(
                         initialPhoneNumber: phoneNumber,
                         didSend: false,

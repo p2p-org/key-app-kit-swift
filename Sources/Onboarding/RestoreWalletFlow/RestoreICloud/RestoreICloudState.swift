@@ -18,6 +18,7 @@ public enum RestoreICloudEvent {
 
 public struct RestoreICloudContainer {
     let icloudAccountProvider: ICloudAccountProvider
+    let bimotric: Bio
 }
 
 public enum RestoreICloudState: Codable, State, Equatable {

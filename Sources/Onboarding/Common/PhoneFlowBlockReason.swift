@@ -6,5 +6,6 @@ let blockTime: Double = 60 * 10
 
 public enum PhoneFlowBlockReason: Codable {
     case blockEnterPhoneNumber
+    case blockResend
     case blockEnterOTP
 }
