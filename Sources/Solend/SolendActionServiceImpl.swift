@@ -8,7 +8,7 @@ import Foundation
 import P2PSwift
 import SolanaSwift
 
-class SolendActionServiceImpl: SolendActionService {
+public class SolendActionServiceImpl: SolendActionService {
     private let lendingMark: String
     private let userAccountStorage: SolanaAccountStorage
 
@@ -28,7 +28,7 @@ class SolendActionServiceImpl: SolendActionService {
         }
     }
 
-    init(
+    public init(
         lendingMark: String,
         userAccountStorage: SolanaAccountStorage,
         solend: Solend,
@@ -47,11 +47,11 @@ class SolendActionServiceImpl: SolendActionService {
     }
 
     private let currentActionSubject: CurrentValueSubject<SolendAction?, Never> = .init(nil)
-    var currentAction: AnyPublisher<SolendAction?, Never> {
+    public var currentAction: AnyPublisher<SolendAction?, Never> {
         CurrentValueSubject(nil).eraseToAnyPublisher()
     }
 
-    func clearAction() throws {}
+    public func clearAction() throws {}
 
     public func check() async throws {
         guard currentActionSubject.value == nil else {
@@ -123,7 +123,7 @@ class SolendActionServiceImpl: SolendActionService {
         }
     }
 
-    func withdraw(amount: UInt64, symbol: SolendSymbol) async throws {
+    public func withdraw(amount: UInt64, symbol: SolendSymbol) async throws {
         try await check()
 
         // let feeRelayContext = try await feeRelayContextManager.getCurrentContext()

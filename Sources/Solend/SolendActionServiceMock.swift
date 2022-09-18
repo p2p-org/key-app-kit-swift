@@ -2,25 +2,23 @@
 // Use of this source code is governed by a MIT-style license that can be
 // found in the LICENSE file.
 
-import Foundation
 import Combine
+import Foundation
 
-class SolendActionServiceMock: SolendActionService {
-    var currentAction: AnyPublisher<SolendAction?, Never>
-
-    func clearAction() throws {
-        <#code#>
+public class SolendActionServiceMock: SolendActionService {
+    public init() {}
+    
+    public var currentAction: AnyPublisher<SolendAction?, Never> {
+        CurrentValueSubject(nil).eraseToAnyPublisher()
     }
 
-    func depositFee(amount _: UInt64, symbol _: SolendSymbol) async throws -> SolendDepositFee {
-        <#code#>
+    public func clearAction() throws {}
+
+    public func depositFee(amount _: UInt64, symbol _: SolendSymbol) async throws -> SolendDepositFee {
+        .init(fee: 0, rent: 0)
     }
 
-    func deposit(amount _: UInt64, symbol _: SolendSymbol) async throws {
-        <#code#>
-    }
+    public func deposit(amount _: UInt64, symbol _: SolendSymbol) async throws {}
 
-    func withdraw(amount _: UInt64, symbol _: SolendSymbol) async throws {
-        <#code#>
-    }
+    public func withdraw(amount _: UInt64, symbol _: SolendSymbol) async throws {}
 }

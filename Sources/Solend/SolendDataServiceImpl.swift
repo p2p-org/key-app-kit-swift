@@ -15,22 +15,24 @@ public class SolendDataServiceImpl: SolendDataService {
     private let allowedSymbols = ["SOL", "USDC", "USDT", "ETH", "BTC"]
 
     private let statusSubject: CurrentValueSubject<SolendDataStatus, Never> = .init(.initialized)
-    public var status: AnyPublisher<SolendDataStatus, Never>
+    public var status: AnyPublisher<SolendDataStatus, Never> { statusSubject.eraseToAnyPublisher() }
 
-    public let availableAssetsSubject: CurrentValueSubject<[SolendConfigAsset], Never> = .init([])
+    private let availableAssetsSubject: CurrentValueSubject<[SolendConfigAsset], Never> = .init([])
     public var availableAssets: AnyPublisher<[SolendConfigAsset], Never> { availableAssetsSubject.eraseToAnyPublisher()
     }
 
-    public let depositsSubject: CurrentValueSubject<[SolendUserDeposit], Never> = .init([])
+    private let depositsSubject: CurrentValueSubject<[SolendUserDeposit], Never> = .init([])
     public var deposits: AnyPublisher<[SolendUserDeposit], Never> { depositsSubject.eraseToAnyPublisher() }
 
-    public let marketInfoSubject: CurrentValueSubject<[SolendMarketInfo], Never> = .init([])
+    private let marketInfoSubject: CurrentValueSubject<[SolendMarketInfo], Never> = .init([])
     public var marketInfo: AnyPublisher<[SolendMarketInfo], Never> { marketInfoSubject.eraseToAnyPublisher() }
 
     public init(solend: Solend, owner: Account, lendingMark: String) {
         self.solend = solend
         self.owner = owner
         self.lendingMark = lendingMark
+        
+        Task.detached { try await self.update() }
     }
 
     public var hasDeposits: Bool {
