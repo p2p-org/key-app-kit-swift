@@ -48,7 +48,7 @@ public class SolendActionServiceImpl: SolendActionService {
 
     private let currentActionSubject: CurrentValueSubject<SolendAction?, Never> = .init(nil)
     public var currentAction: AnyPublisher<SolendAction?, Never> {
-        CurrentValueSubject(nil).eraseToAnyPublisher()
+        currentActionSubject.eraseToAnyPublisher()
     }
 
     public func clearAction() throws {}
@@ -180,16 +180,20 @@ public class SolendActionServiceImpl: SolendActionService {
 
     func listenTransactionStatus(transactionID: TransactionID, initialAction: SolendAction) async throws {
         var action = initialAction
-        for try await status in solana.observeSignatureStatus(signature: transactionID) {
-            let actionStatus: SolendActionStatus
-            switch status {
-            case .sending, .confirmed: actionStatus = .processing
-            case .finalized: actionStatus = .success
-            case let .error(msg): actionStatus = .failed(msg: msg ?? "")
+        do {
+            defer { currentActionSubject.send(nil) }
+            
+            for try await status in solana.observeSignatureStatus(signature: transactionID) {
+                let actionStatus: SolendActionStatus
+                switch status {
+                case .sending, .confirmed: actionStatus = .processing
+                case .finalized: actionStatus = .success
+                case let .error(msg): actionStatus = .failed(msg: msg ?? "")
+                }
+                
+                action.status = actionStatus
+                currentActionSubject.send(action)
             }
-
-            action.status = actionStatus
-            currentActionSubject.send(action)
         }
     }
 }
