@@ -13,6 +13,7 @@ public enum RestoreICloudResult: Codable, Equatable {
 public enum RestoreICloudEvent {
     case back
     case signIn
+    case restoreRawWallet(name: String?, phrase: String, derivablePath: DerivablePath)
     case restoreWallet(account: ICloudAccount)
 }
 
@@ -51,18 +52,20 @@ public enum RestoreICloudState: Codable, State, Equatable {
                         ))
                 }
                 return .chooseWallet(accounts: accounts)
+
+            case .restoreRawWallet(let name, let phrase, let derivablePath):
+                let iCloudAccount = try await ICloudAccount(name: name, phrase: phrase, derivablePath: derivablePath)
+                let account = try await account(from: iCloudAccount)
+                return .finish(result: .successful(account: account))
+
             default:
                 throw StateMachineError.invalidEvent
             }
 
         case .chooseWallet(let accounts):
             switch event {
-            case .restoreWallet(let account):
-                let account = try await Account(
-                    phrase: account.phrase.components(separatedBy: " "),
-                    network: .mainnetBeta,
-                    derivablePath: account.derivablePath
-                )
+            case .restoreWallet(let icloudAccount):
+                let account = try await account(from: icloudAccount)
                 return .finish(result: .successful(account: account))
             case .back:
                 return .finish(result: .back)
@@ -72,6 +75,15 @@ public enum RestoreICloudState: Codable, State, Equatable {
         case .finish(let result):
             throw StateMachineError.invalidEvent
         }
+    }
+
+    private func account(from icloudAccount: ICloudAccount) async throws -> Account {
+        let account = try await Account(
+            phrase: icloudAccount.phrase.components(separatedBy: " "),
+            network: .mainnetBeta,
+            derivablePath: icloudAccount.derivablePath
+        )
+        return account
     }
 }
 
