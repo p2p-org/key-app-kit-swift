@@ -65,6 +65,17 @@ public enum RestoreWalletState: Codable, State, Equatable {
             switch event {
             case let .restoreICloud(event):
                 switch event {
+                case let .restoreRawWallet(name, phrase, derivablePath):
+                    let event = RestoreICloudEvent.restoreRawWallet(name: name, phrase: phrase, derivablePath: derivablePath)
+                    let innerState = RestoreICloudState.signIn
+                    let nextInnerState = try await innerState <- (event, .init(icloudAccountProvider: provider.icloudAccountProvider))
+
+                    if case let .finish(result) = nextInnerState {
+                        return handleRestoreICloud(result: result)
+                    } else {
+                        return .restoreICloud(nextInnerState)
+                    }
+
                 case .signIn:
                     let nextInnerState = try await RestoreICloudState.signIn <- (
                         RestoreICloudEvent.signIn,
@@ -237,16 +248,7 @@ public enum RestoreWalletState: Codable, State, Equatable {
                 )
 
                 if case let .finish(result) = nextInnerState {
-                    switch result {
-                    case let .successful(account):
-                        return .securitySetup(
-                            wallet: OnboardingWallet(seedPhrase: account.phrase.joined(separator: " ")),
-                            ethPublicKey: nil,
-                            SecuritySetupState.initialState
-                        )
-                    case .back:
-                        return .restore
-                    }
+                    return handleRestoreICloud(result: result)
                 } else {
                     return .restoreICloud(nextInnerState)
                 }
@@ -321,6 +323,19 @@ public enum RestoreWalletState: Codable, State, Equatable {
             return try await handleRestoreSocial(result: result)
         } else {
             return .restoreSocial(nextInnerState, option: option)
+        }
+    }
+
+    private func handleRestoreICloud(result: RestoreICloudResult) -> RestoreWalletState {
+        switch result {
+        case let .successful(account):
+            return .securitySetup(
+                wallet: OnboardingWallet(seedPhrase: account.phrase.joined(separator: " ")),
+                ethPublicKey: nil,
+                SecuritySetupState.initialState
+            )
+        case .back:
+            return .restore
         }
     }
 }
