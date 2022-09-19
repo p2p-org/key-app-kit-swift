@@ -41,7 +41,7 @@ public enum RestoreCustomState: Codable, State, Equatable {
     public typealias Event = RestoreCustomEvent
     public typealias Provider = RestoreCustomContainer
 
-    case enterPhone(phone: String?, social: RestoreSocialData?)
+    case enterPhone(initialPhoneNumber: String?, didSend: Bool, solPrivateKey: Data?, social: RestoreSocialData?)
     case enterOTP(phone: String, solPrivateKey: Data, social: RestoreSocialData?, attempt: Wrapper<Int>)
     case otpNotDeliveredTrySocial(phone: String, code: Int)
     case otpNotDelivered(phone: String, code: Int)
@@ -53,7 +53,12 @@ public enum RestoreCustomState: Codable, State, Equatable {
     case block(until: Date, social: RestoreSocialData?, reason: PhoneFlowBlockReason)
     case finish(result: RestoreCustomResult)
 
-    public static var initialState: RestoreCustomState = .enterPhone(phone: nil, social: nil)
+    public static var initialState: RestoreCustomState = .enterPhone(
+        initialPhoneNumber: nil,
+        didSend: false,
+        solPrivateKey: nil,
+        social: nil
+    )
 
     public func accept(
         currentState: RestoreCustomState,
@@ -61,9 +66,13 @@ public enum RestoreCustomState: Codable, State, Equatable {
         provider: RestoreCustomContainer
     ) async throws -> RestoreCustomState {
         switch currentState {
-        case let .enterPhone(phone, social):
+        case let .enterPhone(initialPhoneNumber, didSend, solPrivateKey, social):
             switch event {
             case let .enterPhoneNumber(phone):
+                if initialPhoneNumber == phone, didSend == true, let solPrivateKey = solPrivateKey {
+                    return .enterOTP(phone: phone, solPrivateKey: solPrivateKey, social: social, attempt: .init(0))
+                }
+                
                 let solPrivateKey = try NaclSign.KeyPair.keyPair().secretKey
                 return try await sendOTP(
                     phone: phone,
@@ -80,7 +89,7 @@ public enum RestoreCustomState: Codable, State, Equatable {
                 throw StateMachineError.invalidEvent
             }
 
-        case .enterOTP(let phone, let solPrivateKey, let social, var attempt):
+        case let .enterOTP(phone, solPrivateKey, social, attempt):
             switch event {
             case let .enterOTP(otp):
                 do {
@@ -118,11 +127,9 @@ public enum RestoreCustomState: Codable, State, Equatable {
                         } catch {
                             if let social = social, provider.authService.isExpired(token: social.tokenID.value) {
                                 return .expiredSocialTryAgain(result: result, social: social)
-                            }
-                            else if provider.deviceShare != nil, (error as? TKeyFacadeError)?.code == 1009 {
+                            } else if provider.deviceShare != nil, (error as? TKeyFacadeError)?.code == 1009 {
                                 return .notFoundDevice
-                            }
-                            else {
+                            } else {
                                 return .noMatch
                             }
                         }
@@ -158,16 +165,21 @@ public enum RestoreCustomState: Codable, State, Equatable {
                 )
 
             case .back:
-                return .enterPhone(phone: phone, social: social)
+                return .enterPhone(
+                    initialPhoneNumber: phone,
+                    didSend: true,
+                    solPrivateKey: solPrivateKey,
+                    social: social
+                )
 
             default:
                 throw StateMachineError.invalidEvent
             }
 
-        case let .otpNotDeliveredTrySocial(phone, _):
+        case .otpNotDeliveredTrySocial:
             switch event {
             case .back:
-                return .enterPhone(phone: nil, social: nil)
+                return .enterPhone(initialPhoneNumber: nil, didSend: false, solPrivateKey: nil, social: nil)
             case let .requireSocial(provider):
                 return .finish(result: .requireSocialDevice(provider: provider))
             case .start:
@@ -184,10 +196,10 @@ public enum RestoreCustomState: Codable, State, Equatable {
                 throw StateMachineError.invalidEvent
             }
 
-        case let .tryAnother(wrongNumber, trySocial):
+        case let .tryAnother(_, trySocial):
             switch event {
             case .enterPhone:
-                return .enterPhone(phone: nil, social: nil)
+                return .enterPhone(initialPhoneNumber: nil, didSend: false, solPrivateKey: nil, social: nil)
             case let .requireSocial(provider):
                 if trySocial {
                     return .finish(result: .requireSocialDevice(provider: provider))
@@ -200,13 +212,13 @@ public enum RestoreCustomState: Codable, State, Equatable {
                 throw StateMachineError.invalidEvent
             }
 
-        case let .block(until, social, _):
+        case let .block(until, _, _):
             switch event {
             case .start:
                 return .finish(result: .start)
             case .enterPhone:
                 guard Date() > until else { throw StateMachineError.invalidEvent }
-                return .enterPhone(phone: nil, social: social)
+                return .enterPhone(initialPhoneNumber: nil, didSend: false, solPrivateKey: nil, social: nil)
             default:
                 throw StateMachineError.invalidEvent
             }
@@ -224,8 +236,8 @@ public enum RestoreCustomState: Codable, State, Equatable {
         case .notFoundDevice:
             switch event {
             case .enterPhone:
-                return .enterPhone(phone: nil, social: nil)
-            case .requireSocial(let provider):
+                return .enterPhone(initialPhoneNumber: nil, didSend: false, solPrivateKey: nil, social: nil)
+            case let .requireSocial(provider):
                 return .finish(result: .requireSocialDevice(provider: provider))
             case .start:
                 return .finish(result: .start)

@@ -66,9 +66,16 @@ public enum RestoreWalletState: Codable, State, Equatable {
             case let .restoreICloud(event):
                 switch event {
                 case let .restoreRawWallet(name, phrase, derivablePath):
-                    let event = RestoreICloudEvent.restoreRawWallet(name: name, phrase: phrase, derivablePath: derivablePath)
+                    let event = RestoreICloudEvent.restoreRawWallet(
+                        name: name,
+                        phrase: phrase,
+                        derivablePath: derivablePath
+                    )
                     let innerState = RestoreICloudState.signIn
-                    let nextInnerState = try await innerState <- (event, .init(icloudAccountProvider: provider.icloudAccountProvider))
+                    let nextInnerState = try await innerState <- (
+                        event,
+                        .init(icloudAccountProvider: provider.icloudAccountProvider)
+                    )
 
                     if case let .finish(result) = nextInnerState {
                         return handleRestoreICloud(result: result)
@@ -102,7 +109,14 @@ public enum RestoreWalletState: Codable, State, Equatable {
             case let .restoreCustom(event):
                 switch event {
                 case .enterPhone:
-                    return .restoreCustom(.enterPhone(phone: nil, social: nil))
+                    return .restoreCustom(
+                        .enterPhone(
+                            initialPhoneNumber: nil,
+                            didSend: false,
+                            solPrivateKey: nil,
+                            social: nil
+                        )
+                    )
                 default:
                     throw StateMachineError.invalidEvent
                 }
@@ -298,7 +312,14 @@ public enum RestoreWalletState: Codable, State, Equatable {
         case .start:
             return .finished(.breakProcess)
         case let .requireCustom(data):
-            return .restoreCustom(.enterPhone(phone: nil, social: data))
+            return .restoreCustom(
+                .enterPhone(
+                    initialPhoneNumber: nil,
+                    didSend: false,
+                    solPrivateKey: nil,
+                    social: data
+                )
+            )
         }
     }
 
@@ -398,7 +419,8 @@ extension RestoreWalletState: Step, Continuable {
         case let .restoreSocial(.notFoundCustom(result, email), option: _):
             return 6 * 100 + RestoreSocialState.notFoundCustom(result: result, email: email).step
         case let .restoreSocial(.expiredSocialTryAgain(result, provider, email), option: _):
-            return 6 * 100 + RestoreSocialState.expiredSocialTryAgain(result: result, provider: provider, email: email).step
+            return 6 * 100 + RestoreSocialState.expiredSocialTryAgain(result: result, provider: provider, email: email)
+                .step
         case let .restoreSocial(.finish(finishResult), option: _):
             return 6 * 100 + RestoreSocialState.finish(finishResult).step
         case let .restoreSocial(.notFoundDevice(data, deviceShare), .customResult):
