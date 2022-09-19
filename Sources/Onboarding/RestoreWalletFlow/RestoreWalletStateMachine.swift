@@ -129,7 +129,7 @@ public enum RestoreWalletState: Codable, State, Equatable {
                 )
 
                 if case let .finish(result) = nextInnerState {
-                    return try await handleRestoreSocial(provider: provider, result: result)
+                    return try await handleRestoreSocial(result: result)
                 } else {
                     return .restoreSocial(nextInnerState, option: option)
                 }
@@ -186,7 +186,7 @@ public enum RestoreWalletState: Codable, State, Equatable {
                         )
 
                         if case let .finish(result) = nextInnerState {
-                            return try await handleRestoreSocial(provider: provider, result: result)
+                            return try await handleRestoreSocial(result: result)
                         } else {
                             return .restoreSocial(nextInnerState, option: .customResult(result: result))
                         }
@@ -285,10 +285,7 @@ public enum RestoreWalletState: Codable, State, Equatable {
         }
     }
 
-    private func handleRestoreSocial(
-        provider _: RestoreWalletFlowContainer,
-        result: RestoreSocialResult
-    ) async throws -> RestoreWalletState {
+    private func handleRestoreSocial(result: RestoreSocialResult) async throws -> RestoreWalletState {
         switch result {
         case let .successful(seedPhrase, ethPublicKey):
             return .securitySetup(
@@ -321,7 +318,7 @@ public enum RestoreWalletState: Codable, State, Equatable {
         )
 
         if case let .finish(result) = nextInnerState {
-            return try await handleRestoreSocial(provider: provider, result: result)
+            return try await handleRestoreSocial(result: result)
         } else {
             return .restoreSocial(nextInnerState, option: option)
         }
