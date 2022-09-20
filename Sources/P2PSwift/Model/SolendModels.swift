@@ -4,7 +4,7 @@
 
 import Foundation
 
-public typealias SolanaRawTransaction = String
+public typealias SolanaSerializedTransaction = String
 public typealias SolendSymbol = String
 
 public enum SolendEnvironment: String {
@@ -25,16 +25,32 @@ public struct SolendMarketInfo: Codable {
         case depositLimit = "deposit_limit"
         case supplyInterest = "supply_interest"
     }
+    
+    init(currentSupply: String, depositLimit: String, supplyInterest: String) {
+        self.currentSupply = currentSupply
+        self.depositLimit = depositLimit
+        self.supplyInterest = supplyInterest
+    }
 }
 
 public struct SolendUserDeposit: Codable {
     public let symbol: String
     public let depositedAmount: String
+    
+    public init(symbol: String, depositedAmount: String) {
+        self.symbol = symbol
+        self.depositedAmount = depositedAmount
+    }
 }
 
 public struct SolendDepositFee: Codable {
     public let fee: UInt64
     public let rent: UInt64
+    
+    public init(fee: UInt64, rent: UInt64) {
+        self.fee = fee
+        self.rent = rent
+    }
 }
 
 public struct SolendPayFeeInToken: Codable {
