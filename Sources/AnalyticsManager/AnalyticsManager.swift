@@ -10,6 +10,7 @@ import Foundation
 
 public protocol AnalyticsManager {
     func log(event: AnalyticsEvent)
+    func setIdentifier(_ identifier: AnalyticsIdentifier)
 }
 
 public class AnalyticsManagerImpl: AnalyticsManager {
@@ -32,5 +33,13 @@ public class AnalyticsManagerImpl: AnalyticsManager {
             debugPrint([eventName])
             Amplitude.instance().logEvent(eventName)
         }
+    }
+    
+    public func setIdentifier(_ identifier: AnalyticsIdentifier) {
+        guard
+            let value = identifier.value as? NSObject,
+            let identify = AMPIdentify().set(identifier.name, value: value)
+        else { return }
+        Amplitude.instance().identify(identify)
     }
 }

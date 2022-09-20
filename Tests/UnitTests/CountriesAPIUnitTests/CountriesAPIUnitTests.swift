@@ -5,11 +5,6 @@ import CountriesAPI
 class CountriesAPIUnitTests: XCTestCase {
     let countriesAPI = CountriesAPIImpl()
     
-    func testGetCountries() async throws {
-        let countries = try await countriesAPI.fetchCountries()
-        XCTAssertEqual(countries.count, 242)
-    }
-    
     func testGetCountryByName() async throws {
         let countries = try await countriesAPI.fetchCountries()
         let vn = countries.first(where: {$0.name == "Vietnam"})

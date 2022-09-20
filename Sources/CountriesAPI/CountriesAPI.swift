@@ -6,7 +6,7 @@ public protocol CountriesAPI {
 
 public final class CountriesAPIImpl: CountriesAPI {
     public init() {}
-    
+
     public func fetchCountries() async throws -> Countries {
         try await Task {
             let b: Bundle
@@ -15,6 +15,7 @@ public final class CountriesAPIImpl: CountriesAPI {
             #else
             b = Bundle(for: Self.self)
             #endif
+            // Country list source https://github.com/Sonatrix/country-list
             let url = b.url(forResource: "countries", withExtension: "json")!
             try Task.checkCancellation()
             let data = try Data(contentsOf: url)
