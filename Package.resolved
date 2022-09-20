@@ -20,30 +20,12 @@
         }
       },
       {
-        "package": "FeeRelayerSwift",
-        "repositoryURL": "https://github.com/p2p-org/FeeRelayerSwift",
-        "state": {
-          "branch": null,
-          "revision": "1a308c51278b2e877d183b9b6d679fe2b2ae7db5",
-          "version": "3.1.2"
-        }
-      },
-      {
         "package": "LoggerSwift",
         "repositoryURL": "https://github.com/bigearsenal/loggerswift.git",
         "state": {
           "branch": null,
           "revision": "779dbd11a9a2fea3c82943f69a30ca75f4596fc8",
           "version": "1.0.2"
-        }
-      },
-      {
-        "package": "OrcaSwapSwift",
-        "repositoryURL": "https://github.com/p2p-org/OrcaSwapSwift.git",
-        "state": {
-          "branch": null,
-          "revision": "59711b2ee5272acc1cc7e8f2f0c325e985ba5415",
-          "version": "2.1.1"
         }
       },
       {

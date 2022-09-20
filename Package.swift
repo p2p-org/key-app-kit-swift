@@ -62,12 +62,11 @@ let package = Package(
         // Solend
         .library(
             name: "Solend",
-            targets: ["Solend"]
+            targets: ["Solend", "p2p"]
         ),
     ],
     dependencies: [
         .package(url: "https://github.com/p2p-org/solana-swift", from: "2.1.1"),
-        .package(url: "https://github.com/p2p-org/FeeRelayerSwift", from: "3.1.0"),
         .package(url: "https://github.com/amplitude/Amplitude-iOS", from: "8.3.0"),
     ],
     targets: [
@@ -167,7 +166,7 @@ let package = Package(
             name: "Solend",
             dependencies: [
                 "P2PSwift",
-                .product(name: "FeeRelayerSwift", package: "FeeRelayerSwift"),
+                .product(name: "SolanaSwift", package: "solana-swift"),
             ]
         ),
         .testTarget(
@@ -178,7 +177,7 @@ let package = Package(
 
         // MARK: - P2P SDK
 
-        .target(name: "P2PSwift"),
+        .target(name: "P2PSwift", dependencies: ["p2p"]),
 
         .testTarget(
             name: "P2PTestsIntegrationTests",
@@ -186,11 +185,10 @@ let package = Package(
             path: "Tests/IntegrationTests/P2PTestsIntegrationTests"
         ),
 
-        // TODO: Future migration
-        // .binaryTarget(
-        //     name: "p2p",
-        //     path: "Frameworks/p2p.xcframework"
-        // ),
+        .binaryTarget(
+            name: "p2p",
+            path: "Frameworks/p2p.xcframework"
+        ),
     ]
 )
 
