@@ -17,7 +17,7 @@ public struct SolendCollateralAccount: Codable {
     public let mint: String
 }
 
-public struct SolendMarketInfo: Codable {
+public struct SolendMarketInfo: Codable, Hashable {
     public let currentSupply, depositLimit, supplyInterest: String
 
     enum CodingKeys: String, CodingKey {
@@ -33,7 +33,7 @@ public struct SolendMarketInfo: Codable {
     }
 }
 
-public struct SolendUserDeposit: Codable {
+public struct SolendUserDeposit: Codable, Hashable {
     public let symbol: String
     public let depositedAmount: String
     

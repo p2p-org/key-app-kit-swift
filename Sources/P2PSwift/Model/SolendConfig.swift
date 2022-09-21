@@ -16,7 +16,7 @@ public struct SolendConfig: Codable {
 
 // MARK: - ConfigAsset
 
-public struct SolendConfigAsset: Codable {
+public struct SolendConfigAsset: Codable, Hashable {
     public let name, symbol: String
     public let decimals: Int
     public let mintAddress: String
