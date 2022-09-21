@@ -2,14 +2,15 @@
 // Use of this source code is governed by a MIT-style license that can be
 // found in the LICENSE file.
 
+import CryptoKit
 import Foundation
 import SolanaSwift
 import TweetNacl
 
 public typealias BindingPhoneNumberChannel = APIGatewayChannel
 
-public enum BindingPhoneNumberResult: Codable {
-    case success
+public enum BindingPhoneNumberResult: Codable, Equatable {
+    case success(metadata: WalletMetaData)
     case breakProcess
 }
 
@@ -27,6 +28,10 @@ public struct BindingPhoneNumberData: Codable, Equatable {
     let ethAddress: String
     let customShare: String
     let payload: String
+
+    let deviceName: String
+    let email: String
+    let authProvider: String
 
     var sendingThrottle: Throttle = .init(maxAttempt: 5, timeInterval: 60 * 10)
 }
@@ -49,7 +54,15 @@ public enum BindingPhoneNumberState: Codable, State, Equatable {
     public static var initialState: BindingPhoneNumberState = .enterPhoneNumber(
         initialPhoneNumber: nil,
         didSend: false,
-        data: .init(seedPhrase: "", ethAddress: "", customShare: "", payload: "")
+        data: .init(
+            seedPhrase: "",
+            ethAddress: "",
+            customShare: "",
+            payload: "",
+            deviceName: "",
+            email: "",
+            authProvider: ""
+        )
     )
 
     public func accept(
@@ -122,7 +135,7 @@ public enum BindingPhoneNumberState: Codable, State, Equatable {
             default:
                 throw StateMachineError.invalidEvent
             }
-        case .enterOTP(let resendAttempt, let channel, let phoneNumber, let data):
+        case let .enterOTP(resendAttempt, channel, phoneNumber, data):
             switch event {
             case let .enterOTP(opt):
                 let account = try await Account(
@@ -131,12 +144,20 @@ public enum BindingPhoneNumberState: Codable, State, Equatable {
                     derivablePath: .default
                 )
 
+                let metaData = WalletMetaData(
+                    deviceName: data.deviceName,
+                    email: data.email,
+                    authProvider: data.authProvider,
+                    phoneNumber: phoneNumber
+                )
+
                 do {
                     try await provider.confirmRegisterWallet(
                         solanaPrivateKey: Base58.encode(account.secretKey),
                         ethAddress: data.ethAddress,
                         share: data.customShare,
                         encryptedPayload: data.payload,
+                        encryptedMetaData: try metaData.encrypt(seedPhrase: data.seedPhrase),
                         phone: phoneNumber,
                         otpCode: opt,
                         timestampDevice: Date()
@@ -159,7 +180,7 @@ public enum BindingPhoneNumberState: Codable, State, Equatable {
                     }
                 }
 
-                return .finish(.success)
+                return .finish(.success(metadata: metaData))
             case .resendOTP:
                 if resendAttempt.value >= 4 {
                     return .block(

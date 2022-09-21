@@ -20,6 +20,50 @@ public class APIGatewayClientImpl: APIGatewayClient {
         dateFormat.locale = Locale(identifier: "en_US_POSIX")
     }
 
+    public func getMetadata(
+        ethAddress: String,
+        solanaPrivateKey: String,
+        timestampDevice: Date
+    ) async throws -> String {
+        // Prepare
+        var request = createDefaultRequest()
+        let (solanaSecretKey, solanaPublicKey) = try prepare(solanaPrivateKey: solanaPrivateKey)
+        
+        print(Int64(timestampDevice.timeIntervalSince1970))
+
+        // Create rpc request
+        let rpcRequest = JSONRPCRequest(
+            id: requestID,
+            method: "get_metadata",
+            params: APIGatewayGetMetadataParams(
+                solanaPublicKey: Base58.encode(solanaPublicKey),
+                ethereumAddress: ethAddress,
+                signature: try GetMetadataSignature(
+                    ethereumAddress: ethAddress,
+                    solanaPublicKey: Base58.encode(solanaPublicKey),
+                    timestampDevice: Int64(timestampDevice.timeIntervalSince1970)
+                ).signAsBase58(secretKey: solanaSecretKey),
+                timestampDevice: dateFormat.string(from: timestampDevice)
+            )
+        )
+        requestID += 1
+        request.httpBody = try JSONEncoder().encode(rpcRequest)
+
+        // Request
+        let responseData = try await networkManager.requestData(request: request)
+        
+        print(String(data: responseData, encoding: .utf8))
+
+        let response = try JSONDecoder()
+            .decode(JSONRPCResponse<String>.self, from: responseData)
+        if let error = response.error {
+            throw APIGatewayError(rawValue: error.code) ?? UndefinedAPIGatewayError(code: error.code)
+        }
+
+        guard let result = response.result else { throw APIGatewayError.failedSending }
+        return result
+    }
+
     private func createDefaultRequest(method: String = "POST") -> URLRequest {
         var request = URLRequest(url: endpoint)
         request.httpMethod = method
@@ -48,7 +92,7 @@ public class APIGatewayClientImpl: APIGatewayClient {
         // Prepare
         var request = createDefaultRequest()
         let (solanaSecretKey, solanaPublicKey) = try prepare(solanaPrivateKey: solanaPrivateKey)
-        
+
         // Create rpc request
         let rpcRequest = JSONRPCRequest(
             id: requestID,
@@ -89,6 +133,7 @@ public class APIGatewayClientImpl: APIGatewayClient {
         ethAddress: String,
         share: String,
         encryptedPayload: String,
+        encryptedMetaData: String,
         phone: String,
         otpCode: String,
         timestampDevice: Date
@@ -108,6 +153,7 @@ public class APIGatewayClientImpl: APIGatewayClient {
                 ethereumAddress: ethAddress,
                 encryptedShare: share.base64(),
                 encryptedPayload: encryptedPayload.base64(),
+                encryptedMetadata: encryptedMetaData.base64(),
                 phone: phone,
                 phoneConfirmationCode: otpCode,
                 signature: try ConfirmRegisterWalletSignature(
@@ -115,6 +161,7 @@ public class APIGatewayClientImpl: APIGatewayClient {
                     solanaPublicKey: Base58.encode(solanaPublicKey),
                     encryptedShare: share,
                     encryptedPayload: encryptedPayload,
+                    encryptedMetadata: encryptedMetaData,
                     phone: phone,
                     phoneConfirmationCode: otpCode
                 ).signAsBase58(secretKey: solanaSecretKey),
@@ -231,7 +278,8 @@ public class APIGatewayClientImpl: APIGatewayClient {
             solanaPublicKey: result.solanaPublicKey,
             ethereumId: result.ethereumAddress,
             encryptedShare: try result.share.fromBase64(),
-            encryptedPayload: try result.payload.fromBase64()
+            encryptedPayload: try result.payload.fromBase64(),
+            encryptedMetaData: try result.metadata.fromBase64()
         )
     }
 }

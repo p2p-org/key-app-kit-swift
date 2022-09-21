@@ -6,6 +6,18 @@ import XCTest
 @testable import Onboarding
 
 class APIGatewayClientImplTests: XCTestCase {
+    func testGetMetadata() async throws {
+        let client = APIGatewayClientImpl(endpoint: "localhost", networkManager: URLSessionMock())
+
+        _ = try await client.getMetadata(
+            ethAddress: "0x239a3b0ce6dd9f3393e0e552763f7bb27441cc5d",
+            solanaPrivateKey: "52y2jQVwqQXkNW9R9MsKMcv9ZnJnDwzJqLX4d8noB4LEpuezFQLvAb2rioKsLCChte9ELNYwN29GzVjVVUmvfQ4v",
+            timestampDevice: Date()
+        )
+        
+        
+    }
+
     func testRegisterWallet() async throws {
         let privateKey = "52y2jQVwqQXkNW9R9MsKMcv9ZnJnDwzJqLX4d8noB4LEpuezFQLvAb2rioKsLCChte9ELNYwN29GzVjVVUmvfQ4v"
         let client = APIGatewayClientImpl(endpoint: "localhost", networkManager: URLSessionMock())

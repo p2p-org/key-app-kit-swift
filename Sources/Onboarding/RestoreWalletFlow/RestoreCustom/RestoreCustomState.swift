@@ -11,7 +11,8 @@ public typealias RestoreCustomChannel = APIGatewayChannel
 public enum RestoreCustomResult: Codable, Equatable {
     case successful(
         seedPhrase: String,
-        ethPublicKey: String
+        ethPublicKey: String,
+        metadata: WalletMetaData?
     )
     case requireSocialCustom(result: RestoreWalletResult)
     case requireSocialDevice(provider: SocialProvider)
@@ -72,7 +73,7 @@ public enum RestoreCustomState: Codable, State, Equatable {
                 if initialPhoneNumber == phone, didSend == true, let solPrivateKey = solPrivateKey {
                     return .enterOTP(phone: phone, solPrivateKey: solPrivateKey, social: social, attempt: .init(0))
                 }
-                
+
                 let solPrivateKey = try NaclSign.KeyPair.keyPair().secretKey
                 return try await sendOTP(
                     phone: phone,
@@ -106,6 +107,7 @@ public enum RestoreCustomState: Codable, State, Equatable {
                         return try await restore(
                             with: tokenID,
                             customShare: result.encryptedShare,
+                            encryptedMetadata: result.encryptedMetaData,
                             encryptedMnemonic: result.encryptedPayload,
                             deviceShare: deviceShare,
                             tKey: provider.tKeyFacade
@@ -118,10 +120,22 @@ public enum RestoreCustomState: Codable, State, Equatable {
                                 customShare: result.encryptedShare,
                                 encryptedMnemonic: result.encryptedPayload
                             )
+
+                            guard let encryptedMetaData = Data(base64Encoded: result.encryptedMetaData)
+                            else { throw OnboardingError.invalidValue(at: "Invalid encrypted metadata") }
+                            let encryptedMetadata = try JSONDecoder()
+                                .decode(Crypto.EncryptedMetadata.self, from: encryptedMetaData)
+                            let metadataRaw = try Crypto.decryptMetadata(
+                                seedPhrase: finalResult.privateSOL,
+                                encryptedMetadata: encryptedMetadata
+                            )
+                            let metadata = try JSONDecoder().decode(WalletMetaData.self, from: metadataRaw)
+
                             return .finish(
                                 result: .successful(
                                     seedPhrase: finalResult.privateSOL,
-                                    ethPublicKey: finalResult.reconstructedETH
+                                    ethPublicKey: finalResult.reconstructedETH,
+                                    metadata: metadata
                                 )
                             )
                         } catch {
@@ -256,6 +270,7 @@ public enum RestoreCustomState: Codable, State, Equatable {
     private func restore(
         with tokenID: TokenID,
         customShare: String,
+        encryptedMetadata: String,
         encryptedMnemonic: String,
         deviceShare: String,
         tKey: TKeyFacade
@@ -267,10 +282,14 @@ public enum RestoreCustomState: Codable, State, Equatable {
                 customShare: customShare,
                 encryptedMnemonic: encryptedMnemonic
             )
+
+            let metadata = try WalletMetaData.decrypt(seedPhrase: finalResult.privateSOL, data: encryptedMetadata)
+
             return .finish(
                 result: .successful(
                     seedPhrase: finalResult.privateSOL,
-                    ethPublicKey: finalResult.reconstructedETH
+                    ethPublicKey: finalResult.reconstructedETH,
+                    metadata: metadata
                 )
             )
         } catch {
@@ -281,10 +300,14 @@ public enum RestoreCustomState: Codable, State, Equatable {
                     customShare: customShare,
                     encryptedMnemonic: encryptedMnemonic
                 )
+
+                let metadata = try WalletMetaData.decrypt(seedPhrase: finalResult.privateSOL, data: encryptedMetadata)
+
                 return .finish(
                     result: .successful(
                         seedPhrase: finalResult.privateSOL,
-                        ethPublicKey: finalResult.reconstructedETH
+                        ethPublicKey: finalResult.reconstructedETH,
+                        metadata: metadata
                     )
                 )
             } catch {

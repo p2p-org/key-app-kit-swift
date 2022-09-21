@@ -8,6 +8,7 @@ import SolanaSwift
 public enum SocialSignInResult: Codable, Equatable {
     case successful(
         email: String,
+        authProvider: String,
         seedPhrase: String,
         ethPublicKey: String,
         deviceShare: String,
@@ -80,6 +81,7 @@ public enum SocialSignInState: Codable, State, Equatable {
                 return .finish(
                     .successful(
                         email: email,
+                        authProvider: socialProvider.rawValue,
                         seedPhrase: result.privateSOL,
                         ethPublicKey: result.reconstructedETH,
                         deviceShare: result.deviceShare,
@@ -122,6 +124,7 @@ public enum SocialSignInState: Codable, State, Equatable {
                 return .finish(
                     .successful(
                         email: email,
+                        authProvider: socialProvider.rawValue,
                         seedPhrase: result.privateSOL,
                         ethPublicKey: result.reconstructedETH,
                         deviceShare: result.deviceShare,
