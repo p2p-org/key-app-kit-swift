@@ -9,7 +9,7 @@ public class APIGatewayClientImpl: APIGatewayClient {
     private let endpoint: URL
     private let networkManager: NetworkManager
     private let dateFormat: DateFormatter
-    private var requestID: Int64 = 1
+    private let uuid = UUID()
 
     public init(endpoint: String, networkManager: NetworkManager = URLSession.shared) {
         self.endpoint = URL(string: endpoint)!
@@ -20,6 +20,16 @@ public class APIGatewayClientImpl: APIGatewayClient {
         dateFormat.locale = Locale(identifier: "en_US_POSIX")
     }
 
+    private func createDefaultRequest(method: String = "POST") -> URLRequest {
+        var request = URLRequest(url: endpoint)
+        request.httpMethod = method
+        request.setValue("P2PWALLET_MOBILE", forHTTPHeaderField: "CHANNEL_ID")
+        request.setValue("application/json", forHTTPHeaderField: "Accept")
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+
+        return request
+    }
+
     public func getMetadata(
         ethAddress: String,
         solanaPrivateKey: String,
@@ -28,12 +38,10 @@ public class APIGatewayClientImpl: APIGatewayClient {
         // Prepare
         var request = createDefaultRequest()
         let (solanaSecretKey, solanaPublicKey) = try prepare(solanaPrivateKey: solanaPrivateKey)
-        
-        print(Int64(timestampDevice.timeIntervalSince1970))
 
         // Create rpc request
         let rpcRequest = JSONRPCRequest(
-            id: requestID,
+            id: uuid.uuidString,
             method: "get_metadata",
             params: APIGatewayGetMetadataParams(
                 solanaPublicKey: Base58.encode(solanaPublicKey),
@@ -46,32 +54,18 @@ public class APIGatewayClientImpl: APIGatewayClient {
                 timestampDevice: dateFormat.string(from: timestampDevice)
             )
         )
-        requestID += 1
         request.httpBody = try JSONEncoder().encode(rpcRequest)
 
         // Request
         let responseData = try await networkManager.requestData(request: request)
-        
-        print(String(data: responseData, encoding: .utf8))
-
         let response = try JSONDecoder()
-            .decode(JSONRPCResponse<String>.self, from: responseData)
+            .decode(JSONRPCResponse<APIGatewayClientGetMetadataResult>.self, from: responseData)
         if let error = response.error {
             throw APIGatewayError(rawValue: error.code) ?? UndefinedAPIGatewayError(code: error.code)
         }
 
-        guard let result = response.result else { throw APIGatewayError.failedSending }
-        return result
-    }
-
-    private func createDefaultRequest(method: String = "POST") -> URLRequest {
-        var request = URLRequest(url: endpoint)
-        request.httpMethod = method
-        request.setValue("P2PWALLET_MOBILE", forHTTPHeaderField: "CHANNEL_ID")
-        request.setValue("application/json", forHTTPHeaderField: "Accept")
-        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
-
-        return request
+        guard let result = response.result?.encryptedMetadata else { throw APIGatewayError.failedSending }
+        return try result.fromBase64()
     }
 
     private func prepare(solanaPrivateKey: String) throws -> (solanaSecretKey: Data, solanaPublicKey: Data) {
@@ -95,7 +89,7 @@ public class APIGatewayClientImpl: APIGatewayClient {
 
         // Create rpc request
         let rpcRequest = JSONRPCRequest(
-            id: requestID,
+            id: uuid.uuidString,
             method: "register_wallet",
             params: APIGatewayRegisterWalletParams(
                 solanaPublicKey: Base58.encode(solanaPublicKey),
@@ -112,7 +106,6 @@ public class APIGatewayClientImpl: APIGatewayClient {
                 timestampDevice: dateFormat.string(from: timestampDevice)
             )
         )
-        requestID += 1
 
         request.httpBody = try JSONEncoder().encode(rpcRequest)
 
@@ -146,7 +139,7 @@ public class APIGatewayClientImpl: APIGatewayClient {
 
         // Create rpc request
         let rpcRequest = JSONRPCRequest(
-            id: requestID,
+            id: uuid.uuidString,
             method: "confirm_register_wallet",
             params: APIGatewayConfirmRegisterWalletParams(
                 solanaPublicKey: Base58.encode(solanaPublicKey),
@@ -168,7 +161,6 @@ public class APIGatewayClientImpl: APIGatewayClient {
                 timestampDevice: dateFormat.string(from: timestampDevice)
             )
         )
-        requestID += 1
 
         request.httpBody = try JSONEncoder().encode(rpcRequest)
         print(request.cURL(pretty: true))
@@ -197,7 +189,7 @@ public class APIGatewayClientImpl: APIGatewayClient {
         let solanaKeypair = try NaclSign.KeyPair.keyPair(fromSecretKey: solPrivateKey)
 
         let rpcRequest = JSONRPCRequest(
-            id: requestID,
+            id: uuid.uuidString,
             method: "restore_wallet",
             params: APIGatewayRestoreWalletParams(
                 restoreId: Base58.encode(solanaKeypair.publicKey),
@@ -213,7 +205,6 @@ public class APIGatewayClientImpl: APIGatewayClient {
                 timestampDevice: dateFormat.string(from: timestampDevice)
             )
         )
-        requestID += 1
 
         request.httpBody = try JSONEncoder().encode(rpcRequest)
         print(request.cURL(pretty: true))
@@ -242,7 +233,7 @@ public class APIGatewayClientImpl: APIGatewayClient {
         let solanaKeypair = try NaclSign.KeyPair.keyPair(fromSecretKey: solanaPrivateKey)
 
         let rpcRequest = JSONRPCRequest(
-            id: requestID,
+            id: uuid.uuidString,
             method: "confirm_restore_wallet",
             params: APIGatewayConfirmRestoreWalletParams(
                 restoreId: Base58.encode(solanaKeypair.publicKey),
@@ -256,7 +247,6 @@ public class APIGatewayClientImpl: APIGatewayClient {
                 timestampDevice: dateFormat.string(from: timestampDevice)
             )
         )
-        requestID += 1
 
         request.httpBody = try JSONEncoder().encode(rpcRequest)
         print(request.cURL(pretty: true))

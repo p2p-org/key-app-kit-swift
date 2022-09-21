@@ -98,6 +98,15 @@ struct APIGatewayClientResult: Codable {
     let status: Bool
 }
 
+struct APIGatewayClientGetMetadataResult: Codable {
+    let encryptedMetadata: String
+    
+    enum CodingKeys: String, CodingKey {
+        case encryptedMetadata = "metadata"
+    }
+    
+}
+
 struct APIGatewayClientConfirmRestoreWalletResult: Codable {
     let status: Bool
     let solanaPublicKey: String
