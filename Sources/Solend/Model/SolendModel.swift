@@ -10,7 +10,7 @@ public typealias SolendUserDeposit = P2PSwift.SolendUserDeposit
 public typealias SolendDepositFee = P2PSwift.SolendDepositFee
 public typealias SolendConfigAsset = P2PSwift.SolendConfigAsset
 
-public struct SolendMarketInfo: Codable {
+public struct SolendMarketInfo: Codable, Hashable {
     public let symbol: String
     public let currentSupply: String
     public let depositLimit: String
