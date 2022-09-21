@@ -121,10 +121,8 @@ public enum RestoreCustomState: Codable, State, Equatable {
                                 encryptedMnemonic: result.encryptedPayload
                             )
 
-                            guard let encryptedMetaData = Data(base64Encoded: result.encryptedMetaData)
-                            else { throw OnboardingError.invalidValue(at: "Invalid encrypted metadata") }
                             let encryptedMetadata = try JSONDecoder()
-                                .decode(Crypto.EncryptedMetadata.self, from: encryptedMetaData)
+                                .decode(Crypto.EncryptedMetadata.self, from: Data(result.encryptedMetaData.utf8))
                             let metadataRaw = try Crypto.decryptMetadata(
                                 seedPhrase: finalResult.privateSOL,
                                 encryptedMetadata: encryptedMetadata
