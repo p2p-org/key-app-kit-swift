@@ -36,13 +36,30 @@ public struct BindingPhoneNumberData: Codable, Equatable {
     var sendingThrottle: Throttle = .init(maxAttempt: 5, timeInterval: 60 * 10)
 }
 
+/// Resend timer interval
+let EnterSMSCodeCountdownLegs: [TimeInterval] = [30, 40, 60, 90, 120]
+
+public struct ResendCounter: Codable, Equatable {
+    public internal(set) var attempt: Int
+    public internal(set) var until: Date
+
+    static func zero() -> Self {
+        .init(attempt: 0, until: Date().addingTimeInterval(EnterSMSCodeCountdownLegs[0]))
+    }
+}
+
 public enum BindingPhoneNumberState: Codable, State, Equatable {
     public typealias Event = BindingPhoneNumberEvent
     public typealias Provider = APIGatewayClient
 
-    case enterPhoneNumber(initialPhoneNumber: String?, didSend: Bool, data: BindingPhoneNumberData)
+    case enterPhoneNumber(
+        initialPhoneNumber: String?,
+        didSend: Bool,
+        resendCounter: Wrapper<ResendCounter>?,
+        data: BindingPhoneNumberData
+    )
     case enterOTP(
-        resendAttempt: Wrapper<Int>,
+        resendCounter: Wrapper<ResendCounter>,
         channel: BindingPhoneNumberChannel,
         phoneNumber: String,
         data: BindingPhoneNumberData
@@ -54,6 +71,7 @@ public enum BindingPhoneNumberState: Codable, State, Equatable {
     public static var initialState: BindingPhoneNumberState = .enterPhoneNumber(
         initialPhoneNumber: nil,
         didSend: false,
+        resendCounter: nil,
         data: .init(
             seedPhrase: "",
             ethAddress: "",
@@ -71,12 +89,12 @@ public enum BindingPhoneNumberState: Codable, State, Equatable {
         provider: APIGatewayClient
     ) async throws -> BindingPhoneNumberState {
         switch currentState {
-        case let .enterPhoneNumber(initialPhoneNumber, didSend, data):
+        case let .enterPhoneNumber(initialPhoneNumber, didSend, resendCounter, data):
             switch event {
             case let .enterPhoneNumber(phoneNumber, channel):
                 if initialPhoneNumber == phoneNumber, didSend {
                     return .enterOTP(
-                        resendAttempt: .init(0),
+                        resendCounter: resendCounter ?? .init(.zero()),
                         channel: .sms,
                         phoneNumber: phoneNumber,
                         data: data
@@ -109,7 +127,12 @@ public enum BindingPhoneNumberState: Codable, State, Equatable {
                     )
 
                     return .enterOTP(
-                        resendAttempt: Wrapper(0),
+                        resendCounter: .init(
+                            .init(
+                                attempt: 0,
+                                until: Date().addingTimeInterval(TimeInterval(EnterSMSCodeCountdownLegs[0]))
+                            )
+                        ),
                         channel: channel,
                         phoneNumber: phoneNumber,
                         data: data
@@ -135,7 +158,7 @@ public enum BindingPhoneNumberState: Codable, State, Equatable {
             default:
                 throw StateMachineError.invalidEvent
             }
-        case let .enterOTP(resendAttempt, channel, phoneNumber, data):
+        case let .enterOTP(resendCounter, channel, phoneNumber, data):
             switch event {
             case let .enterOTP(opt):
                 let account = try await Account(
@@ -182,7 +205,7 @@ public enum BindingPhoneNumberState: Codable, State, Equatable {
 
                 return .finish(.success(metadata: metaData))
             case .resendOTP:
-                if resendAttempt.value >= 4 {
+                if resendCounter.value.attempt >= 4 {
                     return .block(
                         until: Date() + blockTime,
                         reason: .blockResend,
@@ -191,7 +214,9 @@ public enum BindingPhoneNumberState: Codable, State, Equatable {
                     )
                 }
 
-                resendAttempt.value = resendAttempt.value + 1
+                resendCounter.value.attempt = resendCounter.value.attempt + 1
+                resendCounter.value.until = Date()
+                    .addingTimeInterval(EnterSMSCodeCountdownLegs[resendCounter.value.attempt])
 
                 let account = try await Account(
                     phrase: data.seedPhrase.components(separatedBy: " "),
@@ -212,6 +237,7 @@ public enum BindingPhoneNumberState: Codable, State, Equatable {
                 return .enterPhoneNumber(
                     initialPhoneNumber: phoneNumber,
                     didSend: true,
+                    resendCounter: resendCounter,
                     data: data
                 )
             default:
@@ -235,12 +261,14 @@ public enum BindingPhoneNumberState: Codable, State, Equatable {
                     return .enterPhoneNumber(
                         initialPhoneNumber: phoneNumber,
                         didSend: false,
+                        resendCounter: nil,
                         data: data
                     )
                 case .blockEnterOTP:
                     return .enterPhoneNumber(
                         initialPhoneNumber: phoneNumber,
                         didSend: false,
+                        resendCounter: nil,
                         data: data
                     )
                 }

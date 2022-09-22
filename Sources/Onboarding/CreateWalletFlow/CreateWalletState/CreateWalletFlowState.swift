@@ -98,6 +98,7 @@ public enum CreateWalletFlowState: Codable, State, Equatable {
                             .enterPhoneNumber(
                                 initialPhoneNumber: nil,
                                 didSend: false,
+                                resendCounter: nil,
                                 data: .init(
                                     seedPhrase: seedPhrase,
                                     ethAddress: ethPublicKey,

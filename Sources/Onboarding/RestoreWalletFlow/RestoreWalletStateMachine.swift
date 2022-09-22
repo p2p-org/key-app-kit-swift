@@ -114,6 +114,7 @@ public enum RestoreWalletState: Codable, State, Equatable {
                         .enterPhone(
                             initialPhoneNumber: nil,
                             didSend: false,
+                            resendCounter: nil,
                             solPrivateKey: nil,
                             social: nil
                         )
@@ -326,6 +327,7 @@ public enum RestoreWalletState: Codable, State, Equatable {
                 .enterPhone(
                     initialPhoneNumber: nil,
                     didSend: false,
+                    resendCounter: nil,
                     solPrivateKey: nil,
                     social: data
                 )

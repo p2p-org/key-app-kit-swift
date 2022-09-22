@@ -42,8 +42,14 @@ public enum RestoreCustomState: Codable, State, Equatable {
     public typealias Event = RestoreCustomEvent
     public typealias Provider = RestoreCustomContainer
 
-    case enterPhone(initialPhoneNumber: String?, didSend: Bool, solPrivateKey: Data?, social: RestoreSocialData?)
-    case enterOTP(phone: String, solPrivateKey: Data, social: RestoreSocialData?, attempt: Wrapper<Int>)
+    case enterPhone(
+        initialPhoneNumber: String?,
+        didSend: Bool,
+        resendCounter: Wrapper<ResendCounter>?,
+        solPrivateKey: Data?,
+        social: RestoreSocialData?
+    )
+    case enterOTP(phone: String, solPrivateKey: Data, social: RestoreSocialData?, attempt: Wrapper<ResendCounter>)
     case otpNotDeliveredTrySocial(phone: String, code: Int)
     case otpNotDelivered(phone: String, code: Int)
     case noMatch
@@ -57,6 +63,7 @@ public enum RestoreCustomState: Codable, State, Equatable {
     public static var initialState: RestoreCustomState = .enterPhone(
         initialPhoneNumber: nil,
         didSend: false,
+        resendCounter: nil,
         solPrivateKey: nil,
         social: nil
     )
@@ -67,11 +74,16 @@ public enum RestoreCustomState: Codable, State, Equatable {
         provider: RestoreCustomContainer
     ) async throws -> RestoreCustomState {
         switch currentState {
-        case let .enterPhone(initialPhoneNumber, didSend, solPrivateKey, social):
+        case let .enterPhone(initialPhoneNumber, didSend, resendCounter, solPrivateKey, social):
             switch event {
             case let .enterPhoneNumber(phone):
                 if initialPhoneNumber == phone, didSend == true, let solPrivateKey = solPrivateKey {
-                    return .enterOTP(phone: phone, solPrivateKey: solPrivateKey, social: social, attempt: .init(0))
+                    return .enterOTP(
+                        phone: phone,
+                        solPrivateKey: solPrivateKey,
+                        social: social,
+                        attempt: resendCounter ?? .init(.zero())
+                    )
                 }
 
                 let solPrivateKey = try NaclSign.KeyPair.keyPair().secretKey
@@ -79,7 +91,7 @@ public enum RestoreCustomState: Codable, State, Equatable {
                     phone: phone,
                     solPrivateKey: solPrivateKey,
                     social: social,
-                    attempt: .init(0),
+                    attempt: .init(.zero()),
                     provider: provider
                 )
 
@@ -160,14 +172,16 @@ public enum RestoreCustomState: Codable, State, Equatable {
                 }
 
             case .resendOTP:
-                if attempt.value == 4 {
+                if attempt.value.attempt == 4 {
                     return .block(
                         until: Date() + blockTime,
                         social: social,
                         reason: .blockEnterOTP
                     )
                 }
-                attempt.value = attempt.value + 1
+                attempt.value.attempt = attempt.value.attempt + 1
+                attempt.value.until = Date().addingTimeInterval(EnterSMSCodeCountdownLegs[attempt.value.attempt])
+
                 return try await sendOTP(
                     phone: phone,
                     solPrivateKey: solPrivateKey,
@@ -180,6 +194,7 @@ public enum RestoreCustomState: Codable, State, Equatable {
                 return .enterPhone(
                     initialPhoneNumber: phone,
                     didSend: true,
+                    resendCounter: attempt,
                     solPrivateKey: solPrivateKey,
                     social: social
                 )
@@ -191,7 +206,13 @@ public enum RestoreCustomState: Codable, State, Equatable {
         case .otpNotDeliveredTrySocial:
             switch event {
             case .back:
-                return .enterPhone(initialPhoneNumber: nil, didSend: false, solPrivateKey: nil, social: nil)
+                return .enterPhone(
+                    initialPhoneNumber: nil,
+                    didSend: false,
+                    resendCounter: nil,
+                    solPrivateKey: nil,
+                    social: nil
+                )
             case let .requireSocial(provider):
                 return .finish(result: .requireSocialDevice(provider: provider))
             case .start:
@@ -211,7 +232,13 @@ public enum RestoreCustomState: Codable, State, Equatable {
         case let .tryAnother(_, trySocial):
             switch event {
             case .enterPhone:
-                return .enterPhone(initialPhoneNumber: nil, didSend: false, solPrivateKey: nil, social: nil)
+                return .enterPhone(
+                    initialPhoneNumber: nil,
+                    didSend: false,
+                    resendCounter: nil,
+                    solPrivateKey: nil,
+                    social: nil
+                )
             case let .requireSocial(provider):
                 if trySocial {
                     return .finish(result: .requireSocialDevice(provider: provider))
@@ -230,7 +257,13 @@ public enum RestoreCustomState: Codable, State, Equatable {
                 return .finish(result: .start)
             case .enterPhone:
                 guard Date() > until else { throw StateMachineError.invalidEvent }
-                return .enterPhone(initialPhoneNumber: nil, didSend: false, solPrivateKey: nil, social: nil)
+                return .enterPhone(
+                    initialPhoneNumber: nil,
+                    didSend: false,
+                    resendCounter: nil,
+                    solPrivateKey: nil,
+                    social: nil
+                )
             default:
                 throw StateMachineError.invalidEvent
             }
@@ -248,7 +281,13 @@ public enum RestoreCustomState: Codable, State, Equatable {
         case .notFoundDevice:
             switch event {
             case .enterPhone:
-                return .enterPhone(initialPhoneNumber: nil, didSend: false, solPrivateKey: nil, social: nil)
+                return .enterPhone(
+                    initialPhoneNumber: nil,
+                    didSend: false,
+                    resendCounter: nil,
+                    solPrivateKey: nil,
+                    social: nil
+                )
             case let .requireSocial(provider):
                 return .finish(result: .requireSocialDevice(provider: provider))
             case .start:
@@ -318,7 +357,7 @@ public enum RestoreCustomState: Codable, State, Equatable {
         phone: String,
         solPrivateKey: Data,
         social: RestoreSocialData?,
-        attempt: Wrapper<Int>,
+        attempt: Wrapper<ResendCounter>,
         provider: RestoreCustomContainer
     ) async throws -> RestoreCustomState {
         do {
