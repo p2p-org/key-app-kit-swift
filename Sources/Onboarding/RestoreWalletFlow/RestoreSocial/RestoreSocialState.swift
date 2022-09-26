@@ -23,9 +23,9 @@ public enum RestoreSocialEvent {
 
 public struct RestoreSocialContainer {
     public enum Option: Equatable, Codable {
-        case device(share: String)
-        case customResult(result: RestoreWalletResult)
-        case customDevice(share: String)
+        case device
+        case custom
+        case customDevice
     }
 
     let option: Option
