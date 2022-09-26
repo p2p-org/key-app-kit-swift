@@ -202,7 +202,8 @@ public enum RestoreWalletState: Codable, State, Equatable {
                         let innerState = RestoreSocialState.expiredSocialTryAgain(
                             result: result,
                             provider: socialProvider,
-                            email: email
+                            email: email,
+                            deviceShare: provider.deviceShare
                         )
                         let nextInnerState = try await innerState <- (
                             event,
@@ -431,9 +432,8 @@ extension RestoreWalletState: Step, Continuable {
             return 6 * 100 + RestoreSocialState.social(result: result).step
         case let .restoreSocial(.notFoundCustom(result, email), option: _):
             return 6 * 100 + RestoreSocialState.notFoundCustom(result: result, email: email).step
-        case let .restoreSocial(.expiredSocialTryAgain(result, provider, email), option: _):
-            return 6 * 100 + RestoreSocialState.expiredSocialTryAgain(result: result, provider: provider, email: email)
-                .step
+        case let .restoreSocial(.expiredSocialTryAgain(result, provider, email, deviceShare), option: _):
+            return 6 * 100 + RestoreSocialState.expiredSocialTryAgain(result: result, provider: provider, email: email, deviceShare: deviceShare).step
         case let .restoreSocial(.finish(finishResult), option: _):
             return 6 * 100 + RestoreSocialState.finish(finishResult).step
         case let .restoreSocial(.notFoundDevice(data, deviceShare), .customResult):
