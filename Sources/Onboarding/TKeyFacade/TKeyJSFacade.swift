@@ -6,19 +6,24 @@ import Foundation
 import JSBridge
 import WebKit
 
+public enum TKeyVerifierStrategy {
+    case single(verifier: String)
+    case aggregate(verifier: String, subVerifier: String)
+}
+
 public struct TKeyJSFacadeConfiguration {
     let torusEndpoint: String
     let torusNetwork: String
-    let torusVerifierMapping: [String: String]
+    let verifierStrategyResolver: (_ authProvider: String) -> TKeyVerifierStrategy
 
     public init(
         torusEndpoint: String,
         torusNetwork: String,
-        torusVerifierMapping: [String: String]
+        verifierStrategyResolver: @escaping (_ authProvider: String) -> TKeyVerifierStrategy
     ) {
         self.torusEndpoint = torusEndpoint
         self.torusNetwork = torusNetwork
-        self.torusVerifierMapping = torusVerifierMapping
+        self.verifierStrategyResolver = verifierStrategyResolver
     }
 }
 
@@ -94,13 +99,22 @@ public actor TKeyJSFacade: TKeyFacade {
 
     public func signUp(tokenID: TokenID, privateInput: String) async throws -> SignUpResult {
         do {
-            let facade = try await getFacade(configuration: [
+            var facadeConfig: [String: Any] = [
                 "type": "signup",
                 "useNewEth": true,
                 "torusLoginType": tokenID.provider,
-                "torusVerifier": config.torusVerifierMapping[tokenID.provider]!,
                 "privateInput": privateInput,
-            ])
+            ]
+
+            switch config.verifierStrategyResolver(tokenID.provider) {
+            case let .single(verifier):
+                facadeConfig["torusVerifier"] = verifier
+            case let .aggregate(verifier, subVerifier):
+                facadeConfig["torusVerifier"] = verifier
+                facadeConfig["torusSubVerifier"] = subVerifier
+            }
+
+            let facade = try await getFacade(configuration: facadeConfig)
             let value = try await facade.invokeAsyncMethod("triggerSilentSignup", withArguments: [tokenID.value])
 
             guard
@@ -130,16 +144,25 @@ public actor TKeyJSFacade: TKeyFacade {
 
     public func signIn(tokenID: TokenID, deviceShare: String) async throws -> SignInResult {
         do {
-            let facade = try await getFacade(configuration: [
+            var facadeConfig: [String: Any] = [
                 "type": "signin",
                 "torusLoginType": tokenID.provider,
-                "torusVerifier": config.torusVerifierMapping[tokenID.provider]!,
+            ]
 
-            ])
+            switch config.verifierStrategyResolver(tokenID.provider) {
+            case let .single(verifier):
+                facadeConfig["torusVerifier"] = verifier
+            case let .aggregate(verifier, subVerifier):
+                facadeConfig["torusVerifier"] = verifier
+                facadeConfig["torusSubVerifier"] = subVerifier
+            }
+
+            let facade = try await getFacade(configuration: facadeConfig)
             let value = try await facade.invokeAsyncMethod(
                 "triggerSignInNoCustom",
                 withArguments: [tokenID.value, deviceShare]
             )
+
             guard
                 let privateSOL = try await value.valueForKey("privateSOL").toString(),
                 let reconstructedETH = try await value.valueForKey("ethAddress").toString()
@@ -159,12 +182,20 @@ public actor TKeyJSFacade: TKeyFacade {
 
     public func signIn(tokenID: TokenID, customShare: String, encryptedMnemonic: String) async throws -> SignInResult {
         do {
-            let facade = try await getFacade(configuration: [
+            var facadeConfig: [String: Any] = [
                 "type": "signin",
                 "torusLoginType": tokenID.provider,
-                "torusVerifier": config.torusVerifierMapping[tokenID.provider]!,
-            ])
+            ]
 
+            switch config.verifierStrategyResolver(tokenID.provider) {
+            case let .single(verifier):
+                facadeConfig["torusVerifier"] = verifier
+            case let .aggregate(verifier, subVerifier):
+                facadeConfig["torusVerifier"] = verifier
+                facadeConfig["torusSubVerifier"] = subVerifier
+            }
+
+            let facade = try await getFacade(configuration: facadeConfig)
             let encryptedMnemonic = try await JSBValue(jsonString: encryptedMnemonic, in: context)
             let value = try await facade.invokeAsyncMethod(
                 "triggerSignInNoDevice",
@@ -192,12 +223,19 @@ public actor TKeyJSFacade: TKeyFacade {
     {
         do {
             // It doesn't matter which login type and torus verifier
-            let facade = try await getFacade(configuration: [
+            var facadeConfig: [String: Any] = [
                 "type": "signin",
                 "torusLoginType": "google",
-                "torusVerifier": config.torusVerifierMapping["google"]!,
-            ])
+            ]
 
+            switch config.verifierStrategyResolver("google") {
+            case let .single(verifier):
+                facadeConfig["torusVerifier"] = verifier
+            case let .aggregate(verifier, subVerifier):
+                facadeConfig["torusVerifier"] = verifier
+                facadeConfig["torusSubVerifier"] = subVerifier
+            }
+            let facade = try await getFacade(configuration: facadeConfig)
             let encryptedMnemonic = try await JSBValue(jsonString: encryptedMnemonic, in: context)
             let value = try await facade.invokeAsyncMethod(
                 "triggerSignInNoTorus",
