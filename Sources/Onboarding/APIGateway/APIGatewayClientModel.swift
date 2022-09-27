@@ -4,6 +4,20 @@
 
 import Foundation
 
+struct APIGatewayGetMetadataParams: Codable {
+    let solanaPublicKey: String
+    let ethereumAddress: String
+    let signature: String
+    let timestampDevice: String
+    
+    enum CodingKeys: String, CodingKey {
+        case solanaPublicKey = "solana_pubkey"
+        case ethereumAddress = "ethereum_id"
+        case signature
+        case timestampDevice = "timestamp_device"
+    }
+}
+
 struct APIGatewayRegisterWalletParams: Codable {
     let solanaPublicKey: String
     let ethereumAddress: String
@@ -27,6 +41,7 @@ struct APIGatewayConfirmRegisterWalletParams: Codable {
     let ethereumAddress: String
     let encryptedShare: String
     let encryptedPayload: String
+    let encryptedMetadata: String
     let phone: String
     let phoneConfirmationCode: String
     let signature: String
@@ -39,6 +54,7 @@ struct APIGatewayConfirmRegisterWalletParams: Codable {
         case phoneConfirmationCode = "phone_confirmation_code"
         case encryptedShare = "encrypted_share"
         case encryptedPayload = "encrypted_payload"
+        case encryptedMetadata = "encrypted_metadata"
         case signature
         case timestampDevice = "timestamp_device"
     }
@@ -82,6 +98,15 @@ struct APIGatewayClientResult: Codable {
     let status: Bool
 }
 
+struct APIGatewayClientGetMetadataResult: Codable {
+    let encryptedMetadata: String
+    
+    enum CodingKeys: String, CodingKey {
+        case encryptedMetadata = "metadata"
+    }
+    
+}
+
 struct APIGatewayClientConfirmRestoreWalletResult: Codable {
     let status: Bool
     let solanaPublicKey: String
@@ -92,6 +117,7 @@ struct APIGatewayClientConfirmRestoreWalletResult: Codable {
 
     /// Base64 encoded share
     let payload: String
+    let metadata: String
 
     enum CodingKeys: String, CodingKey {
         case status
@@ -99,5 +125,6 @@ struct APIGatewayClientConfirmRestoreWalletResult: Codable {
         case ethereumAddress = "ethereum_id"
         case share
         case payload
+        case metadata
     }
 }

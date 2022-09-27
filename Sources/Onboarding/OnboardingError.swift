@@ -2,10 +2,8 @@
 // Use of this source code is governed by a MIT-style license that can be
 // found in the LICENSE file.
 
-let blockTime: Double = 60 * 10
+import Foundation
 
-public enum PhoneFlowBlockReason: Codable {
-    case blockEnterPhoneNumber
-    case blockResend
-    case blockEnterOTP
+enum OnboardingError: Error {
+    case invalidValue(at: String)
 }

@@ -7,7 +7,7 @@ import Foundation
 public typealias None = Void
 
 public class Wrapper<T: Codable & Equatable>: Codable, Equatable {
-    internal(set) var value: T
+    public internal(set) var value: T
 
     internal init(_ value: T) { self.value = value }
 

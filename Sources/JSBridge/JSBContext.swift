@@ -33,8 +33,12 @@ public class JSBContext: NSObject {
         contentController.add(self, name: JSBContext.kPromiseCallback)
     }
     
-    deinit {
-        wkWebView.removeFromSuperview()
+    @MainActor
+    public func dispose() async {
+        wkWebView.configuration.userContentController.removeAllScriptMessageHandlers()
+        if wkWebView.superview != nil {
+            wkWebView.removeFromSuperview()
+        }
     }
     
     /// Get current unused local variable.

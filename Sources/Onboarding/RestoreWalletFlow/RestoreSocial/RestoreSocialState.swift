@@ -23,9 +23,9 @@ public enum RestoreSocialEvent {
 
 public struct RestoreSocialContainer {
     public enum Option: Equatable, Codable {
-        case device(share: String)
-        case customResult(result: RestoreWalletResult)
-        case customDevice(share: String)
+        case device
+        case custom
+        case customDevice
     }
 
     let option: Option
@@ -42,7 +42,7 @@ public enum RestoreSocialState: Codable, State, Equatable {
     case notFoundDevice(data: RestoreSocialData, deviceShare: String)
     case notFoundCustom(result: RestoreWalletResult, email: String)
     case notFoundSocial(data: RestoreSocialData, deviceShare: String)
-    case expiredSocialTryAgain(result: RestoreWalletResult, provider: SocialProvider, email: String)
+    case expiredSocialTryAgain(result: RestoreWalletResult, provider: SocialProvider, email: String, deviceShare: String?)
     case finish(RestoreSocialResult)
 
     public static var initialState: RestoreSocialState = .signIn(deviceShare: "")
@@ -120,15 +120,15 @@ public enum RestoreSocialState: Codable, State, Equatable {
                 throw StateMachineError.invalidEvent
             }
 
-        case let .expiredSocialTryAgain(result, socialProvider, email):
+        case let .expiredSocialTryAgain(result, socialProvider, email, deviceShare):
             do {
                 return try await handleSignInCustom(result: result, socialProvider: socialProvider, provider: provider)
             }
             catch {
-                if case let .device(share) = provider.option {
+                if let deviceShare = deviceShare {
                     do {
                         return try await handleSignInDevice(
-                            deviceShare: share,
+                            deviceShare: deviceShare,
                             socialProvider: socialProvider,
                             provider: provider
                         )

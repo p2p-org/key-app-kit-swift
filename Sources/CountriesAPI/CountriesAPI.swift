@@ -20,8 +20,6 @@ public final class CountriesAPIImpl: CountriesAPI {
             try Task.checkCancellation()
             let data = try Data(contentsOf: url)
             let countries = try JSONDecoder().decode(Countries.self, from: data)
-                .filter { !$0.dialCode.isEmpty }
-                .filter { $0.status == .assigned || $0.status == .userAssigned }
             try Task.checkCancellation()
             return countries
         }.value
