@@ -126,11 +126,10 @@ public enum RestoreWalletState: Codable, State, Equatable {
             case let .restoreSocial(event):
                 switch event {
                 case let .signInDevice(socialProvider):
-                    guard let share = provider.deviceShare else { throw StateMachineError.invalidEvent }
                     return try await handleSignInDeviceEvent(
                         provider: provider,
                         socialProvider: socialProvider,
-                        option: .device(share: share)
+                        option: .device
                     )
 
                 default:
@@ -187,13 +186,12 @@ public enum RestoreWalletState: Codable, State, Equatable {
                             SecuritySetupState.initialState
                         )
                     case let .requireSocialCustom(result):
-                        return .restoreSocial(.social(result: result), option: .customResult(result: result))
+                        return .restoreSocial(.social(result: result), option: .custom)
                     case let .requireSocialDevice(socialProvider):
-                        guard let share = provider.deviceShare else { throw StateMachineError.invalidEvent }
                         return try await handleSignInDeviceEvent(
                             provider: provider,
                             socialProvider: socialProvider,
-                            option: .customDevice(share: share)
+                            option: .customDevice
                         )
                     case .start:
                         return .finished(.breakProcess)
@@ -202,12 +200,13 @@ public enum RestoreWalletState: Codable, State, Equatable {
                         let innerState = RestoreSocialState.expiredSocialTryAgain(
                             result: result,
                             provider: socialProvider,
-                            email: email
+                            email: email,
+                            deviceShare: provider.deviceShare
                         )
                         let nextInnerState = try await innerState <- (
                             event,
                             .init(
-                                option: .customResult(result: result),
+                                option: .custom,
                                 tKeyFacade: provider.tKeyFacade,
                                 authService: provider.authService
                             )
@@ -216,7 +215,7 @@ public enum RestoreWalletState: Codable, State, Equatable {
                         if case let .finish(result) = nextInnerState {
                             return try await handleRestoreSocial(result: result)
                         } else {
-                            return .restoreSocial(nextInnerState, option: .customResult(result: result))
+                            return .restoreSocial(nextInnerState, option: .custom)
                         }
                     case .breakProcess:
                         return .restore
@@ -431,12 +430,11 @@ extension RestoreWalletState: Step, Continuable {
             return 6 * 100 + RestoreSocialState.social(result: result).step
         case let .restoreSocial(.notFoundCustom(result, email), option: _):
             return 6 * 100 + RestoreSocialState.notFoundCustom(result: result, email: email).step
-        case let .restoreSocial(.expiredSocialTryAgain(result, provider, email), option: _):
-            return 6 * 100 + RestoreSocialState.expiredSocialTryAgain(result: result, provider: provider, email: email)
-                .step
+        case let .restoreSocial(.expiredSocialTryAgain(result, provider, email, deviceShare), option: _):
+            return 6 * 100 + RestoreSocialState.expiredSocialTryAgain(result: result, provider: provider, email: email, deviceShare: deviceShare).step
         case let .restoreSocial(.finish(finishResult), option: _):
             return 6 * 100 + RestoreSocialState.finish(finishResult).step
-        case let .restoreSocial(.notFoundDevice(data, deviceShare), .customResult):
+        case let .restoreSocial(.notFoundDevice(data, deviceShare), .custom):
             return 6 * 100 + RestoreSocialState.notFoundDevice(data: data, deviceShare: deviceShare).step
         case let .restoreSocial(.notFoundDevice(data, deviceShare), .customDevice):
             return 6 * 100 + RestoreSocialState.notFoundDevice(data: data, deviceShare: deviceShare).step
