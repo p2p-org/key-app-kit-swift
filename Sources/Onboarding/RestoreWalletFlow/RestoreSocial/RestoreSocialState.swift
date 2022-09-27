@@ -122,22 +122,20 @@ public enum RestoreSocialState: Codable, State, Equatable {
 
         case let .expiredSocialTryAgain(result, socialProvider, email, deviceShare):
             do {
-                return try await handleSignInCustom(result: result, socialProvider: socialProvider, provider: provider)
+                let state = try await handleSignInCustom(result: result, socialProvider: socialProvider, provider: provider)
+                if case .notFoundCustom(let result, let email) = state, let deviceShare {
+                    return try await handleSignInDevice(
+                        deviceShare: deviceShare,
+                        socialProvider: socialProvider,
+                        provider: provider
+                    )
+                }
+                else {
+                    return state
+                }
             }
             catch {
-                if let deviceShare = deviceShare {
-                    do {
-                        return try await handleSignInDevice(
-                            deviceShare: deviceShare,
-                            socialProvider: socialProvider,
-                            provider: provider
-                        )
-                    } catch {
-                        return .notFoundCustom(result: result, email: email)
-                    }
-                } else {
-                    return .notFoundCustom(result: result, email: email)
-                }
+                throw error
             }
 
         case .finish:
@@ -190,8 +188,13 @@ private extension RestoreSocialState {
                 encryptedMnemonic: result.encryptedPayload
             )
             return .finish(.successful(seedPhrase: result.privateSOL, ethPublicKey: result.reconstructedETH))
-        } catch let _ as TKeyFacadeError {
-            return .notFoundCustom(result: result, email: email)
+        } catch let error as TKeyFacadeError {
+            switch error.code {
+            case 1009, 1021:
+                return .notFoundCustom(result: result, email: email)
+            default:
+                throw error
+            }
         } catch {
             throw error
         }
