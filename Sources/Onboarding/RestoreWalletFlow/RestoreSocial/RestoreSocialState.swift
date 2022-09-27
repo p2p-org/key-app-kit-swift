@@ -123,7 +123,7 @@ public enum RestoreSocialState: Codable, State, Equatable {
         case let .expiredSocialTryAgain(result, socialProvider, email, deviceShare):
             do {
                 let state = try await handleSignInCustom(result: result, socialProvider: socialProvider, provider: provider)
-                if case .notFoundCustom(let result, let email) = state, let deviceShare {
+                if case .notFoundCustom(let result, let email) = state, let deviceShare = deviceShare {
                     return try await handleSignInDevice(
                         deviceShare: deviceShare,
                         socialProvider: socialProvider,
