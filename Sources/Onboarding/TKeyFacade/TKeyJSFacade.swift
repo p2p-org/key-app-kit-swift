@@ -39,23 +39,31 @@ public actor TKeyJSFacade: TKeyFacade {
         self.config = config
         context = JSBContext(wkWebView: wkWebView)
     }
-
+    
+    deinit {
+        context.dispose()
+    }
+    
     private var ready: Bool = false
 
     public func initialize() async throws {
         guard ready == false else { return }
         defer { ready = true }
 
+        await clearWebStorage()
+        let scriptPath = getSDKPath()
+        let request = URLRequest(url: URL(fileURLWithPath: scriptPath))
+        try await context.load(request: request)
+        facadeClass = try await context.this.valueForKey("\(kLibrary).IosFacade")
+    }
+    
+    @MainActor
+    private func clearWebStorage() async {
         let records = await WKWebsiteDataStore.default()
             .fetchDataRecords(ofTypes: WKWebsiteDataStore.allWebsiteDataTypes())
         for record in records {
             await WKWebsiteDataStore.default().removeData(ofTypes: record.dataTypes, for: [record])
         }
-
-        let scriptPath = getSDKPath()
-        let request = URLRequest(url: URL(fileURLWithPath: scriptPath))
-        try await context.load(request: request)
-        facadeClass = try await context.this.valueForKey("\(kLibrary).IosFacade")
     }
 
     private func getSDKPath() -> String {

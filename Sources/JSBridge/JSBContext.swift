@@ -33,6 +33,10 @@ public class JSBContext: NSObject {
         contentController.add(self, name: JSBContext.kPromiseCallback)
     }
     
+    public func dispose() {
+        wkWebView.configuration.userContentController.removeAllScriptMessageHandlers()
+    }
+    
     deinit {
         wkWebView.removeFromSuperview()
     }
