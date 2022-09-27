@@ -41,7 +41,7 @@ public actor TKeyJSFacade: TKeyFacade {
     }
     
     deinit {
-        context.dispose()
+        Task.detached { [context] in await context.dispose() }
     }
     
     private var ready: Bool = false
