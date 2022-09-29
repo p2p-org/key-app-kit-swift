@@ -17,9 +17,10 @@ public enum SolendDataStatus {
 public protocol SolendDataService {
     var status: AnyPublisher<SolendDataStatus, Never> { get }
 
-    var availableAssets: AnyPublisher<[SolendConfigAsset], Never> { get }
-    var deposits: AnyPublisher<[SolendUserDeposit], Never> { get }
-    var marketInfo: AnyPublisher<[SolendMarketInfo], Never> { get }
+    var error: AnyPublisher<Error?, Never> { get }
+    var availableAssets: AnyPublisher<[SolendConfigAsset]?, Never> { get }
+    var deposits: AnyPublisher<[SolendUserDeposit]?, Never> { get }
+    var marketInfo: AnyPublisher<[SolendMarketInfo]?, Never> { get }
 
     func update() async throws
 }
