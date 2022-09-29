@@ -19,6 +19,7 @@ class CryptoTests: XCTestCase {
         
         print(randomSeed)
         print(encryptedMetadata)
-        print(String(data: Data(base64Encoded: decryptedMetadata)!, encoding: .utf8)!)
+
+        XCTAssertEqual(secretData, String(data: Data(base64Encoded: decryptedMetadata)!, encoding: .utf8)!)
     }
 }

@@ -2,7 +2,7 @@
 // Use of this source code is governed by a MIT-style license that can be
 // found in the LICENSE file.
 
-import CryptoKit
+import CryptoSwift
 import Foundation
 import SolanaSwift
 
@@ -14,40 +14,41 @@ internal enum Crypto {
     struct EncryptedMetadata: Codable {
         let nonce: String
         let metadataCiphered: String
-        let tag: String
 
         enum CodingKeys: String, CodingKey {
             case nonce
             case metadataCiphered = "metadata_ciphered"
-            case tag
         }
     }
 
-    private static func extractSymmetricKey(seedPhrase: String) throws -> SymmetricKey {
+    private static func extractSymmetricKey(seedPhrase: String) throws -> Data {
         let secretKey = try Ed25519HDKey.derivePath("m/44'/101'/0'/0'", seed: seedPhrase).get().key
-        return SymmetricKey(data: secretKey)
+        return secretKey
     }
 
     static func encryptMetadata(seedPhrase: String, data: Data) throws -> EncryptedMetadata {
         let symmetricKey = try extractSymmetricKey(seedPhrase: seedPhrase)
-        let box = try ChaChaPoly.seal(data, using: symmetricKey)
+        let iv = AES.randomIV(8)
+        debugPrint(iv)
+        let box = try ChaCha20(key: [UInt8](symmetricKey), iv: iv).encrypt([UInt8](data))
+        let data = Data(box)
 
         return EncryptedMetadata(
-            nonce: Data(box.nonce).base64EncodedString(),
-            metadataCiphered: box.ciphertext.base64EncodedString(),
-            tag: box.tag.base64EncodedString()
+            nonce: Data(iv).base64EncodedString(),
+            metadataCiphered: data.base64EncodedString()
         )
     }
 
     static func decryptMetadata(seedPhrase: String, encryptedMetadata: EncryptedMetadata) throws -> Data {
         let symmetricKey = try extractSymmetricKey(seedPhrase: seedPhrase)
-        let box = try ChaChaPoly.SealedBox(
-            nonce: try .init(data: Data(base64Encoded: encryptedMetadata.nonce)!),
-            ciphertext: Data(base64Encoded: encryptedMetadata.metadataCiphered)!,
-            tag: Data(base64Encoded: encryptedMetadata.tag)!
-        )
-
-        return try ChaChaPoly.open(box, using: symmetricKey)
+        
+        let iv = [UInt8](Data(base64Encoded: encryptedMetadata.nonce)!)
+        let cipher = [UInt8](Data(base64Encoded: encryptedMetadata.metadataCiphered)!)
+        let box = try ChaCha20(key: [UInt8](symmetricKey), iv: iv).decrypt(cipher)
+        let data = Data(box)
+        debugPrint(data)
+        debugPrint("I AM HERE")
+        return data
     }
 
     private static func secureRandomData(count: Int) throws -> Data {
