@@ -20,8 +20,9 @@ public class SolendDataServiceImpl: SolendDataService {
     private let statusSubject: CurrentValueSubject<SolendDataStatus, Never> = .init(.initialized)
     public var status: AnyPublisher<SolendDataStatus, Never> { statusSubject.eraseToAnyPublisher() }
 
-    private let availableAssetsSubject: CurrentValueSubject<[SolendConfigAsset]?, Never> = .init([])
-    public var availableAssets: AnyPublisher<[SolendConfigAsset]?, Never> { availableAssetsSubject.eraseToAnyPublisher()
+    private let availableAssetsSubject: CurrentValueSubject<[SolendConfigAsset]?, Never> = .init(nil)
+    public var availableAssets: AnyPublisher<[SolendConfigAsset]?, Never> {
+        availableAssetsSubject.eraseToAnyPublisher()
     }
 
     private let depositsSubject: CurrentValueSubject<[SolendUserDeposit]?, Never> = .init([])
@@ -50,26 +51,47 @@ public class SolendDataServiceImpl: SolendDataService {
         defer { statusSubject.send(.ready) }
         errorSubject.send(nil)
 
-        // Get config first and setup available assets
+        // Update available assets and user deposits
+        let _ = await(
+            try updateConfig(),
+            try updateUserDeposits()
+        )
+
+        // Update market info
+        try await updateMarketInfo()
+    }
+
+    private func updateConfig() async throws {
         if availableAssetsSubject.value == nil {
             do {
                 let config: SolendConfig = try await solend.getConfig(environment: .production)
-                let filteredAssets = config.assets.filter { allowedSymbols.contains($0.symbol) }
+
+                // Filter and fix usdt logo
+                let filteredAssets = config.assets
+                    .filter { allowedSymbols.contains($0.symbol) }
+                    .map { asset -> SolendConfigAsset in
+                        if asset.symbol == "USDT" {
+                            return .init(
+                                name: asset.name,
+                                symbol: asset.symbol,
+                                decimals: asset.decimals,
+                                mintAddress: asset.mintAddress,
+                                logo: "https://raw.githubusercontent.com/solana-labs/token-list/main/assets/mainnet/BQcdHdAQW1hczDbBi9hiegXAR7A98Q9jx3X3iBBBDiq4/logo.png"
+                            )
+                        }
+
+                        return asset
+                    }
+
                 availableAssetsSubject.send(filteredAssets)
             } catch {
                 errorSubject.send(error)
                 throw error
             }
         }
-
-        // Get market in and user deposit
-        let _ = await(
-            try updateAvailableAssets(),
-            try updateUserDeposits()
-        )
     }
 
-    private func updateAvailableAssets() async throws {
+    private func updateMarketInfo() async throws {
         guard let availableAssets = availableAssetsSubject.value else {
             marketInfoSubject.send(nil)
             return
