@@ -8,10 +8,11 @@ import SolanaSwift
 
 enum CryptoError: Error {
     case secureRandomDataError
+    case invalidMac
 }
 
 internal enum Crypto {
-    struct EncryptedMetadata: Codable {
+    internal struct EncryptedMetadata: Codable {
         let nonce: String
         let metadataCiphered: String
 
@@ -21,30 +22,47 @@ internal enum Crypto {
         }
     }
 
-    private static func extractSymmetricKey(seedPhrase: String) throws -> Data {
-        let secretKey = try Ed25519HDKey.derivePath("m/44'/101'/0'/0'", seed: seedPhrase).get().key
-        return secretKey
+    internal static func extractSymmetricKey(seedPhrase: String) throws -> Data {
+        try extractSeedPhrase(phrase: seedPhrase, path: "m/44'/101'/0'/0'")
     }
 
     static func encryptMetadata(seedPhrase: String, data: Data) throws -> EncryptedMetadata {
         let symmetricKey = try extractSymmetricKey(seedPhrase: seedPhrase)
-        let iv = AES.randomIV(8)
-        let box = try ChaCha20(key: [UInt8](symmetricKey), iv: iv).encrypt([UInt8](data))
-        let data = Data(box)
+        let iv = AES.randomIV(12)
 
+        let (cipher, tag) = try AEADChaCha20Poly1305.encrypt(
+            [UInt8](data),
+            key: [UInt8](symmetricKey),
+            iv: iv,
+            authenticationHeader: []
+        )
+
+        let result = Data(cipher + tag)
         return EncryptedMetadata(
             nonce: Data(iv).base64EncodedString(),
-            metadataCiphered: data.base64EncodedString()
+            metadataCiphered: result.base64EncodedString()
         )
     }
 
     static func decryptMetadata(seedPhrase: String, encryptedMetadata: EncryptedMetadata) throws -> Data {
         let symmetricKey = try extractSymmetricKey(seedPhrase: seedPhrase)
-        
+
         let iv = [UInt8](Data(base64Encoded: encryptedMetadata.nonce)!)
-        let cipher = [UInt8](Data(base64Encoded: encryptedMetadata.metadataCiphered)!)
-        let box = try ChaCha20(key: [UInt8](symmetricKey), iv: iv).decrypt(cipher)
+        let cipher = Data(base64Encoded: encryptedMetadata.metadataCiphered)!
+
+        let tagSize = 16
+        
+        let (box, status) = try AEADChaCha20Poly1305.decrypt(
+            [UInt8](Data(cipher.prefix(cipher.count - tagSize))),
+            key: [UInt8](symmetricKey),
+            iv: iv,
+            authenticationHeader: [],
+            authenticationTag: cipher.suffix(tagSize)
+        )
+        
+        guard status == true else { throw CryptoError.invalidMac }
         let data = Data(box)
+        
         return data
     }
 

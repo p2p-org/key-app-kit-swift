@@ -31,11 +31,14 @@ public struct WalletMetaData: Codable, Equatable {
     /// Decrypt metadata using seed phrase
     public static func decrypt(seedPhrase: String, data: String) throws -> Self {
         let encryptedMetadata = try JSONDecoder()
-            .decode(Crypto.EncryptedMetadata.self, from: Data(bytes: data.utf8))
+            .decode(Crypto.EncryptedMetadata.self, from: Data(data.utf8))
         let metadataRaw = try Crypto.decryptMetadata(
             seedPhrase: seedPhrase,
             encryptedMetadata: encryptedMetadata
         )
+        print(metadataRaw)
+        print(Data(base64Encoded: metadataRaw))
+        print(String(data: metadataRaw, encoding: .utf8))
         return try JSONDecoder().decode(WalletMetaData.self, from: metadataRaw)
     }
 }
