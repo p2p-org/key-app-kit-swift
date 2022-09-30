@@ -226,7 +226,7 @@ public class APIGatewayClientImpl: APIGatewayClient {
         phone: String,
         otpCode: String,
         timestampDevice: Date
-    ) async throws -> RestoreWalletResult {
+    ) async throws -> APIGatewayRestoreWalletResult {
         guard E164Numbers.validate(phone) else { throw APIGatewayError.invalidE164NumberStandard }
 
         var request = createDefaultRequest()

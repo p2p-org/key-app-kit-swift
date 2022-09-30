@@ -82,7 +82,7 @@ public class APIGatewayClientImplMock: APIGatewayClient {
         phone _: String,
         otpCode: String,
         timestampDevice _: Date
-    ) async throws -> RestoreWalletResult {
+    ) async throws -> APIGatewayRestoreWalletResult {
         sleep(1)
         debugPrint("SMSServiceImplMock confirm isConfirmed: \(code == code)")
 

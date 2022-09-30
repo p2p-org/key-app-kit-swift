@@ -12,7 +12,11 @@ public class TKeyMockupFacade: TKeyFacade {
 
     public func initialize() async throws {}
 
-    public func signUp(tokenID _: TokenID, privateInput: String) async throws -> SignUpResult {
+    public func obtainTorusKey(tokenID: TokenID) async throws -> TorusKey {
+        .init(tokenID: tokenID, value: "")
+    }
+
+    public func signUp(torusKey _: TorusKey, privateInput: String) async throws -> SignUpResult {
         .init(
             privateSOL: privateInput,
             reconstructedETH: "someEthPublicKey",
@@ -22,12 +26,12 @@ public class TKeyMockupFacade: TKeyFacade {
         )
     }
 
-    public func signIn(tokenID _: TokenID, deviceShare _: String) async throws -> SignInResult {
+    public func signIn(torusKey _: TorusKey, deviceShare _: String) async throws -> SignInResult {
         .init(privateSOL: Mnemonic().phrase.joined(separator: " "), reconstructedETH: "someEthPublicKey")
     }
 
     public func signIn(
-        tokenID _: TokenID,
+        torusKey _: TorusKey,
         customShare _: String,
         encryptedMnemonic _: String
     ) async throws -> SignInResult {

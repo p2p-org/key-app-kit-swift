@@ -37,15 +37,20 @@ public enum RestoreSocialState: Codable, State, Equatable {
     public typealias Event = RestoreSocialEvent
     public typealias Provider = RestoreSocialContainer
 
-    case signIn(deviceShare: String)
-    case social(result: RestoreWalletResult)
-    case notFoundDevice(data: RestoreSocialData, deviceShare: String)
-    case notFoundCustom(result: RestoreWalletResult, email: String)
-    case notFoundSocial(data: RestoreSocialData, deviceShare: String)
-    case expiredSocialTryAgain(result: RestoreWalletResult, provider: SocialProvider, email: String, deviceShare: String?)
+    case signIn(deviceShare: String, customResult: APIGatewayRestoreWalletResult?)
+    case social(result: APIGatewayRestoreWalletResult)
+    case notFoundDevice(data: RestoreSocialData, deviceShare: String, customResult: APIGatewayRestoreWalletResult?)
+    case notFoundCustom(result: APIGatewayRestoreWalletResult, email: String)
+    case notFoundSocial(data: RestoreSocialData, deviceShare: String, customResult: APIGatewayRestoreWalletResult?)
+    case expiredSocialTryAgain(
+        result: APIGatewayRestoreWalletResult,
+        provider: SocialProvider,
+        email: String,
+        deviceShare: String?
+    )
     case finish(RestoreSocialResult)
 
-    public static var initialState: RestoreSocialState = .signIn(deviceShare: "")
+    public static var initialState: RestoreSocialState = .signIn(deviceShare: "", customResult: nil)
 
     public func accept(
         currentState: RestoreSocialState,
@@ -53,11 +58,12 @@ public enum RestoreSocialState: Codable, State, Equatable {
         provider: RestoreSocialContainer
     ) async throws -> RestoreSocialState {
         switch currentState {
-        case let .signIn(deviceShare):
+        case let .signIn(deviceShare, customShare):
             switch event {
             case let .signInDevice(socialProvider):
                 return try await handleSignInDevice(
                     deviceShare: deviceShare,
+                    customResult: customShare,
                     socialProvider: socialProvider,
                     provider: provider
                 )
@@ -77,7 +83,7 @@ public enum RestoreSocialState: Codable, State, Equatable {
                 throw StateMachineError.invalidEvent
             }
 
-        case let .notFoundCustom(result, email):
+        case let .notFoundCustom(result, _):
             switch event {
             case let .signInCustom(socialProvider):
                 return try await handleSignInCustom(result: result, socialProvider: socialProvider, provider: provider)
@@ -88,11 +94,12 @@ public enum RestoreSocialState: Codable, State, Equatable {
                 throw StateMachineError.invalidEvent
             }
 
-        case let .notFoundDevice(data, deviceShare):
+        case let .notFoundDevice(data, deviceShare, customShare):
             switch event {
             case let .signInDevice(socialProvider):
                 return try await handleSignInDevice(
                     deviceShare: deviceShare,
+                    customResult: customShare,
                     socialProvider: socialProvider,
                     provider: provider
                 )
@@ -104,11 +111,12 @@ public enum RestoreSocialState: Codable, State, Equatable {
                 throw StateMachineError.invalidEvent
             }
 
-        case let .notFoundSocial(data, deviceShare):
+        case let .notFoundSocial(data, deviceShare, customShare):
             switch event {
             case let .signInDevice(socialProvider):
                 return try await handleSignInDevice(
                     deviceShare: deviceShare,
+                    customResult: customShare,
                     socialProvider: socialProvider,
                     provider: provider
                 )
@@ -120,21 +128,24 @@ public enum RestoreSocialState: Codable, State, Equatable {
                 throw StateMachineError.invalidEvent
             }
 
-        case let .expiredSocialTryAgain(result, socialProvider, email, deviceShare):
+        case let .expiredSocialTryAgain(result, socialProvider, _, deviceShare):
             do {
-                let state = try await handleSignInCustom(result: result, socialProvider: socialProvider, provider: provider)
-                if case .notFoundCustom(let result, let email) = state, let deviceShare = deviceShare {
+                let state = try await handleSignInCustom(
+                    result: result,
+                    socialProvider: socialProvider,
+                    provider: provider
+                )
+                if case .notFoundCustom(result, _) = state, let deviceShare = deviceShare {
                     return try await handleSignInDevice(
                         deviceShare: deviceShare,
+                        customResult: result,
                         socialProvider: socialProvider,
                         provider: provider
                     )
-                }
-                else {
+                } else {
                     return state
                 }
-            }
-            catch {
+            } catch {
                 throw error
             }
 
@@ -147,25 +158,44 @@ public enum RestoreSocialState: Codable, State, Equatable {
 private extension RestoreSocialState {
     func handleSignInDevice(
         deviceShare: String,
+        customResult: APIGatewayRestoreWalletResult?,
         socialProvider: SocialProvider,
         provider: RestoreSocialContainer
     ) async throws -> RestoreSocialState {
         let (value, email) = try await provider.authService.auth(type: socialProvider)
         let tokenID = TokenID(value: value, provider: socialProvider.rawValue)
+
+        try await provider.tKeyFacade.initialize()
+        let torusKey = try await provider.tKeyFacade.obtainTorusKey(tokenID: tokenID)
+
         do {
-            try await provider.tKeyFacade.initialize()
             let result = try await provider.tKeyFacade.signIn(
-                tokenID: tokenID,
+                torusKey: torusKey,
                 deviceShare: deviceShare
             )
             return .finish(.successful(seedPhrase: result.privateSOL, ethPublicKey: result.reconstructedETH))
         } catch let error as TKeyFacadeError {
-            let data = RestoreSocialData(tokenID: tokenID, email: email)
+            let data = RestoreSocialData(torusKey: torusKey, email: email)
             switch error.code {
             case 1009:
-                return .notFoundDevice(data: data, deviceShare: deviceShare)
+                guard let customShareData = customResult else {
+                    return .notFoundDevice(data: data, deviceShare: deviceShare, customResult: nil)
+                }
+
+                do {
+                    let result = try await provider.tKeyFacade.signIn(
+                        torusKey: torusKey,
+                        customShare: customShareData.encryptedShare,
+                        encryptedMnemonic: customShareData.encryptedPayload
+                    )
+                    return .finish(
+                        .successful(seedPhrase: result.privateSOL, ethPublicKey: result.reconstructedETH)
+                    )
+                } catch {
+                    return .notFoundDevice(data: data, deviceShare: deviceShare, customResult: customShareData)
+                }
             case 1021:
-                return .notFoundSocial(data: data, deviceShare: deviceShare)
+                return .notFoundSocial(data: data, deviceShare: deviceShare, customResult: customResult)
             default:
                 throw error
             }
@@ -175,15 +205,17 @@ private extension RestoreSocialState {
     }
 
     func handleSignInCustom(
-        result: RestoreWalletResult,
+        result: APIGatewayRestoreWalletResult,
         socialProvider: SocialProvider,
         provider: RestoreSocialContainer
     ) async throws -> RestoreSocialState {
-        let (tokenID, email) = try await provider.authService.auth(type: socialProvider)
+        let (value, email) = try await provider.authService.auth(type: socialProvider)
+        let tokenID = TokenID(value: value, provider: socialProvider.rawValue)
         do {
             try await provider.tKeyFacade.initialize()
+            let torusKey = try await provider.tKeyFacade.obtainTorusKey(tokenID: tokenID)
             let result = try await provider.tKeyFacade.signIn(
-                tokenID: TokenID(value: tokenID, provider: socialProvider.rawValue),
+                torusKey: torusKey,
                 customShare: result.encryptedShare,
                 encryptedMnemonic: result.encryptedPayload
             )
