@@ -163,7 +163,6 @@ public class APIGatewayClientImpl: APIGatewayClient {
         )
 
         request.httpBody = try JSONEncoder().encode(rpcRequest)
-        print(request.cURL(pretty: true))
 
         // Request
         let responseData = try await networkManager.requestData(request: request)
@@ -207,7 +206,6 @@ public class APIGatewayClientImpl: APIGatewayClient {
         )
 
         request.httpBody = try JSONEncoder().encode(rpcRequest)
-        print(request.cURL(pretty: true))
 
         // Request
         let responseData = try await networkManager.requestData(request: request)
@@ -249,7 +247,6 @@ public class APIGatewayClientImpl: APIGatewayClient {
         )
 
         request.httpBody = try JSONEncoder().encode(rpcRequest)
-        print(request.cURL(pretty: true))
 
         // Request
         let responseData = try await networkManager.requestData(request: request)
