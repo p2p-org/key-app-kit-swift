@@ -29,7 +29,6 @@ internal enum Crypto {
     static func encryptMetadata(seedPhrase: String, data: Data) throws -> EncryptedMetadata {
         let symmetricKey = try extractSymmetricKey(seedPhrase: seedPhrase)
         let iv = AES.randomIV(8)
-        debugPrint(iv)
         let box = try ChaCha20(key: [UInt8](symmetricKey), iv: iv).encrypt([UInt8](data))
         let data = Data(box)
 
@@ -46,8 +45,6 @@ internal enum Crypto {
         let cipher = [UInt8](Data(base64Encoded: encryptedMetadata.metadataCiphered)!)
         let box = try ChaCha20(key: [UInt8](symmetricKey), iv: iv).decrypt(cipher)
         let data = Data(box)
-        debugPrint(data)
-        debugPrint("I AM HERE")
         return data
     }
 
