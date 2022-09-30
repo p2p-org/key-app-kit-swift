@@ -92,7 +92,6 @@ public actor TKeyJSFacade: TKeyFacade {
                 [
                     "torusEndpoint": config.torusEndpoint,
                     "torusNetwork": config.torusNetwork,
-                    "logLevel": "debug"
                 ].merging(configuration, uniquingKeysWith: { $1 }),
             ]
         )
