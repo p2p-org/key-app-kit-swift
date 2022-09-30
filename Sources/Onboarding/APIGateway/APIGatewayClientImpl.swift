@@ -163,7 +163,6 @@ public class APIGatewayClientImpl: APIGatewayClient {
         )
 
         request.httpBody = try JSONEncoder().encode(rpcRequest)
-        print(request.cURL(pretty: true))
 
         // Request
         let responseData = try await networkManager.requestData(request: request)
@@ -207,7 +206,6 @@ public class APIGatewayClientImpl: APIGatewayClient {
         )
 
         request.httpBody = try JSONEncoder().encode(rpcRequest)
-        print(request.cURL(pretty: true))
 
         // Request
         let responseData = try await networkManager.requestData(request: request)
@@ -226,7 +224,7 @@ public class APIGatewayClientImpl: APIGatewayClient {
         phone: String,
         otpCode: String,
         timestampDevice: Date
-    ) async throws -> RestoreWalletResult {
+    ) async throws -> APIGatewayRestoreWalletResult {
         guard E164Numbers.validate(phone) else { throw APIGatewayError.invalidE164NumberStandard }
 
         var request = createDefaultRequest()
@@ -249,7 +247,6 @@ public class APIGatewayClientImpl: APIGatewayClient {
         )
 
         request.httpBody = try JSONEncoder().encode(rpcRequest)
-        print(request.cURL(pretty: true))
 
         // Request
         let responseData = try await networkManager.requestData(request: request)

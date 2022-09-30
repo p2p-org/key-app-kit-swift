@@ -41,7 +41,7 @@ public enum APIGatewayChannel: String, Codable {
     case call
 }
 
-public struct RestoreWalletResult: Codable, Equatable {
+public struct APIGatewayRestoreWalletResult: Codable, Equatable {
     let solanaPublicKey: String
     let ethereumId: String
     let encryptedShare: String
@@ -134,7 +134,7 @@ public protocol APIGatewayClient {
         phone: String,
         otpCode: String,
         timestampDevice: Date
-    ) async throws -> RestoreWalletResult
+    ) async throws -> APIGatewayRestoreWalletResult
 
     func isValidOTPFormat(code: String) -> Bool
 }

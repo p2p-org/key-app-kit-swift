@@ -3,6 +3,6 @@
 // found in the LICENSE file.
 
 public struct RestoreSocialData: Codable, Equatable {
-    public let tokenID: TokenID
+    public let torusKey: TorusKey
     public let email: String
 }

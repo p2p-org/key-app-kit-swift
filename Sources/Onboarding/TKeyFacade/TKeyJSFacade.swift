@@ -44,11 +44,11 @@ public actor TKeyJSFacade: TKeyFacade {
         self.config = config
         context = JSBContext(wkWebView: wkWebView)
     }
-    
+
     deinit {
         Task.detached { [context] in await context.dispose() }
     }
-    
+
     private var ready: Bool = false
 
     public func initialize() async throws {
@@ -61,7 +61,7 @@ public actor TKeyJSFacade: TKeyFacade {
         try await context.load(request: request)
         facadeClass = try await context.this.valueForKey("\(kLibrary).IosFacade")
     }
-    
+
     @MainActor
     private func clearWebStorage() async {
         let records = await WKWebsiteDataStore.default()
@@ -97,13 +97,11 @@ public actor TKeyJSFacade: TKeyFacade {
         )
     }
 
-    public func signUp(tokenID: TokenID, privateInput: String) async throws -> SignUpResult {
+    public func obtainTorusKey(tokenID: TokenID) async throws -> TorusKey {
         do {
             var facadeConfig: [String: Any] = [
-                "type": "signup",
-                "useNewEth": true,
+                "type": "signin",
                 "torusLoginType": tokenID.provider,
-                "privateInput": privateInput,
             ]
 
             switch config.verifierStrategyResolver(tokenID.provider) {
@@ -115,7 +113,40 @@ public actor TKeyJSFacade: TKeyFacade {
             }
 
             let facade = try await getFacade(configuration: facadeConfig)
-            let value = try await facade.invokeAsyncMethod("triggerSilentSignup", withArguments: [tokenID.value])
+            let value = try await facade.invokeAsyncMethod("obtainTorusKey", withArguments: [tokenID.value])
+
+            guard let torusKey = try await value.toString() else {
+                throw Error.invalidReturnValue
+            }
+
+            return .init(tokenID: tokenID, value: torusKey)
+        } catch let JSBError.jsError(error) {
+            let parsedError = parseFacadeJSError(error: error)
+            throw parsedError ?? JSBError.jsError(error)
+        } catch {
+            throw error
+        }
+    }
+
+    public func signUp(torusKey: TorusKey, privateInput: String) async throws -> SignUpResult {
+        do {
+            var facadeConfig: [String: Any] = [
+                "type": "signup",
+                "useNewEth": true,
+                "torusLoginType": torusKey.tokenID.provider,
+                "privateInput": privateInput,
+            ]
+
+            switch config.verifierStrategyResolver(torusKey.tokenID.provider) {
+            case let .single(verifier):
+                facadeConfig["torusVerifier"] = verifier
+            case let .aggregate(verifier, subVerifier):
+                facadeConfig["torusVerifier"] = verifier
+                facadeConfig["torusSubVerifier"] = subVerifier
+            }
+
+            let facade = try await getFacade(configuration: facadeConfig)
+            let value = try await facade.invokeAsyncMethod("triggerSilentSignup", withArguments: [torusKey.value])
 
             guard
                 let privateSOL = try await value.valueForKey("privateSOL").toString(),
@@ -142,14 +173,14 @@ public actor TKeyJSFacade: TKeyFacade {
         }
     }
 
-    public func signIn(tokenID: TokenID, deviceShare: String) async throws -> SignInResult {
+    public func signIn(torusKey: TorusKey, deviceShare: String) async throws -> SignInResult {
         do {
             var facadeConfig: [String: Any] = [
                 "type": "signin",
-                "torusLoginType": tokenID.provider,
+                "torusLoginType": torusKey.tokenID.provider,
             ]
 
-            switch config.verifierStrategyResolver(tokenID.provider) {
+            switch config.verifierStrategyResolver(torusKey.tokenID.provider) {
             case let .single(verifier):
                 facadeConfig["torusVerifier"] = verifier
             case let .aggregate(verifier, subVerifier):
@@ -160,7 +191,7 @@ public actor TKeyJSFacade: TKeyFacade {
             let facade = try await getFacade(configuration: facadeConfig)
             let value = try await facade.invokeAsyncMethod(
                 "triggerSignInNoCustom",
-                withArguments: [tokenID.value, deviceShare]
+                withArguments: [torusKey.value, deviceShare]
             )
 
             guard
@@ -180,14 +211,16 @@ public actor TKeyJSFacade: TKeyFacade {
         }
     }
 
-    public func signIn(tokenID: TokenID, customShare: String, encryptedMnemonic: String) async throws -> SignInResult {
+    public func signIn(torusKey: TorusKey, customShare: String,
+                       encryptedMnemonic: String) async throws -> SignInResult
+    {
         do {
             var facadeConfig: [String: Any] = [
                 "type": "signin",
-                "torusLoginType": tokenID.provider,
+                "torusLoginType": torusKey.tokenID.provider,
             ]
 
-            switch config.verifierStrategyResolver(tokenID.provider) {
+            switch config.verifierStrategyResolver(torusKey.tokenID.provider) {
             case let .single(verifier):
                 facadeConfig["torusVerifier"] = verifier
             case let .aggregate(verifier, subVerifier):
@@ -199,7 +232,7 @@ public actor TKeyJSFacade: TKeyFacade {
             let encryptedMnemonic = try await JSBValue(jsonString: encryptedMnemonic, in: context)
             let value = try await facade.invokeAsyncMethod(
                 "triggerSignInNoDevice",
-                withArguments: [tokenID.value, customShare, encryptedMnemonic]
+                withArguments: [torusKey.value, customShare, encryptedMnemonic]
             )
             guard
                 let privateSOL = try await value.valueForKey("privateSOL").toString(),
@@ -218,9 +251,11 @@ public actor TKeyJSFacade: TKeyFacade {
         }
     }
 
-    public func signIn(deviceShare: String, customShare: String,
-                       encryptedMnemonic: String) async throws -> SignInResult
-    {
+    public func signIn(
+        deviceShare: String,
+        customShare: String,
+        encryptedMnemonic: String
+    ) async throws -> SignInResult {
         do {
             // It doesn't matter which login type and torus verifier
             var facadeConfig: [String: Any] = [
