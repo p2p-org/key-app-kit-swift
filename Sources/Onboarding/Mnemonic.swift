@@ -4,17 +4,11 @@
 
 import Foundation
 import SolanaSwift
+import TweetNacl
 
 internal func extractSeedPhrase(phrase: String, path: String) throws -> Data {
     let mnemonic = try Mnemonic(phrase: phrase.components(separatedBy: " "))
-
-    print(mnemonic.seed.toHexString())
     let secretKey = try Ed25519HDKey.derivePath(path, seed: mnemonic.seed.toHexString()).get().key
-    return secretKey
-}
-
-internal func extractSeedPhrase2(phrase: String, path _: String) async throws {
-    let account = try await Account(phrase: phrase.components(separatedBy: " "), network: .mainnetBeta)
-    print("Here")
-    print(account.publicKey.base58EncodedString)
+    let keyPair = try NaclSign.KeyPair.keyPair(fromSeed: secretKey)
+    return keyPair.secretKey
 }
