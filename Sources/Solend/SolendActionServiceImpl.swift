@@ -11,6 +11,7 @@ import SolanaSwift
 public class SolendActionServiceImpl: SolendActionService {
     private let lendingMark: String
     private let userAccountStorage: SolanaAccountStorage
+    private let rpcUrl: String
 
     private let solend: Solend
     private let solana: SolanaAPIClient
@@ -29,6 +30,7 @@ public class SolendActionServiceImpl: SolendActionService {
     }
 
     public init(
+        rpcUrl: String,
         lendingMark: String,
         userAccountStorage: SolanaAccountStorage,
         solend: Solend,
@@ -37,6 +39,7 @@ public class SolendActionServiceImpl: SolendActionService {
         feeRelay: FeeRelayer,
         feeRelayContextManager: FeeRelayerContextManager
     ) {
+        self.rpcUrl = rpcUrl
         self.lendingMark = lendingMark
         self.userAccountStorage = userAccountStorage
         self.solend = solend
@@ -61,7 +64,7 @@ public class SolendActionServiceImpl: SolendActionService {
 
     public func depositFee(amount: UInt64, symbol: SolendSymbol) async throws -> SolendDepositFee {
         try await solend.getDepositFee(
-            rpcUrl: "https://p2p.rpcpool.com/82313b15169cb10f3ff230febb8d",
+            rpcUrl: rpcUrl,
             owner: owner.publicKey.base58EncodedString,
             tokenAmount: amount,
             tokenSymbol: symbol
@@ -74,7 +77,7 @@ public class SolendActionServiceImpl: SolendActionService {
         // let feeRelayContext = try await feeRelayContextManager.getCurrentContext()
 
         let transactionsRaw: [SolanaSerializedTransaction] = try await solend.createDepositTransaction(
-            solanaRpcUrl: "https://p2p.rpcpool.com/82313b15169cb10f3ff230febb8d",
+            solanaRpcUrl: rpcUrl,
             relayProgramId: RelayProgram.id(network: .mainnetBeta).base58EncodedString,
             amount: amount,
             symbol: symbol,
