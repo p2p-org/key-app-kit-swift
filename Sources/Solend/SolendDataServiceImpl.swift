@@ -44,21 +44,27 @@ public class SolendDataServiceImpl: SolendDataService {
     }
 
     public func update() async throws {
-        guard statusSubject.value != .updating else { return }
+        do {
+            guard statusSubject.value != .updating else { return }
 
-        // Setup status and clear error
-        statusSubject.send(.updating)
-        defer { statusSubject.send(.ready) }
-        errorSubject.send(nil)
+            // Setup status and clear error
+            statusSubject.send(.updating)
+            defer { statusSubject.send(.ready) }
+            errorSubject.send(nil)
 
-        // Update available assets and user deposits
-        let _ = await(
-            try updateConfig(),
-            try updateUserDeposits()
-        )
+            // Update available assets and user deposits
+            let _ = await(
+                try updateConfig(),
+                try updateUserDeposits()
+            )
 
-        // Update market info
-        try await updateMarketInfo()
+            // Update market info
+            try await updateMarketInfo()
+        } catch {
+            print(error)
+            errorSubject.send(error)
+            statusSubject.send(.ready)
+        }
     }
 
     private func updateConfig() async throws {

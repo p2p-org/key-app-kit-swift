@@ -23,6 +23,20 @@ public struct SolendAction: Codable {
     public internal(set) var status: SolendActionStatus
     public let amount: UInt64
     public let symbol: SolendSymbol
+    
+    public init(
+        type: SolendActionType,
+        transactionID: String,
+        status: SolendActionStatus,
+        amount: UInt64,
+        symbol: SolendSymbol
+    ) {
+        self.type = type
+        self.transactionID = transactionID
+        self.status = status
+        self.amount = amount
+        self.symbol = symbol
+    }
 }
 
 public protocol SolendActionService {

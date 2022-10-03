@@ -6,10 +6,12 @@ import Combine
 import Foundation
 
 public class SolendActionServiceMock: SolendActionService {
-    public init() {}
-    
+    let _currentAction: SolendAction?
+
+    public init(currentAction: SolendAction? = nil) { self._currentAction = currentAction }
+
     public var currentAction: AnyPublisher<SolendAction?, Never> {
-        CurrentValueSubject(nil).eraseToAnyPublisher()
+        CurrentValueSubject(_currentAction).eraseToAnyPublisher()
     }
 
     public func clearAction() throws {}
