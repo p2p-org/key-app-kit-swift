@@ -23,7 +23,8 @@ internal enum Crypto {
     }
 
     internal static func extractSymmetricKey(seedPhrase: String) throws -> Data {
-        try extractSeedPhrase(phrase: seedPhrase, path: "m/44'/101'/0'/0'")
+        Data(try extractSeedPhrase(phrase: seedPhrase, path: "m/44'/101'/0'/0'")
+            .prefix(32))
     }
 
     static func encryptMetadata(seedPhrase: String, data: Data) throws -> EncryptedMetadata {
@@ -51,7 +52,7 @@ internal enum Crypto {
         let cipher = Data(base64Encoded: encryptedMetadata.metadataCiphered)!
 
         let tagSize = 16
-        
+
         let (box, status) = try AEADChaCha20Poly1305.decrypt(
             [UInt8](Data(cipher.prefix(cipher.count - tagSize))),
             key: [UInt8](symmetricKey),
@@ -59,10 +60,10 @@ internal enum Crypto {
             authenticationHeader: [],
             authenticationTag: cipher.suffix(tagSize)
         )
-        
+
         guard status == true else { throw CryptoError.invalidMac }
         let data = Data(box)
-        
+
         return data
     }
 
