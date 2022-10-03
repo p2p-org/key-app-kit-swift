@@ -48,9 +48,14 @@ internal enum Crypto {
     static func decryptMetadata(seedPhrase: String, encryptedMetadata: EncryptedMetadata) throws -> Data {
         let symmetricKey = try extractSymmetricKey(seedPhrase: seedPhrase)
 
-        let iv = [UInt8](Data(base64Encoded: encryptedMetadata.nonce)!)
-        let cipher = Data(base64Encoded: encryptedMetadata.metadataCiphered)!
-
+        guard
+            let ivData = Data(base64Encoded: encryptedMetadata.nonce),
+            let cipher = Data(base64Encoded: encryptedMetadata.metadataCiphered)
+        else {
+            throw OnboardingError.decodingError("crypto.decryptMetadata")
+        }
+        
+        let iv = [UInt8](ivData)
         let tagSize = 16
 
         let (box, status) = try AEADChaCha20Poly1305.decrypt(
