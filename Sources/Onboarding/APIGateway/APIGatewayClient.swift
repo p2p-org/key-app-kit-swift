@@ -4,6 +4,10 @@
 
 import Foundation
 
+public struct APIGatewayCooldownError: Error {
+    let cooldown: TimeInterval
+}
+
 public enum APIGatewayError: Int, Error, CaseIterable {
     case invalidOTP = -32061
     case wait10Min = -32053

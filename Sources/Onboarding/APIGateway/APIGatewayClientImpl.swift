@@ -61,7 +61,7 @@ public class APIGatewayClientImpl: APIGatewayClient {
         let response = try JSONDecoder()
             .decode(JSONRPCResponse<APIGatewayClientGetMetadataResult>.self, from: responseData)
         if let error = response.error {
-            throw APIGatewayError(rawValue: error.code) ?? UndefinedAPIGatewayError(code: error.code)
+            throw apiGatewayError(from: error)
         }
 
         guard let result = response.result?.encryptedMetadata else { throw APIGatewayError.failedSending }
@@ -115,7 +115,7 @@ public class APIGatewayClientImpl: APIGatewayClient {
         // Check result
         let result = try JSONDecoder().decode(JSONRPCResponse<APIGatewayClientResult>.self, from: responseData)
         if let error = result.error {
-            throw APIGatewayError(rawValue: error.code) ?? UndefinedAPIGatewayError(code: error.code)
+            throw apiGatewayError(from: error)
         } else if result.result?.status != true {
             throw APIGatewayError.failedSending
         }
@@ -170,7 +170,7 @@ public class APIGatewayClientImpl: APIGatewayClient {
         // Check result
         let result = try JSONDecoder().decode(JSONRPCResponse<APIGatewayClientResult>.self, from: responseData)
         if let error = result.error {
-            throw APIGatewayError(rawValue: error.code) ?? UndefinedAPIGatewayError(code: error.code)
+            throw apiGatewayError(from: error)
         } else if result.result?.status != true {
             throw APIGatewayError.failedSending
         }
@@ -213,7 +213,7 @@ public class APIGatewayClientImpl: APIGatewayClient {
         // Check result
         let result = try JSONDecoder().decode(JSONRPCResponse<APIGatewayClientResult>.self, from: responseData)
         if let error = result.error {
-            throw APIGatewayError(rawValue: error.code) ?? UndefinedAPIGatewayError(code: error.code)
+            throw apiGatewayError(from: error)
         } else if result.result?.status != true {
             throw APIGatewayError.failedSending
         }
@@ -255,7 +255,7 @@ public class APIGatewayClientImpl: APIGatewayClient {
         let response = try JSONDecoder()
             .decode(JSONRPCResponse<APIGatewayClientConfirmRestoreWalletResult>.self, from: responseData)
         if let error = response.error {
-            throw APIGatewayError(rawValue: error.code) ?? UndefinedAPIGatewayError(code: error.code)
+            throw apiGatewayError(from: error)
         } else if response.result?.status != true {
             throw APIGatewayError.failedSending
         }
@@ -268,6 +268,14 @@ public class APIGatewayClientImpl: APIGatewayClient {
             encryptedPayload: try result.payload.fromBase64(),
             encryptedMetaData: try result.metadata.fromBase64()
         )
+    }
+
+    private func apiGatewayError(from error: JSONRPCError) -> Error {
+        let definedError = APIGatewayError(rawValue: error.code)
+        if definedError == .wait10Min, let cooldown = error.data.cooldown_ttl {
+            return APIGatewayCooldownError(cooldown: cooldown)
+        }
+        return definedError ?? UndefinedAPIGatewayError(code: error.code)
     }
 }
 

@@ -139,21 +139,19 @@ public enum BindingPhoneNumberState: Codable, State, Equatable {
                     )
                 } catch let error as APIGatewayError {
                     switch error._code {
-                    // case -32056:
-                    //     return .finish(.success)
                     case -32058, -32700, -32600, -32601, -32602, -32603, -32052:
                         return .broken(code: error._code)
-                    case -32053:
-                        data.sendingThrottle.reset()
-                        return .block(
-                            until: Date() + blockTime,
-                            reason: .blockEnterPhoneNumber,
-                            phoneNumber: phoneNumber,
-                            data: data
-                        )
                     default:
                         throw error
                     }
+                } catch let error as APIGatewayCooldownError {
+                    data.sendingThrottle.reset()
+                    return .block(
+                        until: Date() + error.cooldown,
+                        reason: .blockEnterPhoneNumber,
+                        phoneNumber: phoneNumber,
+                        data: data
+                    )
                 }
             default:
                 throw StateMachineError.invalidEvent
@@ -187,20 +185,18 @@ public enum BindingPhoneNumberState: Codable, State, Equatable {
                     )
                 } catch let error as APIGatewayError {
                     switch error._code {
-                    // case -32056:
-                    //     return .finish(.success)
                     case -32058, -32700, -32600, -32601, -32602, -32603, -32052:
                         return .broken(code: error._code)
-                    case -32053:
-                        return .block(
-                            until: Date() + blockTime,
-                            reason: .blockEnterOTP,
-                            phoneNumber: phoneNumber,
-                            data: data
-                        )
                     default:
                         throw error
                     }
+                } catch let error as APIGatewayCooldownError {
+                    return .block(
+                        until: Date() + error.cooldown,
+                        reason: .blockEnterOTP,
+                        phoneNumber: phoneNumber,
+                        data: data
+                    )
                 }
 
                 return .finish(.success(metadata: metaData))

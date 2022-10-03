@@ -162,11 +162,11 @@ public enum RestoreCustomState: Codable, State, Equatable {
                     switch error._code {
                     case -32700, -32600, -32601, -32602, -32603, -32052:
                         return .broken(code: error.rawValue)
-                    case -32053:
-                        return .block(until: Date() + blockTime, social: social, reason: .blockEnterOTP)
                     default:
                         throw error
                     }
+                } catch let error as APIGatewayCooldownError {
+                    return .block(until: Date() + error.cooldown, social: social, reason: .blockEnterOTP)
                 }
 
             case .resendOTP:
@@ -378,12 +378,12 @@ public enum RestoreCustomState: Codable, State, Equatable {
                 } else {
                     return .otpNotDelivered(phone: phone, code: error.rawValue)
                 }
-            case -32053:
-                return .block(until: Date() + blockTime, social: social, reason: .blockEnterPhoneNumber)
 
             default:
                 throw error
             }
+        } catch let error as APIGatewayCooldownError {
+            return .block(until: Date() + error.cooldown, social: social, reason: .blockEnterPhoneNumber)
         }
     }
 }
