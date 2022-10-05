@@ -170,15 +170,8 @@ public enum RestoreCustomState: Codable, State, Equatable {
                 }
 
             case .resendOTP:
-                if attempt.value.attempt == 4 {
-                    return .block(
-                        until: Date() + blockTime,
-                        social: social,
-                        reason: .blockEnterOTP
-                    )
-                }
                 attempt.value.attempt = attempt.value.attempt + 1
-                attempt.value.until = Date().addingTimeInterval(EnterSMSCodeCountdownLegs[attempt.value.attempt])
+                attempt.value.until = Date().addingTimeInterval(attempt.value.intervalForCurrentAttempt())
 
                 return try await sendOTP(
                     phone: phone,

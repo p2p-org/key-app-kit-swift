@@ -36,18 +36,6 @@ public struct BindingPhoneNumberData: Codable, Equatable {
     var sendingThrottle: Throttle = .init(maxAttempt: 5, timeInterval: 60 * 10)
 }
 
-/// Resend timer interval
-let EnterSMSCodeCountdownLegs: [TimeInterval] = [30, 40, 60, 90, 120]
-
-public struct ResendCounter: Codable, Equatable {
-    public internal(set) var attempt: Int
-    public internal(set) var until: Date
-
-    static func zero() -> Self {
-        .init(attempt: 0, until: Date().addingTimeInterval(EnterSMSCodeCountdownLegs[0]))
-    }
-}
-
 public enum BindingPhoneNumberState: Codable, State, Equatable {
     public typealias Event = BindingPhoneNumberEvent
     public typealias Provider = APIGatewayClient
@@ -201,18 +189,8 @@ public enum BindingPhoneNumberState: Codable, State, Equatable {
 
                 return .finish(.success(metadata: metaData))
             case .resendOTP:
-                if resendCounter.value.attempt >= 4 {
-                    return .block(
-                        until: Date() + blockTime,
-                        reason: .blockResend,
-                        phoneNumber: phoneNumber,
-                        data: data
-                    )
-                }
-
                 resendCounter.value.attempt = resendCounter.value.attempt + 1
-                resendCounter.value.until = Date()
-                    .addingTimeInterval(EnterSMSCodeCountdownLegs[resendCounter.value.attempt])
+                resendCounter.value.until = Date().addingTimeInterval(resendCounter.value.intervalForCurrentAttempt())
 
                 let account = try await Account(
                     phrase: data.seedPhrase.components(separatedBy: " "),
@@ -220,15 +198,31 @@ public enum BindingPhoneNumberState: Codable, State, Equatable {
                     derivablePath: .default
                 )
 
-                try await provider.registerWallet(
-                    solanaPrivateKey: Base58.encode(account.secretKey),
-                    ethAddress: data.ethAddress,
-                    phone: phoneNumber,
-                    channel: channel,
-                    timestampDevice: Date()
-                )
-
-                return currentState
+                do {
+                    try await provider.registerWallet(
+                        solanaPrivateKey: Base58.encode(account.secretKey),
+                        ethAddress: data.ethAddress,
+                        phone: phoneNumber,
+                        channel: channel,
+                        timestampDevice: Date()
+                    )
+                    return currentState
+                } catch let error as APIGatewayError {
+                    switch error._code {
+                    case -32058, -32700, -32600, -32601, -32602, -32603, -32052:
+                        return .broken(code: error._code)
+                    default:
+                        throw error
+                    }
+                } catch let error as APIGatewayCooldownError {
+                    data.sendingThrottle.reset()
+                    return .block(
+                        until: Date() + error.cooldown,
+                        reason: .blockEnterPhoneNumber,
+                        phoneNumber: phoneNumber,
+                        data: data
+                    )
+                }
             case .back:
                 return .enterPhoneNumber(
                     initialPhoneNumber: phoneNumber,
