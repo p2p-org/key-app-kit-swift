@@ -51,7 +51,6 @@ public class SolendDataServiceImpl: SolendDataService {
         depositsSubject
             .removeDuplicates()
             .eraseToAnyPublisher()
-        
     }
 
     private let marketInfoSubject: CurrentValueSubject<[SolendMarketInfo]?, Never> = .init([])
@@ -91,7 +90,8 @@ public class SolendDataServiceImpl: SolendDataService {
         self.cache = cache ?? SolendInMemoryCache()
 
         if let dataCache: SolendDataCache = dataCache {
-            if dataCache.userPublicAddress == owner.publicKey.base58EncodedString {
+            let interval = DateInterval(start: dataCache.lastUpdate ?? Date(), end: Date())
+            if dataCache.userPublicAddress == owner.publicKey.base58EncodedString, interval.duration < 60 * 10 {
                 availableAssetsSubject.send(dataCache.assets)
                 marketInfoSubject.send(dataCache.marketInfos)
                 depositsSubject.send(dataCache.deposits)
@@ -107,11 +107,11 @@ public class SolendDataServiceImpl: SolendDataService {
     public var hasDeposits: Bool {
         depositsSubject.value?.first { (Double($0.depositedAmount) ?? 0) > 0 } != nil
     }
-    
+
     public func clearDeposits() {
         depositsSubject.send(nil)
     }
-    
+
     public func update() async throws {
         do {
             guard statusSubject.value != .updating else { return }
@@ -138,7 +138,6 @@ public class SolendDataServiceImpl: SolendDataService {
                 lastUpdate: lastUpdateDateSubject.value
             )
         } catch {
-            print(error)
             errorSubject.send(error)
             statusSubject.send(.ready)
         }
@@ -168,7 +167,7 @@ public class SolendDataServiceImpl: SolendDataService {
             if availableAssetsSubject.value != filteredAssets {
                 lastUpdateDateSubject.send(Date())
             }
-            
+
             availableAssetsSubject.send(filteredAssets)
         } catch {
             errorSubject.send(error)
