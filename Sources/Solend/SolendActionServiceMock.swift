@@ -42,8 +42,8 @@ public class SolendActionServiceMock: SolendActionService {
         currentActionSubject.send(action)
 
         Task.detached { [currentActionSubject] in
-            for i in 0 ... 5 {
-                await Task.sleep(1_000_000_000)
+            for _ in 0 ... 5 {
+                try await Task.sleep(nanoseconds: 1_000_000_000)
                 let action = SolendAction(
                     type: .withdraw,
                     transactionID: id,
@@ -63,8 +63,12 @@ public class SolendActionServiceMock: SolendActionService {
             )
             currentActionSubject.send(action)
 
-            await Task.sleep(1_000_000_000)
+            try await Task.sleep(nanoseconds: 1_000_000_000)
             currentActionSubject.send(nil)
         }
+    }
+    
+    public func getCurrentAction() -> SolendAction? {
+        currentActionSubject.value
     }
 }

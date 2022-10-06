@@ -199,4 +199,8 @@ public class SolendActionServiceImpl: SolendActionService {
             }
         }
     }
+    
+    public func getCurrentAction() -> SolendAction? {
+        currentActionSubject.value
+    }
 }

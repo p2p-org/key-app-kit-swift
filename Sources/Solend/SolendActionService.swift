@@ -41,6 +41,7 @@ public struct SolendAction: Codable, Equatable {
 
 public protocol SolendActionService {
     var currentAction: AnyPublisher<SolendAction?, Never> { get }
+    func getCurrentAction() -> SolendAction?
     func clearAction() throws
 
     func depositFee(amount: UInt64, symbol: SolendSymbol) async throws -> SolendDepositFee
