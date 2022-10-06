@@ -6,18 +6,18 @@ import Combine
 import Foundation
 import SolanaSwift
 
-public enum SolendActionStatus: Codable {
+public enum SolendActionStatus: Codable, Equatable {
     case processing
     case success
     case failed(msg: String)
 }
 
-public enum SolendActionType: Codable {
+public enum SolendActionType: Codable, Equatable {
     case deposit
     case withdraw
 }
 
-public struct SolendAction: Codable {
+public struct SolendAction: Codable, Equatable {
     public let type: SolendActionType
     public let transactionID: String
     public internal(set) var status: SolendActionStatus

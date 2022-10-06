@@ -7,7 +7,7 @@ import Foundation
 
 // MARK: - Config
 
-public struct SolendConfig: Codable {
+public struct SolendConfig: Codable, Equatable {
     public let programID: String
     public let assets: [SolendConfigAsset]
     // public let markets: [SolendMarket]
@@ -16,7 +16,7 @@ public struct SolendConfig: Codable {
 
 // MARK: - ConfigAsset
 
-public struct SolendConfigAsset: Codable, Hashable {
+public struct SolendConfigAsset: Codable, Hashable, Equatable {
     public let name, symbol: String
     public let decimals: Int
     public let mintAddress: String
@@ -33,7 +33,7 @@ public struct SolendConfigAsset: Codable, Hashable {
 
 // MARK: - Market
 
-public struct SolendMarket: Codable {
+public struct SolendMarket: Codable, Equatable {
     let name: String
     let isPrimary: Bool
     let marketDescription: String?
@@ -51,13 +51,13 @@ public struct SolendMarket: Codable {
 
 // MARK: - Reserve
 
-public struct SolendReserve: Codable {
+public struct SolendReserve: Codable, Equatable {
     let asset, address, collateralMintAddress, collateralSupplyAddress: String
     let liquidityAddress, liquidityFeeReceiverAddress: String
     let userBorrowCap, userSupplyCap: SolendUserCap?
 }
 
-public enum SolendUserCap: Codable {
+public enum SolendUserCap: Codable, Equatable {
     case integer(Int)
     case string(String)
     
@@ -90,13 +90,13 @@ public enum SolendUserCap: Codable {
 
 // MARK: - Oracles
 
-public struct SolendOracles: Codable {
+public struct SolendOracles: Codable, Equatable {
     let pythProgramID, switchboardProgramID: String
     let assets: [SolendOraclesAsset]
 }
 
 // MARK: - OraclesAsset
 
-public struct SolendOraclesAsset: Codable {
+public struct SolendOraclesAsset: Codable, Equatable {
     let asset, priceAddress, switchboardFeedAddress: String
 }

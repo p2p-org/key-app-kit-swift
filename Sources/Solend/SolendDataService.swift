@@ -16,8 +16,9 @@ public enum SolendDataStatus {
 
 public protocol SolendDataService {
     var status: AnyPublisher<SolendDataStatus, Never> { get }
-
     var error: AnyPublisher<Error?, Never> { get }
+    var lastUpdateDate: AnyPublisher<Date, Never> { get }
+    
     var availableAssets: AnyPublisher<[SolendConfigAsset]?, Never> { get }
     var deposits: AnyPublisher<[SolendUserDeposit]?, Never> { get }
     var marketInfo: AnyPublisher<[SolendMarketInfo]?, Never> { get }

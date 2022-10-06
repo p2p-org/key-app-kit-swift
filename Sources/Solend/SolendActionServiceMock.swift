@@ -6,12 +6,14 @@ import Combine
 import Foundation
 
 public class SolendActionServiceMock: SolendActionService {
-    let _currentAction: SolendAction?
+    let currentActionSubject: CurrentValueSubject<SolendAction?, Never> = .init(nil)
 
-    public init(currentAction: SolendAction? = nil) { self._currentAction = currentAction }
+    public init(currentAction: SolendAction? = nil) {
+        currentActionSubject.send(currentAction)
+    }
 
     public var currentAction: AnyPublisher<SolendAction?, Never> {
-        CurrentValueSubject(_currentAction).eraseToAnyPublisher()
+        currentActionSubject.eraseToAnyPublisher()
     }
 
     public func clearAction() throws {}
@@ -20,7 +22,49 @@ public class SolendActionServiceMock: SolendActionService {
         .init(fee: 0, rent: 0)
     }
 
-    public func deposit(amount _: UInt64, symbol _: SolendSymbol) async throws {}
+    public func deposit(amount: UInt64, symbol: SolendSymbol) async throws {
+        await mockProcessing(id: "123456", type: .deposit, amount: amount, symbol: symbol)
+    }
 
-    public func withdraw(amount _: UInt64, symbol _: SolendSymbol) async throws {}
+    public func withdraw(amount: UInt64, symbol: SolendSymbol) async throws {
+        await mockProcessing(id: "123456", type: .withdraw, amount: amount, symbol: symbol)
+    }
+
+    private func mockProcessing(id: String, type: SolendActionType, amount: UInt64, symbol: SolendSymbol) async {
+        let action = SolendAction(
+            type: type,
+            transactionID: id,
+            status: .processing,
+            amount: amount,
+            symbol: symbol
+        )
+
+        currentActionSubject.send(action)
+
+        Task.detached { [currentActionSubject] in
+            for i in 0 ... 5 {
+                await Task.sleep(1_000_000_000)
+                let action = SolendAction(
+                    type: .withdraw,
+                    transactionID: id,
+                    status: .processing,
+                    amount: amount,
+                    symbol: symbol
+                )
+                currentActionSubject.send(action)
+            }
+
+            let action = SolendAction(
+                type: .withdraw,
+                transactionID: id,
+                status: .success,
+                amount: amount,
+                symbol: symbol
+            )
+            currentActionSubject.send(action)
+
+            await Task.sleep(1_000_000_000)
+            currentActionSubject.send(nil)
+        }
+    }
 }

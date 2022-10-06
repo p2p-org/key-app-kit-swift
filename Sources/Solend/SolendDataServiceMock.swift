@@ -2,6 +2,7 @@
 // Use of this source code is governed by a MIT-style license that can be
 // found in the LICENSE file.
 
+import Foundation
 import Combine
 import SolanaSwift
 
@@ -11,6 +12,11 @@ public class SolendDataServiceMock: SolendDataService {
     public var error: AnyPublisher<Error?, Never> {
         CurrentValueSubject(nil)
             .eraseToAnyPublisher()
+    }
+    
+    private let lastUpdateDateSubject:  CurrentValueSubject<Date, Never> = .init(Date())
+    public var lastUpdateDate: AnyPublisher<Date, Never> {
+        lastUpdateDateSubject.eraseToAnyPublisher()
     }
     
     public var availableAssets: AnyPublisher<[SolendConfigAsset]?, Never> {
@@ -39,14 +45,6 @@ public class SolendDataServiceMock: SolendDataService {
     }
 
     public func update() async throws {}
-
-    public func depositFee(amount _: UInt64, symbol _: SolendSymbol) async throws -> SolendDepositFee {
-        .init(fee: 0, rent: 0)
-    }
-
-    public func deposit(amount _: UInt64, symbol _: String) async throws -> [TransactionID] {
-        []
-    }
 
     public var status: Combine.AnyPublisher<SolendDataStatus, Never> {
         CurrentValueSubject(.ready).eraseToAnyPublisher()

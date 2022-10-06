@@ -12,12 +12,12 @@ public enum SolendEnvironment: String {
     case devnet
 }
 
-public struct SolendCollateralAccount: Codable {
+public struct SolendCollateralAccount: Codable, Equatable {
     public let address: String
     public let mint: String
 }
 
-public struct SolendMarketInfo: Codable, Hashable {
+public struct SolendMarketInfo: Codable, Hashable, Equatable {
     public let currentSupply, depositLimit, supplyInterest: String
 
     enum CodingKeys: String, CodingKey {
@@ -33,7 +33,7 @@ public struct SolendMarketInfo: Codable, Hashable {
     }
 }
 
-public struct SolendUserDeposit: Codable, Hashable {
+public struct SolendUserDeposit: Codable, Hashable, Equatable {
     public let symbol: String
     public let depositedAmount: String
     

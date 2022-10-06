@@ -8,33 +8,98 @@ import Foundation
 import P2PSwift
 import SolanaSwift
 
+private struct SolendDataCache: Codable {
+    let userPublicAddress: String
+    let assets: [SolendConfigAsset]?
+    let deposits: [SolendUserDeposit]?
+    let marketInfos: [SolendMarketInfo]?
+    let lastUpdate: Date?
+}
+
 public class SolendDataServiceImpl: SolendDataService {
+    // Variables
     private let solend: Solend
     private var owner: Account
     private var lendingMark: String
+    private let cache: SolendCache
+
     private let allowedSymbols = ["SOL", "USDC", "USDT", "ETH", "BTC"]
 
+    // Subjects
     private let errorSubject: CurrentValueSubject<Error?, Never> = .init(nil)
-    public var error: AnyPublisher<Error?, Never> { errorSubject.eraseToAnyPublisher() }
+    public var error: AnyPublisher<Error?, Never> {
+        errorSubject
+            .eraseToAnyPublisher()
+    }
 
     private let statusSubject: CurrentValueSubject<SolendDataStatus, Never> = .init(.initialized)
-    public var status: AnyPublisher<SolendDataStatus, Never> { statusSubject.eraseToAnyPublisher() }
+    public var status: AnyPublisher<SolendDataStatus, Never> {
+        statusSubject
+            .removeDuplicates()
+            .eraseToAnyPublisher()
+    }
 
     private let availableAssetsSubject: CurrentValueSubject<[SolendConfigAsset]?, Never> = .init(nil)
     public var availableAssets: AnyPublisher<[SolendConfigAsset]?, Never> {
-        availableAssetsSubject.eraseToAnyPublisher()
+        availableAssetsSubject
+            .removeDuplicates()
+            .eraseToAnyPublisher()
     }
 
     private let depositsSubject: CurrentValueSubject<[SolendUserDeposit]?, Never> = .init([])
-    public var deposits: AnyPublisher<[SolendUserDeposit]?, Never> { depositsSubject.eraseToAnyPublisher() }
+    public var deposits: AnyPublisher<[SolendUserDeposit]?, Never> {
+        depositsSubject
+            .removeDuplicates()
+            .eraseToAnyPublisher()
+        
+    }
 
     private let marketInfoSubject: CurrentValueSubject<[SolendMarketInfo]?, Never> = .init([])
-    public var marketInfo: AnyPublisher<[SolendMarketInfo]?, Never> { marketInfoSubject.eraseToAnyPublisher() }
+    public var marketInfo: AnyPublisher<[SolendMarketInfo]?, Never> {
+        marketInfoSubject
+            .removeDuplicates()
+            .eraseToAnyPublisher()
+    }
 
-    public init(solend: Solend, owner: Account, lendingMark: String) {
+    private let lastUpdateDateSubject: CurrentValueSubject<Date, Never> = .init(Date())
+    public var lastUpdateDate: AnyPublisher<Date, Never> {
+        lastUpdateDateSubject
+            .removeDuplicates()
+            .eraseToAnyPublisher()
+    }
+
+    // Cache service
+    private static let CacheKey = "SolendDataServiceCache"
+    private var dataCache: SolendDataCache? {
+        set {
+            if let newValue = newValue {
+                cache.write(newValue, for: Self.CacheKey)
+            } else {
+                cache.delete(Self.CacheKey)
+            }
+        }
+
+        get {
+            cache.read(type: SolendDataCache.self, Self.CacheKey)
+        }
+    }
+
+    public init(solend: Solend, owner: Account, lendingMark: String, cache: SolendCache? = nil) {
         self.solend = solend
         self.owner = owner
         self.lendingMark = lendingMark
+        self.cache = cache ?? SolendInMemoryCache()
+
+        if let dataCache: SolendDataCache = dataCache {
+            if dataCache.userPublicAddress == owner.publicKey.base58EncodedString {
+                availableAssetsSubject.send(dataCache.assets)
+                marketInfoSubject.send(dataCache.marketInfos)
+                depositsSubject.send(dataCache.deposits)
+                lastUpdateDateSubject.send(dataCache.lastUpdate ?? Date())
+            } else {
+                self.dataCache = nil
+            }
+        }
 
         Task.detached { try await self.update() }
     }
@@ -60,6 +125,14 @@ public class SolendDataServiceImpl: SolendDataService {
 
             // Update market info
             try await updateMarketInfo()
+
+            dataCache = .init(
+                userPublicAddress: owner.publicKey.base58EncodedString,
+                assets: availableAssetsSubject.value,
+                deposits: depositsSubject.value,
+                marketInfos: marketInfoSubject.value,
+                lastUpdate: lastUpdateDateSubject.value
+            )
         } catch {
             print(error)
             errorSubject.send(error)
@@ -68,32 +141,34 @@ public class SolendDataServiceImpl: SolendDataService {
     }
 
     private func updateConfig() async throws {
-        if availableAssetsSubject.value == nil {
-            do {
-                let config: SolendConfig = try await solend.getConfig(environment: .production)
+        do {
+            let config: SolendConfig = try await solend.getConfig(environment: .production)
 
-                // Filter and fix usdt logo
-                let filteredAssets = config.assets
-                    .filter { allowedSymbols.contains($0.symbol) }
-                    .map { asset -> SolendConfigAsset in
-                        if asset.symbol == "USDT" {
-                            return .init(
-                                name: asset.name,
-                                symbol: asset.symbol,
-                                decimals: asset.decimals,
-                                mintAddress: asset.mintAddress,
-                                logo: "https://raw.githubusercontent.com/solana-labs/token-list/main/assets/mainnet/BQcdHdAQW1hczDbBi9hiegXAR7A98Q9jx3X3iBBBDiq4/logo.png"
-                            )
-                        }
-
-                        return asset
+            // Filter and fix usdt logo
+            let filteredAssets = config.assets
+                .filter { allowedSymbols.contains($0.symbol) }
+                .map { asset -> SolendConfigAsset in
+                    if asset.symbol == "USDT" {
+                        return .init(
+                            name: asset.name,
+                            symbol: asset.symbol,
+                            decimals: asset.decimals,
+                            mintAddress: asset.mintAddress,
+                            logo: "https://raw.githubusercontent.com/solana-labs/token-list/main/assets/mainnet/BQcdHdAQW1hczDbBi9hiegXAR7A98Q9jx3X3iBBBDiq4/logo.png"
+                        )
                     }
 
-                availableAssetsSubject.send(filteredAssets)
-            } catch {
-                errorSubject.send(error)
-                throw error
+                    return asset
+                }
+
+            if availableAssetsSubject.value != filteredAssets {
+                lastUpdateDateSubject.send(Date())
             }
+            
+            availableAssetsSubject.send(filteredAssets)
+        } catch {
+            errorSubject.send(error)
+            throw error
         }
     }
 
