@@ -107,7 +107,11 @@ public class SolendDataServiceImpl: SolendDataService {
     public var hasDeposits: Bool {
         depositsSubject.value?.first { (Double($0.depositedAmount) ?? 0) > 0 } != nil
     }
-
+    
+    public func clearDeposits() {
+        depositsSubject.send(nil)
+    }
+    
     public func update() async throws {
         do {
             guard statusSubject.value != .updating else { return }

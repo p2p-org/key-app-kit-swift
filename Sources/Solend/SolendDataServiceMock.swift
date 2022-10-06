@@ -2,23 +2,23 @@
 // Use of this source code is governed by a MIT-style license that can be
 // found in the LICENSE file.
 
-import Foundation
 import Combine
+import Foundation
 import SolanaSwift
 
 public class SolendDataServiceMock: SolendDataService {
     public init() {}
-    
+
     public var error: AnyPublisher<Error?, Never> {
         CurrentValueSubject(nil)
             .eraseToAnyPublisher()
     }
-    
-    private let lastUpdateDateSubject:  CurrentValueSubject<Date, Never> = .init(Date())
+
+    private let lastUpdateDateSubject: CurrentValueSubject<Date, Never> = .init(Date())
     public var lastUpdateDate: AnyPublisher<Date, Never> {
         lastUpdateDateSubject.eraseToAnyPublisher()
     }
-    
+
     public var availableAssets: AnyPublisher<[SolendConfigAsset]?, Never> {
         CurrentValueSubject([
             SolendConfigAsset.Mock.sol,
@@ -43,6 +43,8 @@ public class SolendDataServiceMock: SolendDataService {
             .init(symbol: "BTC", currentSupply: "0", depositLimit: "0", supplyInterest: "0.042321321"),
         ]).eraseToAnyPublisher()
     }
+
+    public func clearDeposits() {}
 
     public func update() async throws {}
 

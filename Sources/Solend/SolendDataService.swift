@@ -23,5 +23,6 @@ public protocol SolendDataService {
     var deposits: AnyPublisher<[SolendUserDeposit]?, Never> { get }
     var marketInfo: AnyPublisher<[SolendMarketInfo]?, Never> { get }
 
+    func clearDeposits()
     func update() async throws
 }
