@@ -151,14 +151,21 @@ public class SolendDataServiceImpl: SolendDataService {
             let filteredAssets = config.assets
                 .filter { allowedSymbols.contains($0.symbol) }
                 .map { asset -> SolendConfigAsset in
+                    switch asset.symbol {
+                    case "USDT":
+                        return asset
+                            .copy(
+                                logo: "https://raw.githubusercontent.com/solana-labs/token-list/main/assets/mainnet/BQcdHdAQW1hczDbBi9hiegXAR7A98Q9jx3X3iBBBDiq4/logo.png"
+                            )
+                    case "SOL":
+                        return asset.copy(name: "Solana")
+                    default: asset
+                    }
                     if asset.symbol == "USDT" {
-                        return .init(
-                            name: asset.name,
-                            symbol: asset.symbol,
-                            decimals: asset.decimals,
-                            mintAddress: asset.mintAddress,
-                            logo: "https://raw.githubusercontent.com/solana-labs/token-list/main/assets/mainnet/BQcdHdAQW1hczDbBi9hiegXAR7A98Q9jx3X3iBBBDiq4/logo.png"
-                        )
+                        return asset
+                            .copy(
+                                logo: "https://raw.githubusercontent.com/solana-labs/token-list/main/assets/mainnet/BQcdHdAQW1hczDbBi9hiegXAR7A98Q9jx3X3iBBBDiq4/logo.png"
+                            )
                     }
 
                     return asset

@@ -21,13 +21,23 @@ public struct SolendConfigAsset: Codable, Hashable, Equatable {
     public let decimals: Int
     public let mintAddress: String
     public let logo: String?
-    
+
     public init(name: String, symbol: String, decimals: Int, mintAddress: String, logo: String?) {
         self.name = name
         self.symbol = symbol
         self.decimals = decimals
         self.mintAddress = mintAddress
         self.logo = logo
+    }
+
+    public func copy(name: String? = nil, logo: String? = nil) -> Self {
+        return .init(
+            name: name ?? self.name,
+            symbol: symbol,
+            decimals: decimals,
+            mintAddress: mintAddress,
+            logo: logo ?? self.logo
+        )
     }
 }
 
@@ -60,7 +70,7 @@ public struct SolendReserve: Codable, Equatable {
 public enum SolendUserCap: Codable, Equatable {
     case integer(Int)
     case string(String)
-    
+
     public init(from decoder: Decoder) throws {
         let container = try decoder.singleValueContainer()
         if let x = try? container.decode(Int.self) {
@@ -76,7 +86,7 @@ public enum SolendUserCap: Codable, Equatable {
             DecodingError.Context(codingPath: decoder.codingPath, debugDescription: "Wrong type for UserCap")
         )
     }
-    
+
     public func encode(to encoder: Encoder) throws {
         var container = encoder.singleValueContainer()
         switch self {
