@@ -215,10 +215,9 @@ public enum BindingPhoneNumberState: Codable, State, Equatable {
                         throw error
                     }
                 } catch let error as APIGatewayCooldownError {
-                    data.sendingThrottle.reset()
                     return .block(
                         until: Date() + error.cooldown,
-                        reason: .blockEnterPhoneNumber,
+                        reason: .blockResend,
                         phoneNumber: phoneNumber,
                         data: data
                     )
@@ -247,14 +246,7 @@ public enum BindingPhoneNumberState: Codable, State, Equatable {
             case .blockFinish:
                 guard Date() > until else { throw StateMachineError.invalidEvent }
                 switch reason {
-                case .blockEnterPhoneNumber, .blockResend:
-                    return .enterPhoneNumber(
-                        initialPhoneNumber: phoneNumber,
-                        didSend: false,
-                        resendCounter: nil,
-                        data: data
-                    )
-                case .blockEnterOTP:
+                case .blockEnterPhoneNumber, .blockResend, .blockEnterOTP:
                     return .enterPhoneNumber(
                         initialPhoneNumber: phoneNumber,
                         didSend: false,

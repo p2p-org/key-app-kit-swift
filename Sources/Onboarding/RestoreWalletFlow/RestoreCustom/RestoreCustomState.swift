@@ -87,13 +87,19 @@ public enum RestoreCustomState: Codable, State, Equatable {
                 }
 
                 let solPrivateKey = try NaclSign.KeyPair.keyPair().secretKey
-                return try await sendOTP(
-                    phone: phone,
-                    solPrivateKey: solPrivateKey,
-                    social: social,
-                    attempt: .init(.zero()),
-                    provider: provider
-                )
+
+                do {
+                    return try await sendOTP(
+                        phone: phone,
+                        solPrivateKey: solPrivateKey,
+                        social: social,
+                        attempt: .init(.zero()),
+                        provider: provider
+                    )
+                }
+                catch let error as APIGatewayCooldownError {
+                    return .block(until: Date() + error.cooldown, social: social, reason: .blockEnterPhoneNumber)
+                }
 
             case .back:
                 return .finish(result: .breakProcess)
@@ -173,13 +179,18 @@ public enum RestoreCustomState: Codable, State, Equatable {
                 attempt.value.attempt = attempt.value.attempt + 1
                 attempt.value.until = Date().addingTimeInterval(attempt.value.intervalForCurrentAttempt())
 
-                return try await sendOTP(
-                    phone: phone,
-                    solPrivateKey: solPrivateKey,
-                    social: social,
-                    attempt: attempt,
-                    provider: provider
-                )
+                do {
+                    return try await sendOTP(
+                        phone: phone,
+                        solPrivateKey: solPrivateKey,
+                        social: social,
+                        attempt: attempt,
+                        provider: provider
+                    )
+                }
+                catch let error as APIGatewayCooldownError {
+                    return .block(until: Date() + error.cooldown, social: social, reason: .blockResend)
+                }
 
             case .back:
                 return .enterPhone(
@@ -375,8 +386,6 @@ public enum RestoreCustomState: Codable, State, Equatable {
             default:
                 throw error
             }
-        } catch let error as APIGatewayCooldownError {
-            return .block(until: Date() + error.cooldown, social: social, reason: .blockEnterPhoneNumber)
         }
     }
 }
