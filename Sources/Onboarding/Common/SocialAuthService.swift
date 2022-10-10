@@ -8,13 +8,3 @@ public protocol SocialAuthService {
     func isExpired(token: String) -> Bool
 }
 
-public class SocialAuthServiceMock: SocialAuthService {
-
-    public func auth(type: SocialProvider) async throws -> (tokenID: String, email: String) {
-        (tokenID: "someTokenID", email: "someEmail")
-    }
-
-    public func isExpired(token: String) -> Bool {
-        token != token
-    }
-}

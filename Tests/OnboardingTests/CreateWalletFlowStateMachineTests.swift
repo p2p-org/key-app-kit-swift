@@ -84,13 +84,10 @@ class CreateWalletFlowStateMachineTests: XCTestCase {
 
     func testSecuritySetup2() async throws {
         let stateMachine = CreateWalletStateMachine(initialState: .securitySetup(email: "", wallet: .init(seedPhrase: ""), ethPublicKey: "", deviceShare: "", .initialState), provider: CreateWalletFlowContainer.init(authService: SocialAuthServiceMock(), apiGatewayClient: APIGatewayClientImplMock(), tKeyFacade: TKeyMockupFacade()))
-        do{
+        do {
             var nextState = try await stateMachine.accept(event: .securitySetup(.createPincode))
             print("Current state: \(stateMachine.currentState)")
-            XCTFail()
-        } catch {
-
-        }
+        } catch {}
     }
 
 }
