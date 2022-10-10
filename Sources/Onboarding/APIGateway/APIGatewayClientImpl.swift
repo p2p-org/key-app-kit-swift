@@ -271,7 +271,6 @@ public class APIGatewayClientImpl: APIGatewayClient {
     }
 
     private func apiGatewayError(from error: JSONRPCError) -> Error {
-        debugPrint(error)
         let definedError = APIGatewayError(rawValue: error.code)
         if definedError == .wait10Min, let cooldown = error.data?.cooldown_ttl {
             return APIGatewayCooldownError(cooldown: cooldown)
