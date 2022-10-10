@@ -17,7 +17,7 @@ public struct SolendMarketInfo: Codable {
 protocol SolendService {}
 
 public class SolendServiceImpl: SolendService {
-    private let solend: Solend = SolendFFIWrapper()
+    private let solend: Solend
 
     private var owner: Account
     private var lendingMark: String
@@ -26,7 +26,8 @@ public class SolendServiceImpl: SolendService {
     let deposits: CurrentValueSubject<[SolendUserDeposit], Never> = .init([])
     let marketInfo: CurrentValueSubject<[SolendMarketInfo], Never> = .init([])
 
-    public init(owner: Account, lendingMark: String) {
+    public init(solend: Solend, owner: Account, lendingMark: String) {
+        self.solend = solend
         self.owner = owner
         self.lendingMark = lendingMark
     }

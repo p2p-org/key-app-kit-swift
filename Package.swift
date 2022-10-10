@@ -59,16 +59,22 @@ let package = Package(
             targets: ["Onboarding"]
         ),
 
+        .executable(
+            name: "APIGatewayClientCLI",
+            targets: ["APIGatewayClientCLI"]
+        ),
+
         // Solend
         .library(
             name: "Solend",
-            targets: ["Solend", "p2p"]
+            targets: ["Solend"]
         ),
     ],
     dependencies: [
         .package(url: "https://github.com/p2p-org/solana-swift", from: "2.1.1"),
         .package(url: "https://github.com/amplitude/Amplitude-iOS", from: "8.3.0"),
-        .package(url: "https://github.com/krzyzanowskim/CryptoSwift.git", .upToNextMajor(from: "1.6.0"))
+        .package(url: "https://github.com/krzyzanowskim/CryptoSwift.git", .upToNextMajor(from: "1.6.0")),
+        .package(url: "https://github.com/apple/swift-argument-parser", from: "1.1.4"),
     ],
     targets: [
         // Cache
@@ -155,12 +161,20 @@ let package = Package(
             dependencies: [
                 "JSBridge",
                 .product(name: "SolanaSwift", package: "solana-swift"),
-                .product(name: "CryptoSwift", package: "CryptoSwift")
+                .product(name: "CryptoSwift", package: "CryptoSwift"),
             ],
             resources: [
                 .process("Resource/index.html"),
             ]
         ),
+        .executableTarget(
+            name: "APIGatewayClientCLI",
+            dependencies: [
+                "Onboarding",
+                .product(name: "ArgumentParser", package: "swift-argument-parser"),
+            ]
+        ),
+
         .testTarget(name: "OnboardingTests", dependencies: ["Onboarding"]),
 
         // Solend
@@ -179,7 +193,7 @@ let package = Package(
 
         // MARK: - P2P SDK
 
-        .target(name: "P2PSwift", dependencies: ["p2p"]),
+        .target(name: "P2PSwift", dependencies: []),
 
         .testTarget(
             name: "P2PTestsIntegrationTests",
@@ -187,10 +201,10 @@ let package = Package(
             path: "Tests/IntegrationTests/P2PTestsIntegrationTests"
         ),
 
-        .binaryTarget(
-            name: "p2p",
-            path: "Frameworks/p2p.xcframework"
-        ),
+        // .binaryTarget(
+        //     name: "p2p",
+        //     path: "Frameworks/p2p.xcframework"
+        // ),
     ]
 )
 
