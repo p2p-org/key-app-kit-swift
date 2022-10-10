@@ -4,6 +4,10 @@
 
 import Foundation
 
+public struct APIGatewayCooldownError: Error {
+    let cooldown: TimeInterval
+}
+
 public enum APIGatewayError: Int, Error, CaseIterable {
     case invalidOTP = -32061
     case wait10Min = -32053
@@ -41,14 +45,32 @@ public enum APIGatewayChannel: String, Codable {
     case call
 }
 
-public struct RestoreWalletResult: Codable, Equatable {
+public struct APIGatewayRestoreWalletResult: Codable, Equatable {
     let solanaPublicKey: String
     let ethereumId: String
     let encryptedShare: String
     let encryptedPayload: String
+    let encryptedMetaData: String
+}
+
+public struct APIGatewayMetaData: Codable, Equatable {
+    public let deviceName: String
+    public let phoneNumber: String
+    public let email: String
+    public let authProvider: String
 }
 
 public protocol APIGatewayClient {
+    /// Get metadata from api gateway
+    ///
+    /// - Parameters:
+    ///   - ethAddress: Ethereum address.
+    ///   - solanaPrivateKey: Base58 key.
+    ///   - timestampDevice: Timestamp of request.
+    /// - Returns: Encrypted base64 metadata
+    /// - Throws:
+    func getMetadata(ethAddress: String, solanaPrivateKey: String, timestampDevice: Date) async throws -> String
+
     /// Binding a phone number to solana wallet
     ///
     /// - Parameters:
@@ -73,6 +95,7 @@ public protocol APIGatewayClient {
     ///   - ethAddress: Ethereum address.
     ///   - share: TKey share.
     ///   - encryptedPayload: Encrypted mnemonic (base64).
+    ///   - encryptedMetaData: Encrypted metadata
     ///   - phone: E.164 phone number format.
     ///   - otpCode: delivered OTP code
     ///   - timestampDevice:
@@ -81,6 +104,7 @@ public protocol APIGatewayClient {
         ethAddress: String,
         share: String,
         encryptedPayload: String,
+        encryptedMetaData: String,
         phone: String,
         otpCode: String,
         timestampDevice: Date
@@ -114,7 +138,7 @@ public protocol APIGatewayClient {
         phone: String,
         otpCode: String,
         timestampDevice: Date
-    ) async throws -> RestoreWalletResult
+    ) async throws -> APIGatewayRestoreWalletResult
 
     func isValidOTPFormat(code: String) -> Bool
 }

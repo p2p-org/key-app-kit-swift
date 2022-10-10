@@ -9,6 +9,14 @@ public class APIGatewayClientImplMock: APIGatewayClient {
 
     public init() {}
 
+    public func getMetadata(
+        ethAddress _: String,
+        solanaPrivateKey _: String,
+        timestampDevice _: Date
+    ) async throws -> String {
+        ""
+    }
+
     public func registerWallet(
         solanaPrivateKey _: String,
         ethAddress _: String,
@@ -32,6 +40,7 @@ public class APIGatewayClientImplMock: APIGatewayClient {
         ethAddress _: String,
         share _: String,
         encryptedPayload _: String,
+        encryptedMetaData _: String,
         phone _: String,
         otpCode: String,
         timestampDevice _: Date
@@ -73,7 +82,7 @@ public class APIGatewayClientImplMock: APIGatewayClient {
         phone _: String,
         otpCode: String,
         timestampDevice _: Date
-    ) async throws -> RestoreWalletResult {
+    ) async throws -> APIGatewayRestoreWalletResult {
         sleep(1)
         debugPrint("SMSServiceImplMock confirm isConfirmed: \(code == code)")
 
@@ -92,7 +101,8 @@ public class APIGatewayClientImplMock: APIGatewayClient {
             solanaPublicKey: "SomeSolPublicKey",
             ethereumId: "SomeEthereumID",
             encryptedShare: "SomeCustomeShare",
-            encryptedPayload: "SomePayload"
+            encryptedPayload: "SomePayload",
+            encryptedMetaData: "SomeMetadata"
         )
     }
 }

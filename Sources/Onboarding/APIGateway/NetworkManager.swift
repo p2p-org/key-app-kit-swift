@@ -13,10 +13,10 @@ public struct URLSessionMock: NetworkManager {
     public init() {}
 
     public func requestData(request: URLRequest) async throws -> Data {
-        print(request.allHTTPHeaderFields)
+        debugPrint(request.allHTTPHeaderFields)
         if let body = request.httpBody {
-            print(String(data: body, encoding: .utf8))
-            print(try? JSONSerialization.jsonObject(with: body))
+            debugPrint(String(data: body, encoding: .utf8))
+            debugPrint(try? JSONSerialization.jsonObject(with: body))
         }
 
         return Data()

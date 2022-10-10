@@ -2,7 +2,10 @@
 // Use of this source code is governed by a MIT-style license that can be
 // found in the LICENSE file.
 
-public struct RestoreSocialData: Codable, Equatable {
-    public let torusKey: TorusKey
-    public let email: String
+import Foundation
+
+enum OnboardingError: Error {
+    case invalidValue(at: String)
+    case encodingError(String)
+    case decodingError(String)
 }

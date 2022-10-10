@@ -8,6 +8,7 @@ import SolanaSwift
 public enum SocialSignInResult: Codable, Equatable {
     case successful(
         email: String,
+        authProvider: String,
         seedPhrase: String,
         ethPublicKey: String,
         deviceShare: String,
@@ -68,18 +69,22 @@ public enum SocialSignInState: Codable, State, Equatable {
     ) async throws -> Self {
         switch event {
         case let .signIn(socialProvider):
-            let (tokenID, email) = try await provider.authService.auth(type: socialProvider)
+            let (value, email) = try await provider.authService.auth(type: socialProvider)
+            let tokenID = TokenID(value: value, provider: socialProvider.rawValue)
+            
             do {
                 try await provider.tKeyFacade.initialize()
+                let torusKey = try await provider.tKeyFacade.obtainTorusKey(tokenID: tokenID)
                 let result = try await provider.tKeyFacade
                     .signUp(
-                        tokenID: .init(value: tokenID, provider: socialProvider.rawValue),
+                        torusKey: torusKey,
                         privateInput: Mnemonic().phrase.joined(separator: " ")
                     )
 
                 return .finish(
                     .successful(
                         email: email,
+                        authProvider: socialProvider.rawValue,
                         seedPhrase: result.privateSOL,
                         ethPublicKey: result.reconstructedETH,
                         deviceShare: result.deviceShare,
@@ -110,18 +115,21 @@ public enum SocialSignInState: Codable, State, Equatable {
     ) async throws -> Self {
         switch event {
         case let .signIn(socialProvider):
-            let (tokenID, email) = try await provider.authService.auth(type: socialProvider)
+            let (value, email) = try await provider.authService.auth(type: socialProvider)
+            let tokenID = TokenID(value: value, provider: socialProvider.rawValue)
             do {
+                let torusKey = try await provider.tKeyFacade.obtainTorusKey(tokenID: tokenID)
                 let result = try await provider
                     .tKeyFacade
                     .signUp(
-                        tokenID: .init(value: tokenID, provider: socialProvider.rawValue),
+                        torusKey: torusKey,
                         privateInput: Mnemonic().phrase.joined(separator: " ")
                     )
 
                 return .finish(
                     .successful(
                         email: email,
+                        authProvider: socialProvider.rawValue,
                         seedPhrase: result.privateSOL,
                         ethPublicKey: result.reconstructedETH,
                         deviceShare: result.deviceShare,

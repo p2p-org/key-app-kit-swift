@@ -20,6 +20,15 @@
         }
       },
       {
+        "package": "CryptoSwift",
+        "repositoryURL": "https://github.com/krzyzanowskim/CryptoSwift.git",
+        "state": {
+          "branch": null,
+          "revision": "19b3c3ceed117c5cc883517c4e658548315ba70b",
+          "version": "1.6.0"
+        }
+      },
+      {
         "package": "LoggerSwift",
         "repositoryURL": "https://github.com/bigearsenal/loggerswift.git",
         "state": {

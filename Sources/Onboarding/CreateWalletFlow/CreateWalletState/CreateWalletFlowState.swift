@@ -22,14 +22,18 @@ public struct CreateWalletFlowContainer {
     let apiGatewayClient: APIGatewayClient
     let tKeyFacade: TKeyFacade
 
+    let deviceName: String
+
     public init(
         authService: SocialAuthService,
         apiGatewayClient: APIGatewayClient,
-        tKeyFacade: TKeyFacade
+        tKeyFacade: TKeyFacade,
+        deviceName: String
     ) {
         self.authService = authService
         self.apiGatewayClient = apiGatewayClient
         self.tKeyFacade = tKeyFacade
+        self.deviceName = deviceName
     }
 }
 
@@ -43,16 +47,17 @@ public enum CreateWalletFlowState: Codable, State, Equatable {
     case socialSignIn(SocialSignInState)
     case bindingPhoneNumber(
         email: String,
+        authProvider: String,
         seedPhrase: String,
         ethPublicKey: String,
         deviceShare: String,
         BindingPhoneNumberState
     )
     case securitySetup(
-        email: String,
         wallet: OnboardingWallet,
         ethPublicKey: String,
         deviceShare: String,
+        metaData: WalletMetaData,
         SecuritySetupState
     )
 
@@ -75,20 +80,33 @@ public enum CreateWalletFlowState: Codable, State, Equatable {
 
                 if case let .finish(result) = nextInnerState {
                     switch result {
-                    case let .successful(email, seedPhrase, ethPublicKey, deviceShare, customShare, metaData):
+                    case let .successful(
+                        email,
+                        authProvider,
+                        seedPhrase,
+                        ethPublicKey,
+                        deviceShare,
+                        customShare,
+                        metaData
+                    ):
                         return .bindingPhoneNumber(
                             email: email,
+                            authProvider: authProvider,
                             seedPhrase: seedPhrase,
                             ethPublicKey: ethPublicKey,
                             deviceShare: deviceShare,
                             .enterPhoneNumber(
                                 initialPhoneNumber: nil,
                                 didSend: false,
+                                resendCounter: nil,
                                 data: .init(
                                     seedPhrase: seedPhrase,
                                     ethAddress: ethPublicKey,
                                     customShare: customShare,
-                                    payload: metaData
+                                    payload: metaData,
+                                    deviceName: provider.deviceName,
+                                    email: email,
+                                    authProvider: authProvider
                                 )
                             )
                         )
@@ -103,19 +121,19 @@ public enum CreateWalletFlowState: Codable, State, Equatable {
             default:
                 throw StateMachineError.invalidEvent
             }
-        case let .bindingPhoneNumber(email, seedPhrase, ethPublicKey, deviceShare, innerState):
+        case let .bindingPhoneNumber(email, authProvider, seedPhrase, ethPublicKey, deviceShare, innerState):
             switch event {
             case let .bindingPhoneNumberEvent(event):
                 let nextInnerState = try await innerState <- (event, provider.apiGatewayClient)
 
                 if case let .finish(result) = nextInnerState {
                     switch result {
-                    case .success:
+                    case let .success(metadata):
                         return .securitySetup(
-                            email: email,
                             wallet: OnboardingWallet(seedPhrase: seedPhrase),
                             ethPublicKey: ethPublicKey,
                             deviceShare: deviceShare,
+                            metaData: metadata,
                             SecuritySetupState.initialState
                         )
                     case .breakProcess:
@@ -124,6 +142,7 @@ public enum CreateWalletFlowState: Codable, State, Equatable {
                 } else {
                     return .bindingPhoneNumber(
                         email: email,
+                        authProvider: authProvider,
                         seedPhrase: seedPhrase,
                         ethPublicKey: ethPublicKey,
                         deviceShare: deviceShare,
@@ -134,7 +153,7 @@ public enum CreateWalletFlowState: Codable, State, Equatable {
                 throw StateMachineError.invalidEvent
             }
 
-        case let .securitySetup(email, wallet, ethAddress, deviceShare, innerState):
+        case let .securitySetup(wallet, ethAddress, deviceShare, metadata, innerState):
             switch event {
             case let .securitySetup(event):
                 let nextInnerState = try await innerState <- (event, .init())
@@ -147,16 +166,17 @@ public enum CreateWalletFlowState: Codable, State, Equatable {
                                 ethAddress: ethAddress,
                                 deviceShare: deviceShare,
                                 wallet: wallet,
-                                security: securityData
+                                security: securityData,
+                                metadata: metadata
                             ))
                         )
                     }
                 } else {
                     return .securitySetup(
-                        email: email,
                         wallet: wallet,
                         ethPublicKey: ethAddress,
                         deviceShare: deviceShare,
+                        metaData: metadata,
                         nextInnerState
                     )
                 }
@@ -174,7 +194,7 @@ extension CreateWalletFlowState: Step, Continuable {
         switch self {
         case let .socialSignIn(innerState):
             return innerState.continuable
-        case let .bindingPhoneNumber(_, _, _, _, innerState):
+        case let .bindingPhoneNumber(_, _, _, _, _, innerState):
             return innerState.continuable
         case let .securitySetup(_, _, _, _, innerState):
             return innerState.continuable
@@ -187,7 +207,7 @@ extension CreateWalletFlowState: Step, Continuable {
         switch self {
         case let .socialSignIn(innerState):
             return 1 * 100 + innerState.step
-        case let .bindingPhoneNumber(_, _, _, _, innerState):
+        case let .bindingPhoneNumber(_, _, _, _, _, innerState):
             return 2 * 100 + innerState.step
         case let .securitySetup(_, _, _, _, innerState):
             return 3 * 100 + innerState.step

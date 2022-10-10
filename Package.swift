@@ -7,7 +7,7 @@ let package = Package(
     name: "KeyAppKit",
     platforms: [
         .macOS(.v12),
-        .iOS(.v13),
+        .iOS(.v14),
         .tvOS(.v13),
         .watchOS(.v6),
 
@@ -68,6 +68,7 @@ let package = Package(
     dependencies: [
         .package(url: "https://github.com/p2p-org/solana-swift", from: "2.1.1"),
         .package(url: "https://github.com/amplitude/Amplitude-iOS", from: "8.3.0"),
+        .package(url: "https://github.com/krzyzanowskim/CryptoSwift.git", .upToNextMajor(from: "1.6.0"))
     ],
     targets: [
         // Cache
@@ -154,6 +155,7 @@ let package = Package(
             dependencies: [
                 "JSBridge",
                 .product(name: "SolanaSwift", package: "solana-swift"),
+                .product(name: "CryptoSwift", package: "CryptoSwift")
             ],
             resources: [
                 .process("Resource/index.html"),

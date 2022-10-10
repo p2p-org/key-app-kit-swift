@@ -34,7 +34,6 @@ public actor StateMachine<S: State> {
             stateSubject.send(state)
             return state
         } catch {
-            print(error)
             throw error
         }
     }
