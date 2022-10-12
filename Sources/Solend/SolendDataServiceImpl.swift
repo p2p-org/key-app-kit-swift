@@ -138,6 +138,7 @@ public class SolendDataServiceImpl: SolendDataService {
                 lastUpdate: lastUpdateDateSubject.value
             )
         } catch {
+            print(error)
             errorSubject.send(error)
             statusSubject.send(.ready)
         }
@@ -213,6 +214,18 @@ public class SolendDataServiceImpl: SolendDataService {
             )
             depositsSubject.send(userDeposits)
         } catch {
+            // Check error
+            switch error as? SolendError {
+            case let .message(msg):
+                if msg == "Pool is empty" {
+                    depositsSubject.send([])
+                    return
+                }
+            default:
+                break
+            }
+            
+            // Throw error
             depositsSubject.send(nil)
             errorSubject.send(error)
             throw error
