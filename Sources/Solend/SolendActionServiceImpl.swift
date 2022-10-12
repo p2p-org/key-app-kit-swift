@@ -54,7 +54,9 @@ public class SolendActionServiceImpl: SolendActionService {
         currentActionSubject.eraseToAnyPublisher()
     }
 
-    public func clearAction() throws {}
+    public func clearAction() throws {
+        currentActionSubject.send(nil)
+    }
 
     public func check() async throws {
         guard currentActionSubject.value == nil else {
