@@ -6,7 +6,7 @@ import Foundation
 import SolanaSwift
 
 public enum RestoreICloudResult: Codable, Equatable {
-    case successful(account: Account)
+    case successful(phrase: String, derivablePath: DerivablePath)
     case back
 }
 
@@ -36,7 +36,6 @@ public enum RestoreICloudState: Codable, State, Equatable {
         event: RestoreICloudEvent,
         provider: RestoreICloudContainer
     ) async throws -> RestoreICloudState {
-
         switch currentState {
         case .signIn:
             switch event {
@@ -53,26 +52,26 @@ public enum RestoreICloudState: Codable, State, Equatable {
                 }
                 return .chooseWallet(accounts: accounts)
 
-            case .restoreRawWallet(let name, let phrase, let derivablePath):
-                let iCloudAccount = try await ICloudAccount(name: name, phrase: phrase, derivablePath: derivablePath)
-                let account = try await account(from: iCloudAccount)
-                return .finish(result: .successful(account: account))
+            case let .restoreRawWallet(name, phrase, derivablePath):
+                return .finish(result: .successful(phrase: phrase, derivablePath: derivablePath))
 
             default:
                 throw StateMachineError.invalidEvent
             }
 
-        case .chooseWallet(let accounts):
+        case let .chooseWallet(accounts):
             switch event {
-            case .restoreWallet(let icloudAccount):
-                let account = try await account(from: icloudAccount)
-                return .finish(result: .successful(account: account))
+            case let .restoreWallet(icloudAccount):
+                return .finish(result: .successful(
+                    phrase: icloudAccount.phrase,
+                    derivablePath: icloudAccount.derivablePath
+                ))
             case .back:
                 return .finish(result: .back)
             default:
                 throw StateMachineError.invalidEvent
             }
-        case .finish(let result):
+        case let .finish(result):
             throw StateMachineError.invalidEvent
         }
     }

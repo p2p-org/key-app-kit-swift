@@ -363,9 +363,12 @@ public enum RestoreWalletState: Codable, State, Equatable {
 
     private func handleRestoreICloud(result: RestoreICloudResult) -> RestoreWalletState {
         switch result {
-        case let .successful(account):
+        case let .successful(phrase, derivablePath):
             return .securitySetup(
-                wallet: OnboardingWallet(seedPhrase: account.phrase.joined(separator: " ")),
+                wallet: OnboardingWallet(
+                    seedPhrase: phrase,
+                    derivablePath: derivablePath
+                ),
                 ethPublicKey: nil,
                 metadata: nil,
                 SecuritySetupState.initialState
