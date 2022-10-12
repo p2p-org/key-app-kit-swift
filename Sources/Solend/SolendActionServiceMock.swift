@@ -22,11 +22,11 @@ public class SolendActionServiceMock: SolendActionService {
         .init(fee: 0, rent: 0)
     }
 
-    public func deposit(amount: UInt64, symbol: SolendSymbol) async throws {
+    public func deposit(amount: UInt64, symbol: SolendSymbol,fee: SolendDepositFee, feePayer: SolendFeePayer?) async throws {
         await mockProcessing(id: "123456", type: .deposit, amount: amount, symbol: symbol)
     }
 
-    public func withdraw(amount: UInt64, symbol: SolendSymbol) async throws {
+    public func withdraw(amount: UInt64, symbol: SolendSymbol, fee: SolendDepositFee,feePayer: SolendFeePayer?) async throws {
         await mockProcessing(id: "123456", type: .withdraw, amount: amount, symbol: symbol)
     }
 

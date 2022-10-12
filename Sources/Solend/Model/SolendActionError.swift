@@ -6,4 +6,5 @@ import Foundation
 
 enum SolendActionError: Error {
     case actionIsAlreadyRunning
+    case expectedOneTransaction
 }

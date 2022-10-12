@@ -17,16 +17,26 @@ public enum SolendActionType: Codable, Equatable {
     case withdraw
 }
 
+public struct SolendFeePayer: Codable, Equatable {
+    public let address: String
+    public let mint: String
+    
+    public init(address: String, mint: String) {
+        self.address = address
+        self.mint = mint
+    }
+}
+
 public struct SolendAction: Codable, Equatable {
     public let type: SolendActionType
-    public let transactionID: String
+    public let transactionID: String?
     public internal(set) var status: SolendActionStatus
     public let amount: UInt64
     public let symbol: SolendSymbol
     
     public init(
         type: SolendActionType,
-        transactionID: String,
+        transactionID: String?,
         status: SolendActionStatus,
         amount: UInt64,
         symbol: SolendSymbol
@@ -46,6 +56,6 @@ public protocol SolendActionService {
 
     func depositFee(amount: UInt64, symbol: SolendSymbol) async throws -> SolendDepositFee
 
-    func deposit(amount: UInt64, symbol: SolendSymbol) async throws
-    func withdraw(amount: UInt64, symbol: SolendSymbol) async throws
+    func deposit(amount: UInt64, symbol: SolendSymbol, fee: SolendDepositFee, feePayer: SolendFeePayer?) async throws
+    func withdraw(amount: UInt64, symbol: SolendSymbol, fee: SolendDepositFee, feePayer: SolendFeePayer?) async throws
 }

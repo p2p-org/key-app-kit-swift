@@ -67,7 +67,7 @@ let package = Package(
     ],
     dependencies: [
         .package(url: "https://github.com/p2p-org/solana-swift", from: "2.1.1"),
-        .package(url: "https://github.com/p2p-org/FeeRelayerSwift", from: "3.1.0"),
+        .package(url: "https://github.com/p2p-org/FeeRelayerSwift", branch: "feature/replay-raw-transaction"),
         .package(url: "https://github.com/amplitude/Amplitude-iOS", from: "8.3.0"),
     ],
     targets: [

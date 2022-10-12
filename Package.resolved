@@ -6,8 +6,8 @@
         "repositoryURL": "https://github.com/amplitude/Amplitude-iOS",
         "state": {
           "branch": null,
-          "revision": "9e3081af2f3d45931b5404c4276c6c2e21ecd671",
-          "version": "8.13.0"
+          "revision": "483ec5c74b50f0d483013fc910fe890ec34e54d2",
+          "version": "8.14.0"
         }
       },
       {
@@ -23,9 +23,9 @@
         "package": "FeeRelayerSwift",
         "repositoryURL": "https://github.com/p2p-org/FeeRelayerSwift",
         "state": {
-          "branch": null,
-          "revision": "4b6143533153f5c9b37f50027cc5ce8bbf3fc60a",
-          "version": "3.1.3"
+          "branch": "feature/replay-raw-transaction",
+          "revision": "fd0a6cc2e72453b0264a5d60721ac879565d4639",
+          "version": null
         }
       },
       {

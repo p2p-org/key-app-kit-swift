@@ -65,76 +65,157 @@ public class SolendActionServiceImpl: SolendActionService {
     }
 
     public func depositFee(amount: UInt64, symbol: SolendSymbol) async throws -> SolendDepositFee {
-        try await solend.getDepositFee(
+        let depositFee = try await solend.getDepositFee(
             rpcUrl: rpcUrl,
             owner: owner.publicKey.base58EncodedString,
             tokenAmount: amount,
             tokenSymbol: symbol
         )
+
+        let feeRelayContext = try await feeRelayContextManager.getCurrentContext()
+        let coveredByFeeRelay = feeRelayContext.usageStatus.currentUsage < feeRelayContext.usageStatus.maxUsage
+
+        return .init(
+            fee: coveredByFeeRelay ? 0 : depositFee.fee,
+            rent: depositFee.rent
+        )
     }
 
-    public func deposit(amount: UInt64, symbol: String) async throws {
-        try await check()
+    public func deposit(
+        amount: UInt64,
+        symbol: String,
+        fee _: SolendDepositFee,
+        feePayer: SolendFeePayer?
+    ) async throws {
+        do {
+            try await check()
 
-        // let feeRelayContext = try await feeRelayContextManager.getCurrentContext()
+            let feeRelayContext = try await feeRelayContextManager.getCurrentContext()
+            let needToUseRelay = feeRelayContext.usageStatus.currentUsage < feeRelayContext.usageStatus.maxUsage
+            let feePayerAddress: PublicKey = try needToUseRelay ? feeRelayContext.feePayerAddress : owner.publicKey
 
-        let transactionsRaw: [SolanaSerializedTransaction] = try await solend.createDepositTransaction(
-            solanaRpcUrl: rpcUrl,
-            relayProgramId: RelayProgram.id(network: .mainnetBeta).base58EncodedString,
-            amount: amount,
-            symbol: symbol,
-            ownerAddress: owner.publicKey.base58EncodedString,
-            environment: .production,
-            lendingMarketAddress: lendingMark,
-            blockHash: try await solana.getRecentBlockhash(commitment: nil),
-            freeTransactionsCount: 0,
-            needToUseRelay: false,
-            payInFeeToken: nil,
-            feePayerAddress: owner.publicKey.base58EncodedString
-        )
+            let transactionsRaw: [SolanaSerializedTransaction] = try await solend.createDepositTransaction(
+                solanaRpcUrl: rpcUrl,
+                relayProgramId: RelayProgram.id(network: .mainnetBeta).base58EncodedString,
+                amount: amount,
+                symbol: symbol,
+                ownerAddress: owner.publicKey.base58EncodedString,
+                environment: .production,
+                lendingMarketAddress: lendingMark,
+                blockHash: try await solana.getRecentBlockhash(commitment: nil),
+                freeTransactionsCount: UInt32(
+                    feeRelayContext.usageStatus.maxUsage - feeRelayContext.usageStatus.currentUsage
+                ),
+                needToUseRelay: needToUseRelay,
+                payInFeeToken: nil,
+                feePayerAddress: feePayerAddress.base58EncodedString
+            )
 
-        // Sign transactions
-        let transactions: [Transaction] = try transactionsRaw
-            .map { (trx: String) -> Data in Data(Base58.decode(trx)) }
-            .map { (trxData: Data) -> Transaction in
-                var trx = try Transaction.from(data: trxData)
-                try trx.sign(signers: [owner])
-                return trx
+            // Sign transactions
+            let transactions: [Transaction] = try transactionsRaw
+                .map { (trx: String) -> Data in Data(Base58.decode(trx)) }
+                .map { (trxData: Data) -> Transaction in
+                    var trx = try Transaction.from(data: trxData)
+                    try trx.sign(signers: [owner])
+
+                    print(try trx.serialize(requiredAllSignatures: false, verifySignatures: false)
+                        .base64EncodedString())
+
+                    return trx
+                }
+
+            // Send transactions
+            var ids: [String] = []
+            if needToUseRelay {
+                // Allow only one transaction for using with relay. We can not calculate fee for others transactions
+                guard transactions.count == 1 else { throw SolendActionError.expectedOneTransaction }
+
+                // Setup fee payer
+                let feePayer = try feePayer ?? .init(
+                    address: try owner.publicKey.base58EncodedString,
+                    mint: PublicKey.wrappedSOLMint.base58EncodedString
+                )
+
+                let depositFee = try await solend.getDepositFee(
+                    rpcUrl: rpcUrl,
+                    owner: owner.publicKey.base58EncodedString,
+                    tokenAmount: amount,
+                    tokenSymbol: symbol
+                )
+
+                debugPrint(depositFee)
+                // Prepare transaction
+                let preparedTransactions = try transactions.map { (trx: Transaction) -> PreparedTransaction in
+                    PreparedTransaction(
+                        transaction: trx,
+                        signers: [try owner],
+                        expectedFee: .init(transaction: depositFee.fee, accountBalances: depositFee.rent)
+                    )
+                }
+
+                // Relay transaction
+                let transactionsIDs = try await feeRelay.topUpAndRelayTransaction(
+                    feeRelayContext,
+                    preparedTransactions,
+                    fee: .init(
+                        address: try PublicKey(string: feePayer.address),
+                        mint: try PublicKey(string: feePayer.mint)
+                    ),
+                    config: .init(
+                        operationType: .other,
+                        autoPayback: false
+                    )
+                )
+
+                ids.append(contentsOf: transactionsIDs)
+            } else {
+                for var trx in transactions {
+                    let transactionID = try await solana.sendTransaction(
+                        transaction: try trx.serialize().base64EncodedString(),
+                        configs: RequestConfiguration(encoding: "base64")!
+                    )
+                    ids.append(transactionID)
+                }
             }
 
-        // Send transactions
-        var ids: [String] = []
-        for var trx in transactions {
-            let transactionID: TransactionID = try await solana.sendTransaction(
-                transaction: try trx.serialize().base64EncodedString(),
-                configs: RequestConfiguration(encoding: "base64")!
-            )
-            ids.append(transactionID)
-        }
-
-        // Listen last transaction
-        guard let primaryTrxId = ids.last else { throw SolanaError.unknown }
-        Task.detached(priority: .utility) { [self] in
-            try await listenTransactionStatus(
-                transactionID: primaryTrxId,
-                initialAction: .init(
-                    type: .deposit,
+            // Listen last transaction
+            guard let primaryTrxId = ids.last else { throw SolanaError.unknown }
+            Task.detached(priority: .utility) { [self] in
+                try await listenTransactionStatus(
                     transactionID: primaryTrxId,
-                    status: .processing,
-                    amount: amount,
-                    symbol: symbol
+                    initialAction: .init(
+                        type: .deposit,
+                        transactionID: primaryTrxId,
+                        status: .processing,
+                        amount: amount,
+                        symbol: symbol
+                    )
                 )
-            )
+            }
+        } catch {
+            currentActionSubject.send(.init(
+                type: .deposit,
+                transactionID: nil,
+                status: .failed(msg: error.localizedDescription),
+                amount: amount,
+                symbol: symbol
+            ))
+            throw error
         }
     }
 
-    public func withdraw(amount: UInt64, symbol: SolendSymbol) async throws {
+    public func withdraw(
+        amount: UInt64,
+        symbol: SolendSymbol,
+        fee _: SolendDepositFee,
+        feePayer _: SolendFeePayer?
+    ) async throws {
         try await check()
 
         // let feeRelayContext = try await feeRelayContextManager.getCurrentContext()
 
         let transactionsRaw: [SolanaSerializedTransaction] = try await solend.createWithdrawTransaction(
-            solanaRpcUrl: "https://p2p.rpcpool.com/82313b15169cb10f3ff230febb8d",
+            solanaRpcUrl: rpcUrl,
             relayProgramId: RelayProgram.id(network: .mainnetBeta).base58EncodedString,
             amount: amount,
             symbol: symbol,
@@ -186,8 +267,6 @@ public class SolendActionServiceImpl: SolendActionService {
     func listenTransactionStatus(transactionID: TransactionID, initialAction: SolendAction) async throws {
         var action = initialAction
         do {
-            defer { currentActionSubject.send(nil) }
-            
             for try await status in solana.observeSignatureStatus(signature: transactionID) {
                 let actionStatus: SolendActionStatus
                 switch status {
@@ -195,13 +274,13 @@ public class SolendActionServiceImpl: SolendActionService {
                 case .finalized: actionStatus = .success
                 case let .error(msg): actionStatus = .failed(msg: msg ?? "")
                 }
-                
+
                 action.status = actionStatus
                 currentActionSubject.send(action)
             }
         }
     }
-    
+
     public func getCurrentAction() -> SolendAction? {
         currentActionSubject.value
     }
