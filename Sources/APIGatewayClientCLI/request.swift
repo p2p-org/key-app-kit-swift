@@ -5,6 +5,7 @@
 import ArgumentParser
 import Foundation
 import Onboarding
+import TweetNacl
 
 @main
 enum App {
@@ -16,12 +17,19 @@ enum App {
 struct APIGatewayClientCommand: AsyncParsableCommand {
     static let configuration = CommandConfiguration(
         abstract: "A Swift command-line tool for API Gateway",
-        subcommands: [Request.self]
+        subcommands: [Request.self, GenerateSolanaPrivateKey.self]
     )
 }
 
 enum RequestType: String, ExpressibleByArgument {
     case registerWallet
+}
+
+struct GenerateSolanaPrivateKey: AsyncParsableCommand {
+    func run() async throws {
+        let keypair = try NaclSign.KeyPair.keyPair()
+        try print(Base58.encode(keypair.secretKey))
+    }
 }
 
 struct Request: AsyncParsableCommand {
