@@ -96,9 +96,6 @@ public class SolendActionServiceImpl: SolendActionService {
             let feeRelayContext = try await feeRelayContextManager.getCurrentContext()
             let useRelay = feeRelayContext.usageStatus.currentUsage < feeRelayContext.usageStatus.maxUsage
             let feePayerAddress: PublicKey = try useRelay ? feeRelayContext.feePayerAddress : owner.publicKey
-            print(UInt32(
-                feeRelayContext.usageStatus.maxUsage - feeRelayContext.usageStatus.currentUsage
-            ))
 
             let transactionsRaw: [SolanaSerializedTransaction] = try await solend.createDepositTransaction(
                 solanaRpcUrl: rpcUrl,
