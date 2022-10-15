@@ -5,6 +5,7 @@
 import Combine
 import Foundation
 import SolanaSwift
+import FeeRelayerSwift
 
 public enum SolendActionStatus: Codable, Equatable {
     case processing
@@ -54,8 +55,18 @@ public protocol SolendActionService {
     func getCurrentAction() -> SolendAction?
     func clearAction() throws
 
-    func depositFee(amount: UInt64, symbol: SolendSymbol) async throws -> SolendDepositFee
+    func depositFee(amount: UInt64, symbol: SolendSymbol) async throws -> FeeAmount
+    func withdrawFee(amount: UInt64, symbol: SolendSymbol) async throws -> FeeAmount
 
-    func deposit(amount: UInt64, symbol: SolendSymbol, feePayer: SolendFeePayer?) async throws
-    func withdraw(amount: UInt64, symbol: SolendSymbol, feePayer: SolendFeePayer?) async throws
+    func deposit(
+        amount: UInt64,
+        symbol: SolendSymbol,
+        feePayer: FeeRelayerSwift.TokenAccount?
+    ) async throws
+    
+    func withdraw(
+        amount: UInt64,
+        symbol: SolendSymbol,
+        feePayer: FeeRelayerSwift.TokenAccount?
+    ) async throws
 }

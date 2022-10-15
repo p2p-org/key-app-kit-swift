@@ -4,6 +4,8 @@
 
 import Combine
 import Foundation
+import SolanaSwift
+import FeeRelayerSwift
 
 public class SolendActionServiceMock: SolendActionService {
     let currentActionSubject: CurrentValueSubject<SolendAction?, Never> = .init(nil)
@@ -17,16 +19,20 @@ public class SolendActionServiceMock: SolendActionService {
     }
 
     public func clearAction() throws {}
-
-    public func depositFee(amount _: UInt64, symbol _: SolendSymbol) async throws -> SolendDepositFee {
-        .init(fee: 0, rent: 0)
+    
+    public func depositFee(amount: UInt64, symbol: SolendSymbol) async throws -> SolanaSwift.FeeAmount {
+        .init(transaction: 0, accountBalances: 0)
     }
-
-    public func deposit(amount: UInt64, symbol: SolendSymbol, feePayer: SolendFeePayer?) async throws {
+    
+    public func withdrawFee(amount: UInt64, symbol: SolendSymbol) async throws -> SolanaSwift.FeeAmount {
+        .init(transaction: 0, accountBalances: 0)
+    }
+    
+    public func deposit(amount: UInt64, symbol: SolendSymbol, feePayer: FeeRelayerSwift.TokenAccount?) async throws {
         await mockProcessing(id: "123456", type: .deposit, amount: amount, symbol: symbol)
     }
-
-    public func withdraw(amount: UInt64, symbol: SolendSymbol, feePayer: SolendFeePayer?) async throws {
+    
+    public func withdraw(amount: UInt64, symbol: SolendSymbol, feePayer: FeeRelayerSwift.TokenAccount?) async throws {
         await mockProcessing(id: "123456", type: .withdraw, amount: amount, symbol: symbol)
     }
 

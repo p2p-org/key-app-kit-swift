@@ -43,7 +43,7 @@ public struct SolendUserDeposit: Codable, Hashable, Equatable {
     }
 }
 
-public struct SolendDepositFee: Codable {
+public struct SolendDepositFee: Codable, Equatable {
     public let fee: UInt64
     public let rent: UInt64
     
@@ -53,7 +53,7 @@ public struct SolendDepositFee: Codable {
     }
 }
 
-public struct SolendPayFeeInToken: Codable {
+public struct SolendPayFeeInToken: Codable, Equatable {
     public let senderAccount: String
     public let recipientAccount: String
     public let mint: String

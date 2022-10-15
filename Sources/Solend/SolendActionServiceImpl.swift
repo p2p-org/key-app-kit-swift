@@ -84,11 +84,38 @@ public class SolendActionServiceImpl: SolendActionService {
             rent: depositFee.rent
         )
     }
+    
+    public func depositFee(amount: UInt64, symbol: SolendSymbol) async throws -> SolanaSwift.FeeAmount {
+        let depositFee = try await solend.getDepositFee(
+            rpcUrl: rpcUrl,
+            owner: owner.publicKey.base58EncodedString,
+            tokenAmount: amount,
+            tokenSymbol: symbol
+        )
+
+        let feeRelayContext = try await feeRelayContextManager.getCurrentContext()
+        let coveredByFeeRelay = feeRelayContext.usageStatus.currentUsage < feeRelayContext.usageStatus.maxUsage
+
+        return .init(
+            transaction: coveredByFeeRelay ? 0 : depositFee.fee,
+            accountBalances: depositFee.rent
+        )
+    }
+    
+    public func withdrawFee(amount: UInt64, symbol: SolendSymbol) async throws -> SolanaSwift.FeeAmount {
+        let feeRelayContext = try await feeRelayContextManager.getCurrentContext()
+        let coveredByFeeRelay = feeRelayContext.usageStatus.currentUsage < feeRelayContext.usageStatus.maxUsage
+
+        return .init(
+            transaction: coveredByFeeRelay ? 0 : feeRelayContext.lamportsPerSignature,
+            accountBalances: 0
+        )
+    }
 
     public func deposit(
         amount: UInt64,
         symbol: String,
-        feePayer: SolendFeePayer?
+        feePayer: FeeRelayerSwift.TokenAccount?
     ) async throws {
         do {
             try await check()
@@ -163,7 +190,7 @@ public class SolendActionServiceImpl: SolendActionService {
     public func withdraw(
         amount: UInt64,
         symbol: SolendSymbol,
-        feePayer: SolendFeePayer?
+        feePayer: FeeRelayerSwift.TokenAccount?
     ) async throws {
         do {
             try await check()
@@ -258,7 +285,7 @@ public class SolendActionServiceImpl: SolendActionService {
         transactionsRaw: [SolanaSerializedTransaction],
         feeRelayContext: FeeRelayerContext,
         fee: FeeAmount,
-        feePayer: SolendFeePayer?,
+        feePayer: FeeRelayerSwift.TokenAccount?,
         initialAction: SolendAction
     ) async throws {
         // Sign transactions
@@ -276,9 +303,9 @@ public class SolendActionServiceImpl: SolendActionService {
         guard transactions.count == 1 else { throw SolendActionError.expectedOneTransaction }
 
         // Setup fee payer
-        let feePayer = try feePayer ?? .init(
-            address: try owner.publicKey.base58EncodedString,
-            mint: PublicKey.wrappedSOLMint.base58EncodedString
+        let feePayer: FeeRelayerSwift.TokenAccount? = try feePayer ?? .init(
+            address: try owner.publicKey,
+            mint: PublicKey.wrappedSOLMint
         )
 
         // Prepare transaction
@@ -294,10 +321,7 @@ public class SolendActionServiceImpl: SolendActionService {
         let transactionsIDs = try await feeRelay.topUpAndRelayTransaction(
             feeRelayContext,
             preparedTransactions,
-            fee: .init(
-                address: try PublicKey(string: feePayer.address),
-                mint: try PublicKey(string: feePayer.mint)
-            ),
+            fee: feePayer,
             config: .init(
                 operationType: .other,
                 autoPayback: false
