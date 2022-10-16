@@ -227,7 +227,7 @@ public class SolendActionServiceImpl: SolendActionService {
                 try await relay(
                     transactionsRaw: transactionsRaw,
                     feeRelayContext: feeRelayContext,
-                    fee: .zero,
+                    fee: .init(transaction: feeRelayContext.lamportsPerSignature * 2, accountBalances: 0),
                     feePayer: feePayer,
                     initialAction: initialAction
                 )
