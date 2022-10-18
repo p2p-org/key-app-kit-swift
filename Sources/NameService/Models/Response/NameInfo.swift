@@ -3,10 +3,11 @@ struct NameInfo: Codable {
     public let ownerClass: String
     public let name: String?
     public let address: String
-    public let updatedAt: Date
+    public let updatedAt: String
 
     enum CodingKeys: String, CodingKey {
-        case parent, address, updatedAt, name
+        case parent, address, name
         case ownerClass = "class"
+        case updatedAt = "updated_at"
     }
 }
