@@ -22,7 +22,8 @@ Pod::Spec.new do |s|
   s.dependency 'JSBridge'
   s.dependency 'SolanaSwift', '~> 2'
   s.dependency 'CryptoSwift', '~> 1.6.0'
-
+  s.dependency "KeyAppKitCore"
+  
   s.pod_target_xcconfig = {
     'SWIFT_OPTIMIZATION_LEVEL' => '-O'
   }

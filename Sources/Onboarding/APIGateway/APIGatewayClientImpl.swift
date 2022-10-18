@@ -4,6 +4,7 @@
 
 import Foundation
 import TweetNacl
+import KeyAppKitCore
 
 public class APIGatewayClientImpl: APIGatewayClient {
     private let endpoint: URL
