@@ -24,7 +24,7 @@
         "repositoryURL": "https://github.com/p2p-org/FeeRelayerSwift",
         "state": {
           "branch": "feature/replay-raw-transaction",
-          "revision": "fd0a6cc2e72453b0264a5d60721ac879565d4639",
+          "revision": "6420ec56142ff8059c0288970ab3880e837a7e75",
           "version": null
         }
       },

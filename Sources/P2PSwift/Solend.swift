@@ -21,7 +21,7 @@ public protocol Solend {
     /// - Parameters:
     ///   - owner: user's wallet address
     ///   - poolAddress: lending market address
-    func getUserDeposits(owner: String, poolAddress: String) async throws -> [SolendUserDeposit]
+    func getUserDeposits(owner: String, pool: String) async throws -> [SolendUserDeposit]
 
     /// Fetch user deposit for symbol
     ///
@@ -36,6 +36,7 @@ public protocol Solend {
     func getDepositFee(
         rpcUrl: String,
         owner: String,
+        feePayer: String,
         tokenAmount: UInt64,
         tokenSymbol: SolendSymbol
     ) async throws -> SolendDepositFee

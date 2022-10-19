@@ -68,46 +68,30 @@ public class SolendActionServiceImpl: SolendActionService {
         }
     }
 
-    public func depositFee(amount: UInt64, symbol: SolendSymbol) async throws -> SolendDepositFee {
-        let depositFee = try await solend.getDepositFee(
-            rpcUrl: rpcUrl,
-            owner: owner.publicKey.base58EncodedString,
-            tokenAmount: amount,
-            tokenSymbol: symbol
-        )
-
-        let feeRelayContext = try await feeRelayContextManager.getCurrentContext()
-        let coveredByFeeRelay = feeRelayContext.usageStatus.currentUsage < feeRelayContext.usageStatus.maxUsage
-
-        return .init(
-            fee: coveredByFeeRelay ? 0 : depositFee.fee,
-            rent: depositFee.rent
-        )
-    }
-    
     public func depositFee(amount: UInt64, symbol: SolendSymbol) async throws -> SolanaSwift.FeeAmount {
+        let feeRelayContext = try await feeRelayContextManager.getCurrentContext()
+        let coveredByFeeRelay = feeRelayContext.usageStatus.currentUsage < feeRelayContext.usageStatus.maxUsage
+
         let depositFee = try await solend.getDepositFee(
             rpcUrl: rpcUrl,
             owner: owner.publicKey.base58EncodedString,
+            feePayer: feeRelayContext.feePayerAddress.base58EncodedString,
             tokenAmount: amount,
             tokenSymbol: symbol
         )
-
-        let feeRelayContext = try await feeRelayContextManager.getCurrentContext()
-        let coveredByFeeRelay = feeRelayContext.usageStatus.currentUsage < feeRelayContext.usageStatus.maxUsage
 
         return .init(
             transaction: coveredByFeeRelay ? 0 : depositFee.fee,
             accountBalances: depositFee.rent
         )
     }
-    
-    public func withdrawFee(amount: UInt64, symbol: SolendSymbol) async throws -> SolanaSwift.FeeAmount {
+
+    public func withdrawFee(amount _: UInt64, symbol _: SolendSymbol) async throws -> SolanaSwift.FeeAmount {
         let feeRelayContext = try await feeRelayContextManager.getCurrentContext()
         let coveredByFeeRelay = feeRelayContext.usageStatus.currentUsage < feeRelayContext.usageStatus.maxUsage
 
         return .init(
-            transaction: coveredByFeeRelay ? 0 : feeRelayContext.lamportsPerSignature,
+            transaction: coveredByFeeRelay ? 0 : feeRelayContext.lamportsPerSignature * 2,
             accountBalances: 0
         )
     }
@@ -121,8 +105,7 @@ public class SolendActionServiceImpl: SolendActionService {
             try await check()
 
             let feeRelayContext = try await feeRelayContextManager.getCurrentContext()
-            let useRelay = feeRelayContext.usageStatus.currentUsage < feeRelayContext.usageStatus.maxUsage
-            let feePayerAddress: PublicKey = try useRelay ? feeRelayContext.feePayerAddress : owner.publicKey
+            let feePayerAddress: PublicKey = feeRelayContext.feePayerAddress
 
             let transactionsRaw: [SolanaSerializedTransaction] = try await solend.createDepositTransaction(
                 solanaRpcUrl: rpcUrl,
@@ -136,7 +119,7 @@ public class SolendActionServiceImpl: SolendActionService {
                 freeTransactionsCount: UInt32(
                     feeRelayContext.usageStatus.maxUsage - feeRelayContext.usageStatus.currentUsage
                 ),
-                needToUseRelay: useRelay,
+                needToUseRelay: true,
                 payInFeeToken: nil,
                 feePayerAddress: feePayerAddress.base58EncodedString
             )
@@ -149,32 +132,14 @@ public class SolendActionServiceImpl: SolendActionService {
                 symbol: symbol
             )
 
-            if useRelay {
-                let depositFee = try await solend.getDepositFee(
-                    rpcUrl: rpcUrl,
-                    owner: owner.publicKey.base58EncodedString,
-                    tokenAmount: amount,
-                    tokenSymbol: symbol
-                )
-
-                var transactionFee = depositFee.fee
-                let rentExemption = depositFee.rent
-                if useRelay { transactionFee += feeRelayContext.lamportsPerSignature }
-
-                try await relay(
-                    transactionsRaw: transactionsRaw,
-                    feeRelayContext: feeRelayContext,
-                    fee: .init(transaction: transactionFee, accountBalances: rentExemption),
-                    feePayer: feePayer,
-                    initialAction: initialAction
-                )
-            } else {
-                try await submitTransaction(
-                    transactionsRaw: transactionsRaw,
-                    initialAction: initialAction
-                )
-            }
-
+            let depositFee = try await depositFee(amount: amount, symbol: symbol)
+            try await relay(
+                transactionsRaw: transactionsRaw,
+                feeRelayContext: feeRelayContext,
+                fee: depositFee,
+                feePayer: feePayer,
+                initialAction: initialAction
+            )
         } catch {
             currentActionSubject.send(.init(
                 type: .deposit,
@@ -196,8 +161,7 @@ public class SolendActionServiceImpl: SolendActionService {
             try await check()
 
             let feeRelayContext = try await feeRelayContextManager.getCurrentContext()
-            let needToUseRelay = feeRelayContext.usageStatus.currentUsage < feeRelayContext.usageStatus.maxUsage
-            let feePayerAddress: PublicKey = try needToUseRelay ? feeRelayContext.feePayerAddress : owner.publicKey
+            let feePayerAddress: PublicKey = feeRelayContext.feePayerAddress
 
             let transactionsRaw: [SolanaSerializedTransaction] = try await solend.createWithdrawTransaction(
                 solanaRpcUrl: rpcUrl,
@@ -211,7 +175,7 @@ public class SolendActionServiceImpl: SolendActionService {
                 freeTransactionsCount: UInt32(
                     feeRelayContext.usageStatus.maxUsage - feeRelayContext.usageStatus.currentUsage
                 ),
-                needToUseRelay: needToUseRelay,
+                needToUseRelay: true,
                 payInFeeToken: nil,
                 feePayerAddress: feePayerAddress.base58EncodedString
             )
@@ -223,20 +187,15 @@ public class SolendActionServiceImpl: SolendActionService {
                 amount: amount,
                 symbol: symbol
             )
-            if needToUseRelay {
-                try await relay(
-                    transactionsRaw: transactionsRaw,
-                    feeRelayContext: feeRelayContext,
-                    fee: .init(transaction: feeRelayContext.lamportsPerSignature * 2, accountBalances: 0),
-                    feePayer: feePayer,
-                    initialAction: initialAction
-                )
-            } else {
-                try await submitTransaction(
-                    transactionsRaw: transactionsRaw,
-                    initialAction: initialAction
-                )
-            }
+
+            let withdrawFee = try await withdrawFee(amount: amount, symbol: symbol)
+            try await relay(
+                transactionsRaw: transactionsRaw,
+                feeRelayContext: feeRelayContext,
+                fee: withdrawFee,
+                feePayer: feePayer,
+                initialAction: initialAction
+            )
         } catch {
             currentActionSubject.send(.init(
                 type: .withdraw,
@@ -294,6 +253,20 @@ public class SolendActionServiceImpl: SolendActionService {
             .map { (trxData: Data) -> Transaction in
                 var trx = try Transaction.from(data: trxData)
                 try trx.sign(signers: [owner])
+
+                print("=== Transaction ===")
+                print(try trx.serialize(requiredAllSignatures: false, verifySignatures: false).base64EncodedString())
+
+                // Temporary fix for fee relay
+                if
+                    let lastInstruction = trx.instructions.last,
+                    try lastInstruction.programId == PublicKey(string: "12YKFL4mnZz6CBEGePrf293mEzueQM3h8VLPUJsKpGs9")
+                {
+                    trx.instructions.removeLast()
+                }
+
+                print(try trx.serialize(requiredAllSignatures: false, verifySignatures: false).base64EncodedString())
+
                 return trx
             }
 
@@ -324,10 +297,50 @@ public class SolendActionServiceImpl: SolendActionService {
             fee: feePayer,
             config: .init(
                 operationType: .other,
-                autoPayback: false
+                autoPayback: true
             )
         )
         ids.append(contentsOf: transactionsIDs)
+
+        // Listen last transaction
+        guard let primaryTrxId = ids.last else { throw SolanaError.unknown }
+        Task.detached(priority: .utility) { [self] in
+            try await listenTransactionStatus(
+                transactionID: primaryTrxId,
+                initialAction: initialAction
+            )
+        }
+    }
+
+    func directRelay(
+        transactionsRaw: [SolanaSerializedTransaction],
+        fee: FeeAmount,
+        initialAction: SolendAction
+    ) async throws {
+        // Sign transactions
+        let transactions: [Transaction] = try transactionsRaw
+            .map { (trx: String) -> Data in Data(Base58.decode(trx)) }
+            .map { (trxData: Data) -> Transaction in
+                var trx = try Transaction.from(data: trxData)
+                try trx.sign(signers: [owner])
+                return trx
+            }
+
+        // Prepare transaction
+        let preparedTransactions = try transactions.map { (trx: Transaction) -> PreparedTransaction in
+            PreparedTransaction(
+                transaction: trx,
+                signers: [try owner],
+                expectedFee: fee
+            )
+        }
+
+        // Relay transaction
+        guard
+            let preparedTransaction = preparedTransactions.first,
+            transactions.count == 1
+        else { throw SolendActionError.expectedOneTransaction }
+        let ids = [try await feeRelay.relayTransaction(preparedTransaction)]
 
         // Listen last transaction
         guard let primaryTrxId = ids.last else { throw SolanaError.unknown }

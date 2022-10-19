@@ -23,7 +23,7 @@ public class SolendDataServiceImpl: SolendDataService {
     private var lendingMark: String
     private let cache: SolendCache
 
-    private let allowedSymbols = ["SOL", "USDC", "USDT", "ETH", "BTC"]
+    private let allowedSymbols = ["USDC", "USDT", "ETH"]
 
     // Subjects
     private let errorSubject: CurrentValueSubject<Error?, Never> = .init(nil)
@@ -210,7 +210,7 @@ public class SolendDataServiceImpl: SolendDataService {
         do {
             let userDeposits = try await solend.getUserDeposits(
                 owner: owner.publicKey.base58EncodedString,
-                poolAddress: lendingMark
+                pool: "main"
             )
             depositsSubject.send(userDeposits)
         } catch {
@@ -224,7 +224,7 @@ public class SolendDataServiceImpl: SolendDataService {
             default:
                 break
             }
-            
+
             // Throw error
             depositsSubject.send(nil)
             errorSubject.send(error)
