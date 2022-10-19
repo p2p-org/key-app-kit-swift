@@ -144,7 +144,7 @@ public class NameServiceImpl: NameService {
         return response.result ?? []
     }
 
-    private func createURLRequest(with body: Encodable) throws -> URLRequest {
+    private func createURLRequest<T: Encodable>(with body: JSONRPCRequest<T>) throws -> URLRequest {
         guard let url = URL(string: endpoint) else { throw UndefinedNameServiceError.unknown }
         var urlRequest = URLRequest(url: url)
         urlRequest.httpMethod = "POST"
