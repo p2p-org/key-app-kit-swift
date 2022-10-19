@@ -160,16 +160,9 @@ public class SolendDataServiceImpl: SolendDataService {
                             )
                     case "SOL":
                         return asset.copy(name: "Solana")
-                    default: asset
-                    }
-                    if asset.symbol == "USDT" {
+                    default:
                         return asset
-                            .copy(
-                                logo: "https://raw.githubusercontent.com/solana-labs/token-list/main/assets/mainnet/BQcdHdAQW1hczDbBi9hiegXAR7A98Q9jx3X3iBBBDiq4/logo.png"
-                            )
                     }
-
-                    return asset
                 }
 
             if availableAssetsSubject.value != filteredAssets {

@@ -7,7 +7,7 @@ import P2PSwift
 
 public typealias SolendSymbol = P2PSwift.SolendSymbol
 public typealias SolendUserDeposit = P2PSwift.SolendUserDeposit
-public typealias SolendDepositFee = P2PSwift.SolendDepositFee
+public typealias SolendDepositFee = P2PSwift.SolendFee
 public typealias SolendConfigAsset = P2PSwift.SolendConfigAsset
 
 public struct SolendMarketInfo: Codable, Hashable {

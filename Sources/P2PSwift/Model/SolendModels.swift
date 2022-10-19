@@ -43,13 +43,15 @@ public struct SolendUserDeposit: Codable, Hashable, Equatable {
     }
 }
 
-public struct SolendDepositFee: Codable, Equatable {
+public struct SolendFee: Codable, Equatable {
     public let fee: UInt64
     public let rent: UInt64
+    public let reserve: UInt64
     
-    public init(fee: UInt64, rent: UInt64) {
+    public init(fee: UInt64, rent: UInt64, reserve: UInt64) {
         self.fee = fee
         self.rent = rent
+        self.reserve = reserve
     }
 }
 

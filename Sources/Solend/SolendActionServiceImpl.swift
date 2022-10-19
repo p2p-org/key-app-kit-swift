@@ -86,13 +86,21 @@ public class SolendActionServiceImpl: SolendActionService {
         )
     }
 
-    public func withdrawFee(amount _: UInt64, symbol _: SolendSymbol) async throws -> SolanaSwift.FeeAmount {
+    public func withdrawFee(amount: UInt64, symbol: SolendSymbol) async throws -> SolanaSwift.FeeAmount {
         let feeRelayContext = try await feeRelayContextManager.getCurrentContext()
         let coveredByFeeRelay = feeRelayContext.usageStatus.currentUsage < feeRelayContext.usageStatus.maxUsage
 
+        let withdrawFee = try await solend.getWithdrawFee(
+            rpcUrl: rpcUrl,
+            owner: owner.publicKey.base58EncodedString,
+            feePayer: feeRelayContext.feePayerAddress.base58EncodedString,
+            tokenAmount: amount,
+            tokenSymbol: symbol
+        )
+
         return .init(
-            transaction: coveredByFeeRelay ? 0 : feeRelayContext.lamportsPerSignature * 2,
-            accountBalances: 0
+            transaction: coveredByFeeRelay ? 0 : withdrawFee.fee,
+            accountBalances: withdrawFee.rent
         )
     }
 
@@ -208,38 +216,6 @@ public class SolendActionServiceImpl: SolendActionService {
         }
     }
 
-    func submitTransaction(
-        transactionsRaw: [SolanaSerializedTransaction],
-        initialAction: SolendAction
-    ) async throws {
-        var ids: [String] = []
-
-        // Sign transactions
-        let transactions: [Transaction] = try transactionsRaw
-            .map { (trx: String) -> Data in Data(Base58.decode(trx)) }
-            .map { (trxData: Data) -> Transaction in
-                var trx = try Transaction.from(data: trxData)
-                try trx.sign(signers: [owner])
-                return trx
-            }
-
-        for var transaction in transactions {
-            let transactionID = try await solana.sendTransaction(
-                transaction: try transaction.serialize().base64EncodedString(),
-                configs: RequestConfiguration(encoding: "base64")!
-            )
-            ids.append(transactionID)
-        }
-        // Listen last transaction
-        guard let primaryTrxId = ids.last else { throw SolanaError.unknown }
-        Task.detached(priority: .utility) { [self] in
-            try await listenTransactionStatus(
-                transactionID: primaryTrxId,
-                initialAction: initialAction
-            )
-        }
-    }
-
     func relay(
         transactionsRaw: [SolanaSerializedTransaction],
         feeRelayContext: FeeRelayerContext,
@@ -253,20 +229,6 @@ public class SolendActionServiceImpl: SolendActionService {
             .map { (trxData: Data) -> Transaction in
                 var trx = try Transaction.from(data: trxData)
                 try trx.sign(signers: [owner])
-
-                print("=== Transaction ===")
-                print(try trx.serialize(requiredAllSignatures: false, verifySignatures: false).base64EncodedString())
-
-                // Temporary fix for fee relay
-                if
-                    let lastInstruction = trx.instructions.last,
-                    try lastInstruction.programId == PublicKey(string: "12YKFL4mnZz6CBEGePrf293mEzueQM3h8VLPUJsKpGs9")
-                {
-                    trx.instructions.removeLast()
-                }
-
-                print(try trx.serialize(requiredAllSignatures: false, verifySignatures: false).base64EncodedString())
-
                 return trx
             }
 
@@ -297,50 +259,10 @@ public class SolendActionServiceImpl: SolendActionService {
             fee: feePayer,
             config: .init(
                 operationType: .other,
-                autoPayback: true
+                autoPayback: false
             )
         )
         ids.append(contentsOf: transactionsIDs)
-
-        // Listen last transaction
-        guard let primaryTrxId = ids.last else { throw SolanaError.unknown }
-        Task.detached(priority: .utility) { [self] in
-            try await listenTransactionStatus(
-                transactionID: primaryTrxId,
-                initialAction: initialAction
-            )
-        }
-    }
-
-    func directRelay(
-        transactionsRaw: [SolanaSerializedTransaction],
-        fee: FeeAmount,
-        initialAction: SolendAction
-    ) async throws {
-        // Sign transactions
-        let transactions: [Transaction] = try transactionsRaw
-            .map { (trx: String) -> Data in Data(Base58.decode(trx)) }
-            .map { (trxData: Data) -> Transaction in
-                var trx = try Transaction.from(data: trxData)
-                try trx.sign(signers: [owner])
-                return trx
-            }
-
-        // Prepare transaction
-        let preparedTransactions = try transactions.map { (trx: Transaction) -> PreparedTransaction in
-            PreparedTransaction(
-                transaction: trx,
-                signers: [try owner],
-                expectedFee: fee
-            )
-        }
-
-        // Relay transaction
-        guard
-            let preparedTransaction = preparedTransactions.first,
-            transactions.count == 1
-        else { throw SolendActionError.expectedOneTransaction }
-        let ids = [try await feeRelay.relayTransaction(preparedTransaction)]
 
         // Listen last transaction
         guard let primaryTrxId = ids.last else { throw SolanaError.unknown }
