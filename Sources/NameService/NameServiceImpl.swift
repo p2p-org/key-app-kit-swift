@@ -164,9 +164,6 @@ public class NameServiceImpl: NameService {
             throw UndefinedNameServiceError.unknown
         }
 
-        debugPrint(String(data: request.httpBody!, encoding: .utf8))
-        debugPrint(String(data: data, encoding: .utf8))
-
         try Task.checkCancellation()
         switch response.statusCode {
         case 200 ... 299:
