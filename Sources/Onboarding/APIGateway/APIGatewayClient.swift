@@ -4,6 +4,10 @@
 
 import Foundation
 
+public struct APIGatewayCooldownError: Error {
+    let cooldown: TimeInterval
+}
+
 public enum APIGatewayError: Int, Error, CaseIterable {
     case invalidOTP = -32061
     case wait10Min = -32053
@@ -41,7 +45,7 @@ public enum APIGatewayChannel: String, Codable {
     case call
 }
 
-public struct RestoreWalletResult: Codable, Equatable {
+public struct APIGatewayRestoreWalletResult: Codable, Equatable {
     let solanaPublicKey: String
     let ethereumId: String
     let encryptedShare: String
@@ -134,7 +138,7 @@ public protocol APIGatewayClient {
         phone: String,
         otpCode: String,
         timestampDevice: Date
-    ) async throws -> RestoreWalletResult
+    ) async throws -> APIGatewayRestoreWalletResult
 
     func isValidOTPFormat(code: String) -> Bool
 }

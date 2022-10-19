@@ -14,9 +14,9 @@ public enum RestoreCustomResult: Codable, Equatable {
         ethPublicKey: String,
         metadata: WalletMetaData?
     )
-    case requireSocialCustom(result: RestoreWalletResult)
-    case requireSocialDevice(provider: SocialProvider)
-    case expiredSocialTryAgain(result: RestoreWalletResult, provider: SocialProvider, email: String)
+    case requireSocialCustom(result: APIGatewayRestoreWalletResult)
+    case requireSocialDevice(provider: SocialProvider, result: APIGatewayRestoreWalletResult?)
+    case expiredSocialTryAgain(result: APIGatewayRestoreWalletResult, provider: SocialProvider, email: String)
     case start
     case breakProcess
 }
@@ -53,9 +53,9 @@ public enum RestoreCustomState: Codable, State, Equatable {
     case otpNotDeliveredTrySocial(phone: String, code: Int)
     case otpNotDelivered(phone: String, code: Int)
     case noMatch
-    case notFoundDevice
+    case notFoundDevice(result: APIGatewayRestoreWalletResult)
     case tryAnother(wrongNumber: String, trySocial: Bool)
-    case expiredSocialTryAgain(result: RestoreWalletResult, social: RestoreSocialData)
+    case expiredSocialTryAgain(result: APIGatewayRestoreWalletResult, social: RestoreSocialData)
     case broken(code: Int)
     case block(until: Date, social: RestoreSocialData?, reason: PhoneFlowBlockReason)
     case finish(result: RestoreCustomResult)
@@ -87,13 +87,19 @@ public enum RestoreCustomState: Codable, State, Equatable {
                 }
 
                 let solPrivateKey = try NaclSign.KeyPair.keyPair().secretKey
-                return try await sendOTP(
-                    phone: phone,
-                    solPrivateKey: solPrivateKey,
-                    social: social,
-                    attempt: .init(.zero()),
-                    provider: provider
-                )
+
+                do {
+                    return try await sendOTP(
+                        phone: phone,
+                        solPrivateKey: solPrivateKey,
+                        social: social,
+                        attempt: .init(.zero()),
+                        provider: provider
+                    )
+                }
+                catch let error as APIGatewayCooldownError {
+                    return .block(until: Date() + error.cooldown, social: social, reason: .blockEnterPhoneNumber)
+                }
 
             case .back:
                 return .finish(result: .breakProcess)
@@ -113,11 +119,9 @@ public enum RestoreCustomState: Codable, State, Equatable {
                         timestampDevice: Date()
                     )
 
-                    if let tokenID = social?.tokenID, !provider.authService.isExpired(token: tokenID.value),
-                       let deviceShare = provider.deviceShare
-                    {
+                    if let torusKey = social?.torusKey, let deviceShare = provider.deviceShare {
                         return try await restore(
-                            with: tokenID,
+                            with: torusKey,
                             customShare: result.encryptedShare,
                             encryptedMetadata: result.encryptedMetaData,
                             encryptedMnemonic: result.encryptedPayload,
@@ -149,10 +153,10 @@ public enum RestoreCustomState: Codable, State, Equatable {
                                 )
                             )
                         } catch {
-                            if let social = social, provider.authService.isExpired(token: social.tokenID.value) {
+                            if let social = social {
                                 return .expiredSocialTryAgain(result: result, social: social)
                             } else if provider.deviceShare != nil, (error as? TKeyFacadeError)?.code == 1009 {
-                                return .notFoundDevice
+                                return .notFoundDevice(result: result)
                             } else {
                                 return .noMatch
                             }
@@ -164,31 +168,28 @@ public enum RestoreCustomState: Codable, State, Equatable {
                     switch error._code {
                     case -32700, -32600, -32601, -32602, -32603, -32052:
                         return .broken(code: error.rawValue)
-                    case -32053:
-                        return .block(until: Date() + blockTime, social: social, reason: .blockEnterOTP)
                     default:
                         throw error
                     }
+                } catch let error as APIGatewayCooldownError {
+                    return .block(until: Date() + error.cooldown, social: social, reason: .blockEnterOTP)
                 }
 
             case .resendOTP:
-                if attempt.value.attempt == 4 {
-                    return .block(
-                        until: Date() + blockTime,
+                do {
+                    let state = try await sendOTP(
+                        phone: phone,
+                        solPrivateKey: solPrivateKey,
                         social: social,
-                        reason: .blockEnterOTP
+                        attempt: attempt,
+                        provider: provider
                     )
+                    attempt.value = attempt.value.incremented()
+                    return state
                 }
-                attempt.value.attempt = attempt.value.attempt + 1
-                attempt.value.until = Date().addingTimeInterval(EnterSMSCodeCountdownLegs[attempt.value.attempt])
-
-                return try await sendOTP(
-                    phone: phone,
-                    solPrivateKey: solPrivateKey,
-                    social: social,
-                    attempt: attempt,
-                    provider: provider
-                )
+                catch let error as APIGatewayCooldownError {
+                    return .block(until: Date() + error.cooldown, social: social, reason: .blockResend)
+                }
 
             case .back:
                 return .enterPhone(
@@ -214,7 +215,7 @@ public enum RestoreCustomState: Codable, State, Equatable {
                     social: nil
                 )
             case let .requireSocial(provider):
-                return .finish(result: .requireSocialDevice(provider: provider))
+                return .finish(result: .requireSocialDevice(provider: provider, result: nil))
             case .start:
                 return .finish(result: .start)
             default:
@@ -241,7 +242,7 @@ public enum RestoreCustomState: Codable, State, Equatable {
                 )
             case let .requireSocial(provider):
                 if trySocial {
-                    return .finish(result: .requireSocialDevice(provider: provider))
+                    return .finish(result: .requireSocialDevice(provider: provider, result: nil))
                 } else {
                     throw StateMachineError.invalidEvent
                 }
@@ -278,7 +279,7 @@ public enum RestoreCustomState: Codable, State, Equatable {
                 throw StateMachineError.invalidEvent
             }
 
-        case .notFoundDevice:
+        case let .notFoundDevice(result):
             switch event {
             case .enterPhone:
                 return .enterPhone(
@@ -289,7 +290,7 @@ public enum RestoreCustomState: Codable, State, Equatable {
                     social: nil
                 )
             case let .requireSocial(provider):
-                return .finish(result: .requireSocialDevice(provider: provider))
+                return .finish(result: .requireSocialDevice(provider: provider, result: result))
             case .start:
                 return .finish(result: .start)
             default:
@@ -305,7 +306,7 @@ public enum RestoreCustomState: Codable, State, Equatable {
     }
 
     private func restore(
-        with tokenID: TokenID,
+        with torusKey: TorusKey,
         customShare: String,
         encryptedMetadata: String,
         encryptedMnemonic: String,
@@ -315,7 +316,7 @@ public enum RestoreCustomState: Codable, State, Equatable {
         do {
             try await tKey.initialize()
             let finalResult = try await tKey.signIn(
-                tokenID: tokenID,
+                torusKey: torusKey,
                 customShare: customShare,
                 encryptedMnemonic: encryptedMnemonic
             )
@@ -380,8 +381,6 @@ public enum RestoreCustomState: Codable, State, Equatable {
                 } else {
                     return .otpNotDelivered(phone: phone, code: error.rawValue)
                 }
-            case -32053:
-                return .block(until: Date() + blockTime, social: social, reason: .blockEnterPhoneNumber)
 
             default:
                 throw error

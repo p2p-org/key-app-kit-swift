@@ -75,7 +75,6 @@ public class SerumSwapParseStrategy: TransactionParseStrategy {
     var toAmount: Lamports?
 
     // from amount
-    print(innerInstruction)
     if let instruction = innerInstruction?.instructions
       .first(where: { $0.parsed?.type == "transfer" }),
       let amountString = instruction.parsed?.info.amount,

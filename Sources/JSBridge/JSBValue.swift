@@ -101,8 +101,6 @@ public class JSBValue: JSBridge, CustomStringConvertible {
                  0;
                 """
 
-                print(script)
-
                 await context.wkWebView.evaluateJavaScript(script) { _, error in
                     guard let error = error else { return }
                     Task { try await context.promiseDispatchTable.resolveWithError(for: id, error: error) }
@@ -115,7 +113,6 @@ public class JSBValue: JSBridge, CustomStringConvertible {
     public func invokeNew(withArguments args: [CustomStringConvertible]) async throws -> JSBValue {
         let context = try await getContext()
         let result = JSBValue(in: context)
-        debugPrint("\(result.name) = new \(name)(\(try parseArgs(args)));")
         try await context.evaluate("\(result.name) = new \(name)(\(try parseArgs(args)));")
         return result
     }

@@ -15,6 +15,11 @@ struct JSONRPCResponse<T: Codable>: Codable {
 struct JSONRPCError: Codable {
     let code: Int
     let message: String
+    let data: ErrorData?
+
+    struct ErrorData: Codable {
+        let cooldown_ttl: TimeInterval?
+    }
 }
 
 struct JSONRPCRequest<T: Codable>: Codable {

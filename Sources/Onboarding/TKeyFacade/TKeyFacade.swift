@@ -5,9 +5,11 @@
 public protocol TKeyFacade {
     func initialize() async throws
     
-    func signUp(tokenID: TokenID, privateInput: String) async throws -> SignUpResult
-    func signIn(tokenID: TokenID, deviceShare: String) async throws -> SignInResult
-    func signIn(tokenID: TokenID, customShare: String, encryptedMnemonic: String) async throws -> SignInResult
+    func obtainTorusKey(tokenID: TokenID) async throws -> TorusKey
+    
+    func signUp(torusKey: TorusKey, privateInput: String) async throws -> SignUpResult
+    func signIn(torusKey: TorusKey, deviceShare: String) async throws -> SignInResult
+    func signIn(torusKey: TorusKey, customShare: String, encryptedMnemonic: String) async throws -> SignInResult
     func signIn(deviceShare: String, customShare: String, encryptedMnemonic: String) async throws -> SignInResult
 }
 

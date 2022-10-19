@@ -115,7 +115,7 @@ public class SolendActionServiceImpl: SolendActionService {
             let feeRelayContext = try await feeRelayContextManager.getCurrentContext()
             let feePayerAddress: PublicKey = feeRelayContext.feePayerAddress
 
-            let transactionsRaw: [SolanaSerializedTransaction] = try await solend.createDepositTransaction(
+            let transactionsRaw: [SolanaRawTransaction] = try await solend.createDepositTransaction(
                 solanaRpcUrl: rpcUrl,
                 relayProgramId: RelayProgram.id(network: .mainnetBeta).base58EncodedString,
                 amount: amount,
@@ -171,7 +171,7 @@ public class SolendActionServiceImpl: SolendActionService {
             let feeRelayContext = try await feeRelayContextManager.getCurrentContext()
             let feePayerAddress: PublicKey = feeRelayContext.feePayerAddress
 
-            let transactionsRaw: [SolanaSerializedTransaction] = try await solend.createWithdrawTransaction(
+            let transactionsRaw: [SolanaRawTransaction] = try await solend.createWithdrawTransaction(
                 solanaRpcUrl: rpcUrl,
                 relayProgramId: RelayProgram.id(network: .mainnetBeta).base58EncodedString,
                 amount: amount,
@@ -217,7 +217,7 @@ public class SolendActionServiceImpl: SolendActionService {
     }
 
     func relay(
-        transactionsRaw: [SolanaSerializedTransaction],
+        transactionsRaw: [SolanaRawTransaction],
         feeRelayContext: FeeRelayerContext,
         fee: FeeAmount,
         feePayer: FeeRelayerSwift.TokenAccount?,

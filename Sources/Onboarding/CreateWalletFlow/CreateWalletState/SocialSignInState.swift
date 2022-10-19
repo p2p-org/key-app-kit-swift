@@ -69,12 +69,15 @@ public enum SocialSignInState: Codable, State, Equatable {
     ) async throws -> Self {
         switch event {
         case let .signIn(socialProvider):
-            let (tokenID, email) = try await provider.authService.auth(type: socialProvider)
+            let (value, email) = try await provider.authService.auth(type: socialProvider)
+            let tokenID = TokenID(value: value, provider: socialProvider.rawValue)
+            
             do {
                 try await provider.tKeyFacade.initialize()
+                let torusKey = try await provider.tKeyFacade.obtainTorusKey(tokenID: tokenID)
                 let result = try await provider.tKeyFacade
                     .signUp(
-                        tokenID: .init(value: tokenID, provider: socialProvider.rawValue),
+                        torusKey: torusKey,
                         privateInput: Mnemonic().phrase.joined(separator: " ")
                     )
 
@@ -112,12 +115,14 @@ public enum SocialSignInState: Codable, State, Equatable {
     ) async throws -> Self {
         switch event {
         case let .signIn(socialProvider):
-            let (tokenID, email) = try await provider.authService.auth(type: socialProvider)
+            let (value, email) = try await provider.authService.auth(type: socialProvider)
+            let tokenID = TokenID(value: value, provider: socialProvider.rawValue)
             do {
+                let torusKey = try await provider.tKeyFacade.obtainTorusKey(tokenID: tokenID)
                 let result = try await provider
                     .tKeyFacade
                     .signUp(
-                        tokenID: .init(value: tokenID, provider: socialProvider.rawValue),
+                        torusKey: torusKey,
                         privateInput: Mnemonic().phrase.joined(separator: " ")
                     )
 

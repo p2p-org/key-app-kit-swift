@@ -4,7 +4,7 @@
 
 import Foundation
 
-public typealias SolanaSerializedTransaction = String
+public typealias SolanaRawTransaction = String
 public typealias SolendSymbol = String
 
 public enum SolendEnvironment: String {

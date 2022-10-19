@@ -36,18 +36,6 @@ public struct BindingPhoneNumberData: Codable, Equatable {
     var sendingThrottle: Throttle = .init(maxAttempt: 5, timeInterval: 60 * 10)
 }
 
-/// Resend timer interval
-let EnterSMSCodeCountdownLegs: [TimeInterval] = [30, 40, 60, 90, 120]
-
-public struct ResendCounter: Codable, Equatable {
-    public internal(set) var attempt: Int
-    public internal(set) var until: Date
-
-    static func zero() -> Self {
-        .init(attempt: 0, until: Date().addingTimeInterval(EnterSMSCodeCountdownLegs[0]))
-    }
-}
-
 public enum BindingPhoneNumberState: Codable, State, Equatable {
     public typealias Event = BindingPhoneNumberEvent
     public typealias Provider = APIGatewayClient
@@ -127,33 +115,26 @@ public enum BindingPhoneNumberState: Codable, State, Equatable {
                     )
 
                     return .enterOTP(
-                        resendCounter: .init(
-                            .init(
-                                attempt: 0,
-                                until: Date().addingTimeInterval(TimeInterval(EnterSMSCodeCountdownLegs[0]))
-                            )
-                        ),
+                        resendCounter: .init(.zero()),
                         channel: channel,
                         phoneNumber: phoneNumber,
                         data: data
                     )
                 } catch let error as APIGatewayError {
                     switch error._code {
-                    // case -32056:
-                    //     return .finish(.success)
                     case -32058, -32700, -32600, -32601, -32602, -32603, -32052:
                         return .broken(code: error._code)
-                    case -32053:
-                        data.sendingThrottle.reset()
-                        return .block(
-                            until: Date() + blockTime,
-                            reason: .blockEnterPhoneNumber,
-                            phoneNumber: phoneNumber,
-                            data: data
-                        )
                     default:
                         throw error
                     }
+                } catch let error as APIGatewayCooldownError {
+                    data.sendingThrottle.reset()
+                    return .block(
+                        until: Date() + error.cooldown,
+                        reason: .blockEnterPhoneNumber,
+                        phoneNumber: phoneNumber,
+                        data: data
+                    )
                 }
             default:
                 throw StateMachineError.invalidEvent
@@ -187,52 +168,53 @@ public enum BindingPhoneNumberState: Codable, State, Equatable {
                     )
                 } catch let error as APIGatewayError {
                     switch error._code {
-                    // case -32056:
-                    //     return .finish(.success)
                     case -32058, -32700, -32600, -32601, -32602, -32603, -32052:
                         return .broken(code: error._code)
-                    case -32053:
-                        return .block(
-                            until: Date() + blockTime,
-                            reason: .blockEnterOTP,
-                            phoneNumber: phoneNumber,
-                            data: data
-                        )
                     default:
                         throw error
                     }
-                }
-
-                return .finish(.success(metadata: metaData))
-            case .resendOTP:
-                if resendCounter.value.attempt >= 4 {
+                } catch let error as APIGatewayCooldownError {
                     return .block(
-                        until: Date() + blockTime,
-                        reason: .blockResend,
+                        until: Date() + error.cooldown,
+                        reason: .blockEnterOTP,
                         phoneNumber: phoneNumber,
                         data: data
                     )
                 }
 
-                resendCounter.value.attempt = resendCounter.value.attempt + 1
-                resendCounter.value.until = Date()
-                    .addingTimeInterval(EnterSMSCodeCountdownLegs[resendCounter.value.attempt])
-
+                return .finish(.success(metadata: metaData))
+            case .resendOTP:
                 let account = try await Account(
                     phrase: data.seedPhrase.components(separatedBy: " "),
                     network: .mainnetBeta,
                     derivablePath: .default
                 )
 
-                try await provider.registerWallet(
-                    solanaPrivateKey: Base58.encode(account.secretKey),
-                    ethAddress: data.ethAddress,
-                    phone: phoneNumber,
-                    channel: channel,
-                    timestampDevice: Date()
-                )
-
-                return currentState
+                do {
+                    try await provider.registerWallet(
+                        solanaPrivateKey: Base58.encode(account.secretKey),
+                        ethAddress: data.ethAddress,
+                        phone: phoneNumber,
+                        channel: channel,
+                        timestampDevice: Date()
+                    )
+                    resendCounter.value = resendCounter.value.incremented()
+                    return currentState
+                } catch let error as APIGatewayError {
+                    switch error._code {
+                    case -32058, -32700, -32600, -32601, -32602, -32603, -32052:
+                        return .broken(code: error._code)
+                    default:
+                        throw error
+                    }
+                } catch let error as APIGatewayCooldownError {
+                    return .block(
+                        until: Date() + error.cooldown,
+                        reason: .blockResend,
+                        phoneNumber: phoneNumber,
+                        data: data
+                    )
+                }
             case .back:
                 return .enterPhoneNumber(
                     initialPhoneNumber: phoneNumber,
@@ -257,14 +239,7 @@ public enum BindingPhoneNumberState: Codable, State, Equatable {
             case .blockFinish:
                 guard Date() > until else { throw StateMachineError.invalidEvent }
                 switch reason {
-                case .blockEnterPhoneNumber, .blockResend:
-                    return .enterPhoneNumber(
-                        initialPhoneNumber: phoneNumber,
-                        didSend: false,
-                        resendCounter: nil,
-                        data: data
-                    )
-                case .blockEnterOTP:
+                case .blockEnterPhoneNumber, .blockResend, .blockEnterOTP:
                     return .enterPhoneNumber(
                         initialPhoneNumber: phoneNumber,
                         didSend: false,

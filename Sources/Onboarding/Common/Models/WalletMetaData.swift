@@ -25,13 +25,16 @@ public struct WalletMetaData: Codable, Equatable {
     public func encrypt(seedPhrase: String) throws -> String {
         let metaDataJson = try JSONEncoder().encode(self)
         let encryptedMetadataRaw = try Crypto.encryptMetadata(seedPhrase: seedPhrase, data: metaDataJson)
-        return String(data: try JSONEncoder().encode(encryptedMetadataRaw), encoding: .utf8)!
+        guard let result = String(data: try JSONEncoder().encode(encryptedMetadataRaw), encoding: .utf8) else {
+            throw OnboardingError.encodingError("metadata")
+        }
+        return result
     }
 
     /// Decrypt metadata using seed phrase
     public static func decrypt(seedPhrase: String, data: String) throws -> Self {
         let encryptedMetadata = try JSONDecoder()
-            .decode(Crypto.EncryptedMetadata.self, from: Data(bytes: data.utf8))
+            .decode(Crypto.EncryptedMetadata.self, from: Data(data.utf8))
         let metadataRaw = try Crypto.decryptMetadata(
             seedPhrase: seedPhrase,
             encryptedMetadata: encryptedMetadata
