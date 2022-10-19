@@ -90,7 +90,7 @@ public class NameServiceImpl: NameService {
             params: credentials
         )
         let urlRequest = try createURLRequest(with: rpcRequest)
-        let response: KeyAppKitCore.JSONRPCResponse<CreateNameTransaction> = try await request(request: urlRequest)
+        let response: KeyAppKitCore.JSONRPCResponse<CreateNameTransaction, ErrorData> = try await request(request: urlRequest)
         if let error = response.error {
             throw NameServiceError(rawValue: error.code) ?? UndefinedNameServiceError(code: error.code)
         }
@@ -107,7 +107,7 @@ public class NameServiceImpl: NameService {
             params: GetNameRequestParams(name: name)
         )
         let urlRequest = try createURLRequest(with: rpcRequest)
-        let response: KeyAppKitCore.JSONRPCResponse<NameRecord> = try await request(request: urlRequest)
+        let response: KeyAppKitCore.JSONRPCResponse<NameRecord, ErrorData> = try await request(request: urlRequest)
         if let error = response.error, error.code == GetNameError.nameNotFound.rawValue {
             return nil
         } else if let error = response.error {
@@ -123,7 +123,7 @@ public class NameServiceImpl: NameService {
             params: GetNameRequestParams(name: name)
         )
         let urlRequest = try createURLRequest(with: rpcRequest)
-        let response: KeyAppKitCore.JSONRPCResponse<[NameRecord]> = try await request(request: urlRequest)
+        let response: KeyAppKitCore.JSONRPCResponse<[NameRecord], ErrorData> = try await request(request: urlRequest)
         if let error = response.error {
             throw NameServiceError(rawValue: error.code) ?? UndefinedNameServiceError(code: error.code)
         }
@@ -137,7 +137,7 @@ public class NameServiceImpl: NameService {
             params: LookupNameRequestParams(owner: owner)
         )
         let urlRequest = try createURLRequest(with: rpcRequest)
-        let response: KeyAppKitCore.JSONRPCResponse<[NameInfo]> = try await request(request: urlRequest)
+        let response: KeyAppKitCore.JSONRPCResponse<[NameInfo], ErrorData> = try await request(request: urlRequest)
         if let error = response.error {
             throw NameServiceError(rawValue: error.code) ?? UndefinedNameServiceError(code: error.code)
         }
@@ -163,6 +163,10 @@ public class NameServiceImpl: NameService {
             logError(event: "Invalid response code")
             throw UndefinedNameServiceError.unknown
         }
+
+        debugPrint(String(data: request.httpBody!, encoding: .utf8))
+        debugPrint(String(data: data, encoding: .utf8))
+
         try Task.checkCancellation()
         switch response.statusCode {
         case 200 ... 299:
@@ -177,3 +181,5 @@ public class NameServiceImpl: NameService {
         KeyAppKitLogger.Logger.log(event: "NameService: \(event)", message: message, logLevel: .error)
     }
 }
+
+private struct ErrorData: Codable { }

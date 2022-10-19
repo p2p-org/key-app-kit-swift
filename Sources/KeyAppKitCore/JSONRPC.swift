@@ -5,13 +5,13 @@
 import Foundation
 
 /// A generic data structure for json rpc
-public struct JSONRPCResponse<T: Codable>: Codable {
+public struct JSONRPCResponse<T: Codable, U: Codable>: Codable {
     public let id: String
     public let jsonrpc: String
     public let result: T?
-    public let error: JSONRPCError?
+    public let error: JSONRPCError<U>?
 
-    public init(id: String, jsonrpc: String, result: T?, error: JSONRPCError?) {
+    public init(id: String, jsonrpc: String, result: T?, error: JSONRPCError<U>?) {
         self.id = id
         self.jsonrpc = jsonrpc
         self.result = result
@@ -19,23 +19,15 @@ public struct JSONRPCResponse<T: Codable>: Codable {
     }
 }
 
-public struct JSONRPCError: Codable {
+public struct JSONRPCError<U: Codable>: Codable {
     public let code: Int
     public let message: String
-    public let data: ErrorData?
+    public let data: U?
 
-    public init(code: Int, message: String, data: ErrorData?) {
+    public init(code: Int, message: String, data: U?) {
         self.code = code
         self.message = message
         self.data = data
-    }
-
-    public struct ErrorData: Codable {
-        public let cooldown_ttl: TimeInterval?
-
-        public init(cooldown_ttl: TimeInterval?) {
-            self.cooldown_ttl = cooldown_ttl
-        }
     }
 }
 
