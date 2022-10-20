@@ -82,7 +82,7 @@ public class SolendActionServiceImpl: SolendActionService {
 
         return .init(
             transaction: coveredByFeeRelay ? 0 : depositFee.fee,
-            accountBalances: depositFee.rent
+            accountBalances: depositFee.rent + depositFee.reserve
         )
     }
 
@@ -100,7 +100,7 @@ public class SolendActionServiceImpl: SolendActionService {
 
         return .init(
             transaction: coveredByFeeRelay ? 0 : withdrawFee.fee,
-            accountBalances: withdrawFee.rent
+            accountBalances: withdrawFee.rent + withdrawFee.reserve
         )
     }
 
