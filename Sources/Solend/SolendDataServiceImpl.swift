@@ -23,7 +23,7 @@ public class SolendDataServiceImpl: SolendDataService {
     private var lendingMark: String
     private let cache: SolendCache
 
-    private let allowedSymbols = ["USDC", "USDT", "ETH"]
+    private let allowedSymbols = ["USDC", "USDT"]
 
     // Subjects
     private let errorSubject: CurrentValueSubject<Error?, Never> = .init(nil)
