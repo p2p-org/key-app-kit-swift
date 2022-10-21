@@ -6,8 +6,8 @@
         "repositoryURL": "https://github.com/amplitude/Amplitude-iOS",
         "state": {
           "branch": null,
-          "revision": "e135cfe3b4fc13fbf17e7e475b8d0053aa44eeec",
-          "version": "8.10.0"
+          "revision": "483ec5c74b50f0d483013fc910fe890ec34e54d2",
+          "version": "8.14.0"
         }
       },
       {
@@ -29,12 +29,21 @@
         }
       },
       {
-        "package": "LoggerSwift",
-        "repositoryURL": "https://github.com/bigearsenal/loggerswift.git",
+        "package": "FeeRelayerSwift",
+        "repositoryURL": "https://github.com/p2p-org/FeeRelayerSwift",
+        "state": {
+          "branch": "feature/replay-raw-transaction",
+          "revision": "6420ec56142ff8059c0288970ab3880e837a7e75",
+          "version": null
+        }
+      },
+      {
+        "package": "OrcaSwapSwift",
+        "repositoryURL": "https://github.com/p2p-org/OrcaSwapSwift.git",
         "state": {
           "branch": null,
-          "revision": "779dbd11a9a2fea3c82943f69a30ca75f4596fc8",
-          "version": "1.0.2"
+          "revision": "59711b2ee5272acc1cc7e8f2f0c325e985ba5415",
+          "version": "2.1.1"
         }
       },
       {
@@ -42,8 +51,8 @@
         "repositoryURL": "https://github.com/Boilertalk/secp256k1.swift.git",
         "state": {
           "branch": null,
-          "revision": "45e458ec3be46cf0a6eb68bc947f797852dc65d8",
-          "version": "0.1.6"
+          "revision": "cd187c632fb812fd93711a9f7e644adb7e5f97f0",
+          "version": "0.1.7"
         }
       },
       {
@@ -51,8 +60,8 @@
         "repositoryURL": "https://github.com/p2p-org/solana-swift",
         "state": {
           "branch": null,
-          "revision": "ffa9ff6910a5c7afb8b5a169d18485d7cb5b9fd9",
-          "version": "2.1.4"
+          "revision": "e81c9a94e9e7b3b08d3dd67a57db4e482a04e042",
+          "version": "2.5.1"
         }
       },
       {

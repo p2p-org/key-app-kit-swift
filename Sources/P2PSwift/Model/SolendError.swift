@@ -8,4 +8,5 @@ public enum SolendError: Error {
     case invalidJson
     case decodingException
     case message(String)
+    case noResult
 }
