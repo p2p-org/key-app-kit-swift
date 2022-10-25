@@ -30,17 +30,10 @@ public class P2POrcaSwapWrapperParseStrategy: TransactionParseStrategy {
         _ transactionInfo: TransactionInfo,
         config configuration: Configuration
     ) async throws -> AnyHashable? {
-        let innerInstructions = transactionInfo.meta?.innerInstructions
-
-        switch true {
-        case isLiquidityToPool(innerInstructions: innerInstructions): return nil
-        case isBurn(innerInstructions: innerInstructions): return nil
-        default:
-            return try await _parse(
-                transactionInfo: transactionInfo,
-                config: configuration
-            )
-        }
+        try await _parse(
+            transactionInfo: transactionInfo,
+            config: configuration
+        )
     }
 
     func _parse(
@@ -93,15 +86,6 @@ public class P2POrcaSwapWrapperParseStrategy: TransactionParseStrategy {
             destinationAmount: destinationChange,
             accountSymbol: config.symbolView
         )
-
-        // return SwapInfo(
-        //     source: sourceWallet,
-        //     sourceAmount: sourceAmountLamports?.convertToBalance(decimals: sourceWallet.token.decimals),
-        //     destination: destinationWallet,
-        //     destinationAmount: destinationAmountLamports?
-        //         .convertToBalance(decimals: destinationWallet.token.decimals),
-        //     accountSymbol: configuration.symbolView
-        // )
     }
 
     func parseToken(_ transactionInfo: TransactionInfo,
@@ -113,9 +97,13 @@ public class P2POrcaSwapWrapperParseStrategy: TransactionParseStrategy {
         let mintAddress: String = transactionInfo.meta?.postTokenBalances?
             .first(where: { $0.accountIndex == addressIndex })?.mint ?? Token.nativeSolana.address
 
-        let preTokenBalance: Lamports = transactionInfo.meta?.preTokenBalances?
-            .first(where: { $0.accountIndex == addressIndex })?.uiTokenAmount.amountInUInt64 ?? 0
-
+        let preWalletBalance: Lamports
+        if mintAddress == Token.nativeSolana.address {
+            preWalletBalance = transactionInfo.meta?.preBalances?[addressIndex] ?? 0
+        } else {
+            preWalletBalance = transactionInfo.meta?.preTokenBalances?
+                .first(where: { $0.accountIndex == addressIndex })?.uiTokenAmount.amountInUInt64 ?? 0
+        }
         let preBalance: Double
         let postBalance: Double
         if mintAddress == Token.nativeSolana.address {
@@ -134,79 +122,12 @@ public class P2POrcaSwapWrapperParseStrategy: TransactionParseStrategy {
 
         let wallet = Wallet(
             pubkey: try? PublicKey(string: address).base58EncodedString,
-            lamports: preTokenBalance,
+            lamports: preWalletBalance,
             token: sourceToken
         )
 
         let amount = abs(postBalance - preBalance)
 
         return (wallet, amount)
-    }
-
-    func parseFailedTransaction(
-        transactionInfo: TransactionInfo,
-        accountSymbol: String?
-    ) async throws -> SwapInfo? {
-        try Task.checkCancellation()
-
-        guard
-            let postTokenBalances = transactionInfo.meta?.postTokenBalances,
-            let approveInstruction = transactionInfo.transaction.message.instructions
-                .first(where: { $0.parsed?.type == "approve" }),
-                let sourceAmountString = approveInstruction.parsed?.info.amount,
-                let sourceMint = postTokenBalances.first?.mint,
-                let destinationMint = postTokenBalances.last?.mint
-        else {
-            return nil
-        }
-
-        let sourceToken = try await tokensRepository.getTokenWithMint(sourceMint)
-        let destinationToken = try await tokensRepository.getTokenWithMint(destinationMint)
-
-        let sourceWallet = Wallet(
-            pubkey: approveInstruction.parsed?.info.source,
-            lamports: Lamports(postTokenBalances.first?.uiTokenAmount.amount ?? "0"),
-            token: sourceToken
-        )
-
-        let destinationWallet = Wallet(
-            pubkey: destinationToken.symbol == "SOL" ? approveInstruction.parsed?.info.owner : nil,
-            lamports: Lamports(postTokenBalances.last?.uiTokenAmount.amount ?? "0"),
-            token: destinationToken
-        )
-
-        return SwapInfo(
-            source: sourceWallet,
-            sourceAmount: Lamports(sourceAmountString)?.convertToBalance(decimals: sourceWallet.token.decimals),
-            destination: destinationWallet,
-            destinationAmount: nil,
-            accountSymbol: accountSymbol
-        )
-    }
-}
-
-private func isLiquidityToPool(innerInstructions: [InnerInstruction]?) -> Bool {
-    guard let instructions = innerInstructions?.first?.instructions else { return false }
-    switch instructions.count {
-    case 3:
-        return instructions[0].parsed?.type == "transfer" &&
-            instructions[1].parsed?.type == "transfer" &&
-            instructions[2].parsed?.type == "mintTo"
-    default:
-        return false
-    }
-}
-
-/// Check the instruction is a burn
-private func isBurn(innerInstructions: [InnerInstruction]?) -> Bool {
-    guard let instructions = innerInstructions?.first?.instructions else { return false }
-    switch instructions.count {
-    case 3:
-        return instructions.count == 3 &&
-            instructions[0].parsed?.type == "burn" &&
-            instructions[1].parsed?.type == "transfer" &&
-            instructions[2].parsed?.type == "transfer"
-    default:
-        return false
     }
 }
