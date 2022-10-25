@@ -67,11 +67,14 @@ let package = Package(
     ],
     dependencies: [
         .package(url: "https://github.com/p2p-org/solana-swift", from: "2.1.1"),
-        .package(url: "https://github.com/p2p-org/FeeRelayerSwift", branch: "feature/replay-raw-transaction"),
+        .package(url: "https://github.com/p2p-org/FeeRelayerSwift", branch: "master"),
         .package(url: "https://github.com/amplitude/Amplitude-iOS", from: "8.3.0"),
         .package(url: "https://github.com/krzyzanowskim/CryptoSwift.git", .upToNextMajor(from: "1.6.0"))
     ],
     targets: [
+        // Core
+        .target(name: "KeyAppKitCore"),
+        
         // Cache
         .target(name: "Cache"),
 
@@ -96,7 +99,7 @@ let package = Package(
         // Name Service
         .target(
             name: "NameService",
-            dependencies: ["KeyAppKitLogger"]
+            dependencies: ["KeyAppKitLogger", "KeyAppKitCore"]
         ),
         .testTarget(
             name: "NameServiceIntegrationTests",

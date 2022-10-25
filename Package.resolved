@@ -32,8 +32,8 @@
         "package": "FeeRelayerSwift",
         "repositoryURL": "https://github.com/p2p-org/FeeRelayerSwift",
         "state": {
-          "branch": "feature/replay-raw-transaction",
-          "revision": "6420ec56142ff8059c0288970ab3880e837a7e75",
+          "branch": "master",
+          "revision": "99c7800f66e17f60500a5c11eb2b5cdc0f5b1984",
           "version": null
         }
       },
@@ -60,8 +60,8 @@
         "repositoryURL": "https://github.com/p2p-org/solana-swift",
         "state": {
           "branch": null,
-          "revision": "e81c9a94e9e7b3b08d3dd67a57db4e482a04e042",
-          "version": "2.5.1"
+          "revision": "596dab76f1e82f8e6c5d6b64534d989b2ba47f69",
+          "version": "2.5.2"
         }
       },
       {

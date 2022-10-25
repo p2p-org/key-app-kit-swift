@@ -1,3 +1,4 @@
+import Foundation
 import SolanaSwift
 
 struct CreateNameRequestMessage: Codable, BorshSerializable {
