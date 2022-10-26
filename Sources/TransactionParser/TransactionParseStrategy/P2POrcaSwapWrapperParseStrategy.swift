@@ -55,14 +55,34 @@ public class P2POrcaSwapWrapperParseStrategy: TransactionParseStrategy {
         // First attempt of extraction
         let swapInstruction = transactionInfo.transaction.message.instructions[swapInstructionIndex]
         guard
-            let sourceAddress: String = swapInstruction.accounts?[3],
-            let (sourceWallet, sourceChange) = try await parseToken(transactionInfo, for: sourceAddress),
+            var sourceAddress: String = swapInstruction.accounts?[3],
+            var (sourceWallet, sourceChange) = try await parseToken(transactionInfo, for: sourceAddress),
             var destinationAddress: String = swapInstruction.accounts?[5],
             var (destinationWallet, destinationChange) = try await parseToken(transactionInfo, for: destinationAddress)
         else { return nil }
 
+        let totalInstructions = transactionInfo.transaction.message.instructions.count
+        
+        // Swap from native SOL
+        if sourceChange == .zero, swapInstructionIndex + 1 < totalInstructions {
+            let closeInstruction = transactionInfo.transaction.message.instructions[swapInstructionIndex + 1]
+            if closeInstruction.programId == TokenProgram.id.base58EncodedString {
+                if closeInstruction.parsed?.type == "closeAccount" {
+                    guard let source = closeInstruction.parsed?.info.destination else { return nil }
+                    sourceAddress = source
+                    guard let (newSourceWallet, newSourceChange) = try await parseToken(
+                        transactionInfo,
+                        for: sourceAddress
+                    ) else { return nil }
+
+                    sourceWallet = newSourceWallet
+                    sourceChange = newSourceChange
+                }
+            }
+        }
+
         // Swap to native SOL
-        if destinationChange == .zero {
+        if destinationChange == .zero, swapInstructionIndex + 1 < totalInstructions {
             let closeInstruction = transactionInfo.transaction.message.instructions[swapInstructionIndex + 1]
             if closeInstruction.programId == TokenProgram.id.base58EncodedString {
                 if closeInstruction.parsed?.type == "closeAccount" {
