@@ -69,13 +69,17 @@ public class DefaultFeeParseStrategy: FeeParseStrategy {
     if let firstPubkey = confirmedTransaction.message.accountKeys.first?.publicKey.base58EncodedString,
        feePayerPubkeys.contains(firstPubkey)
     {
+      // check last "returning instruction"
       if let lastTransaction = confirmedTransaction.message.instructions.last,
+         // returning transaction must have RelayProgram id
          lastTransaction.programId == RelayProgram.id(network: apiClient.endpoint.network)
            .base58EncodedString,
+           // get inner transaction to get amount that have been returned
            let innerInstruction = transactionInfo.meta?.innerInstructions?
              .first(where: { $0.index == UInt32(confirmedTransaction.message.instructions.count - 1) }),
              let innerInstructionAmount = innerInstruction.instructions.first?.parsed?.info.lamports,
-             innerInstructionAmount > accountCreationFee
+             // got the amount, check if user had to pay the transaction fee (not account creation fee)
+             innerInstructionAmount > accountCreationFee + depositFee
       {
         // do nothing
       } else {
