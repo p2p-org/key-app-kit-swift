@@ -9,6 +9,13 @@ public struct WalletMetaData: Codable, Equatable {
     public let email: String
     public let authProvider: String
     public let phoneNumber: String
+    
+    public init(deviceName: String, email: String, authProvider: String, phoneNumber: String) {
+        self.deviceName = deviceName
+        self.email = email
+        self.authProvider = authProvider
+        self.phoneNumber = phoneNumber
+    }
 
     enum CodingKeys: String, CodingKey {
         case deviceName = "device_name"
