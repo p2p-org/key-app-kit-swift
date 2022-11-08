@@ -41,15 +41,18 @@ public actor TKeyJSFacade: TKeyFacade {
     private var facadeClass: JSBValue?
     private let config: TKeyJSFacadeConfiguration
     private let analyticsManager: AnalyticsManager
+    private let providerName: String
 
     public init(
         wkWebView: WKWebView? = nil,
         config: TKeyJSFacadeConfiguration,
-        analyticsManager: AnalyticsManager
+        analyticsManager: AnalyticsManager,
+        providerName: String
     ) {
         self.config = config
         context = JSBContext(wkWebView: wkWebView)
         self.analyticsManager = analyticsManager
+        self.providerName = providerName
     }
 
     deinit {
@@ -154,7 +157,7 @@ public actor TKeyJSFacade: TKeyFacade {
             minutes: minutes,
             seconds: seconds,
             milliseconds: 0,
-            result: nil
+            result: providerName
         ))
     }
 
