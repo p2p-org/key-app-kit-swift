@@ -107,6 +107,8 @@ public actor TKeyJSFacade: TKeyFacade {
     public func obtainTorusKey(tokenID: TokenID) async throws -> TorusKey {
         let startDate = Date()
         let method = "obtainTorusKey"
+        
+        defer { logTorusAnalytics(startDate: startDate, methodName: method) }
 
         do {
             var facadeConfig: [String: Any] = [
@@ -129,17 +131,11 @@ public actor TKeyJSFacade: TKeyFacade {
                 throw Error.invalidReturnValue
             }
 
-            logTorusAnalytics(startDate: startDate, methodName: method)
-
             return .init(tokenID: tokenID, value: torusKey)
         } catch let JSBError.jsError(error) {
             let parsedError = parseFacadeJSError(error: error)
-
-            logTorusAnalytics(startDate: startDate, methodName: method)
-
             throw parsedError ?? JSBError.jsError(error)
         } catch {
-            logTorusAnalytics(startDate: startDate, methodName: method)
             throw error
         }
     }
