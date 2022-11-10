@@ -2,6 +2,7 @@
 // Use of this source code is governed by a MIT-style license that can be
 // found in the LICENSE file.
 
+import AnalyticsManager
 import Foundation
 import JSBridge
 import WebKit
@@ -39,10 +40,16 @@ public actor TKeyJSFacade: TKeyFacade {
     private let context: JSBContext
     private var facadeClass: JSBValue?
     private let config: TKeyJSFacadeConfiguration
+    private let analyticsManager: AnalyticsManager
 
-    public init(wkWebView: WKWebView? = nil, config: TKeyJSFacadeConfiguration) {
+    public init(
+        wkWebView: WKWebView? = nil,
+        config: TKeyJSFacadeConfiguration,
+        analyticsManager: AnalyticsManager
+    ) {
         self.config = config
         context = JSBContext(wkWebView: wkWebView)
+        self.analyticsManager = analyticsManager
     }
 
     deinit {
@@ -98,6 +105,11 @@ public actor TKeyJSFacade: TKeyFacade {
     }
 
     public func obtainTorusKey(tokenID: TokenID) async throws -> TorusKey {
+        let startDate = Date()
+        let method = "obtainTorusKey"
+        
+        defer { logTorusAnalytics(startDate: startDate, methodName: method) }
+
         do {
             var facadeConfig: [String: Any] = [
                 "type": "signin",
@@ -113,7 +125,7 @@ public actor TKeyJSFacade: TKeyFacade {
             }
 
             let facade = try await getFacade(configuration: facadeConfig)
-            let value = try await facade.invokeAsyncMethod("obtainTorusKey", withArguments: [tokenID.value])
+            let value = try await facade.invokeAsyncMethod(method, withArguments: [tokenID.value])
 
             guard let torusKey = try await value.toString() else {
                 throw Error.invalidReturnValue
@@ -126,6 +138,19 @@ public actor TKeyJSFacade: TKeyFacade {
         } catch {
             throw error
         }
+    }
+
+    private func logTorusAnalytics(startDate: Date, methodName: String) {
+        let secondsDifference = Date().timeIntervalSince(startDate)
+        let minutes = Int(secondsDifference / 60)
+        let seconds = Int(secondsDifference) % 60
+        
+        analyticsManager.log(event: TorusAnalytics.onboardingTorusRequest(
+            methodName: methodName,
+            minutes: minutes,
+            seconds: seconds,
+            milliseconds: 0
+        ))
     }
 
     public func signUp(torusKey: TorusKey, privateInput: String) async throws -> SignUpResult {
@@ -319,3 +344,17 @@ extension WKWebsiteDataStore {
         }
     }
 }
+
+// MARK: - TorusAnalytics
+
+private extension TKeyJSFacade {
+    enum TorusAnalytics: AnalyticsEvent {
+        case onboardingTorusRequest(
+            methodName: String,
+            minutes: Int,
+            seconds: Int,
+            milliseconds: Int
+        )
+    }
+}
+
