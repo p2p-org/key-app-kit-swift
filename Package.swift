@@ -69,12 +69,12 @@ let package = Package(
         .package(url: "https://github.com/p2p-org/solana-swift", from: "2.1.1"),
         .package(url: "https://github.com/p2p-org/FeeRelayerSwift", branch: "master"),
         .package(url: "https://github.com/amplitude/Amplitude-iOS", from: "8.3.0"),
-        .package(url: "https://github.com/krzyzanowskim/CryptoSwift.git", .upToNextMajor(from: "1.6.0"))
+        .package(url: "https://github.com/krzyzanowskim/CryptoSwift.git", .upToNextMajor(from: "1.6.0")),
     ],
     targets: [
         // Core
         .target(name: "KeyAppKitCore"),
-        
+
         // Cache
         .target(name: "Cache"),
 
@@ -99,7 +99,12 @@ let package = Package(
         // Name Service
         .target(
             name: "NameService",
-            dependencies: ["KeyAppKitLogger", "KeyAppKitCore"]
+            dependencies: [
+                "KeyAppKitLogger",
+                "KeyAppKitCore",
+                .product(name: "SolanaSwift", package: "solana-swift"),
+                
+            ]
         ),
         .testTarget(
             name: "NameServiceIntegrationTests",
@@ -159,7 +164,7 @@ let package = Package(
             dependencies: [
                 "JSBridge",
                 .product(name: "SolanaSwift", package: "solana-swift"),
-                .product(name: "CryptoSwift", package: "CryptoSwift")
+                .product(name: "CryptoSwift", package: "CryptoSwift"),
             ],
             resources: [
                 .process("Resource/index.html"),
@@ -196,6 +201,21 @@ let package = Package(
         //     name: "p2p",
         //     path: "Frameworks/p2p.xcframework"
         // ),
+
+        .target(
+            name: "Send",
+            dependencies: [
+                .product(name: "SolanaSwift", package: "solana-swift"),
+                "NameService",
+                "SolanaPricesAPIs"
+            ]
+        ),
+        
+        .testTarget(
+            name: "SendTest",
+            dependencies: ["Send"],
+            path: "Tests/UnitTests/SendTests"
+        ),
     ]
 )
 
