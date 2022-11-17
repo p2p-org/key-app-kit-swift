@@ -6,16 +6,16 @@ import Combine
 import Foundation
 
 public actor SendInputStateMachine {
-    private var stateSubject: CurrentValueSubject<SendInputState, Never>
+    private nonisolated let stateSubject: CurrentValueSubject<SendInputState, Never>
     
-    public var statePublisher: AnyPublisher<SendInputState, Never> { stateSubject.eraseToAnyPublisher() }
-    public var currentState: SendInputState { stateSubject.value }
+    public nonisolated var statePublisher: AnyPublisher<SendInputState, Never> { stateSubject.eraseToAnyPublisher() }
+    public nonisolated var currentState: SendInputState { stateSubject.value }
     
-    init(initialState: SendInputState) {
+    public init(initialState: SendInputState) {
         stateSubject = .init(initialState)
     }
     
-    func accept(action: SendInputAction) async -> SendInputState {
+    public func accept(action: SendInputAction) async -> SendInputState {
         await sendInputBusinessLogic(state: currentState, action: action)
     }
 }

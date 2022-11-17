@@ -17,17 +17,19 @@ public enum SendInputAction: Equatable {
 }
 
 public struct SendInputState: Equatable {
-    enum ErrorReason: Equatable {
+    public enum ErrorReason: Equatable {
         case networkConnectionError(NSError)
         case minimumAmount(Amount)
     }
 
-    enum Status: Equatable {
+    public enum Status: Equatable {
         case processing
         case ready
         case error(reason: ErrorReason)
     }
-
+    
+    let status: Status
+    
     let recipient: Recipient
     let userTokenAccount: Wallet
     let userWalletState: UserWalletState
@@ -36,4 +38,22 @@ public struct SendInputState: Equatable {
     let amountInToken: Double
 
     let fee: FeeAmount
+    
+    public init(
+        status: Status,
+        recipient: Recipient,
+        userTokenAccount: Wallet,
+        userWalletState: UserWalletState,
+        amountInFiat: Double,
+        amountInToken: Double,
+        fee: FeeAmount
+    ) {
+        self.status = status
+        self.recipient = recipient
+        self.userTokenAccount = userTokenAccount
+        self.userWalletState = userWalletState
+        self.amountInFiat = amountInFiat
+        self.amountInToken = amountInToken
+        self.fee = fee
+    }
 }
