@@ -263,6 +263,13 @@ let package = Package(
             name: "Moonpay",
             dependencies: []
         ),
+
+        .target(
+            name: "Jupiter",
+            dependencies: [
+                .product(name: "SolanaSwift", package: "solana-swift"),
+            ]
+        ),
     ]
 )
 
