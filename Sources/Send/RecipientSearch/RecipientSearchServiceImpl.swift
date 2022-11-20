@@ -13,7 +13,7 @@ public class RecipientSearchServiceImpl: RecipientSearchService{
     }
     
     // TODO: Implement me
-    public func search(input: String, state: UserWalletState) async -> RecipientSearchResult {
+    public func search(input: String, env: UserWalletEnvironments) async -> RecipientSearchResult {
         .ok([])
     }
 }

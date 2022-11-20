@@ -16,10 +16,16 @@ public enum SendInputAction: Equatable {
     case changeUserToken(Wallet)
 }
 
+public struct SendInputServices {
+    let swapService: SwapService
+}
+
 public struct SendInputState: Equatable {
     public enum ErrorReason: Equatable {
         case networkConnectionError(NSError)
         case minimumAmount(Amount)
+        case inputTooHigh
+        case inputTooLow
     }
 
     public enum Status: Equatable {
@@ -32,7 +38,8 @@ public struct SendInputState: Equatable {
 
     let recipient: Recipient
     let token: Token
-    let userWalletState: UserWalletState
+    let tokenFee: Token
+    let userWalletState: UserWalletEnvironments
 
     let amountInFiat: Double
     let amountInToken: Double
@@ -44,7 +51,8 @@ public struct SendInputState: Equatable {
         status: Status,
         recipient: Recipient,
         token: Token,
-        userWalletState: UserWalletState,
+        tokenFee: Token,
+        userWalletState: UserWalletEnvironments,
         amountInFiat: Double,
         amountInToken: Double,
         fee: FeeAmount,
@@ -53,6 +61,7 @@ public struct SendInputState: Equatable {
         self.status = status
         self.recipient = recipient
         self.token = token
+        self.tokenFee = tokenFee
         self.userWalletState = userWalletState
         self.amountInFiat = amountInFiat
         self.amountInToken = amountInToken
@@ -64,7 +73,8 @@ public struct SendInputState: Equatable {
         status: Status? = nil,
         recipient: Recipient? = nil,
         token: Token? = nil,
-        userWalletState: UserWalletState? = nil,
+        tokenFee: Token? = nil,
+        userWalletState: UserWalletEnvironments? = nil,
         amountInFiat: Double? = nil,
         amountInToken: Double? = nil,
         fee: FeeAmount? = nil,
@@ -74,6 +84,7 @@ public struct SendInputState: Equatable {
             status: status ?? self.status,
             recipient: recipient ?? self.recipient,
             token: token ?? self.token,
+            tokenFee: tokenFee ?? self.tokenFee,
             userWalletState: userWalletState ?? self.userWalletState,
             amountInFiat: amountInFiat ?? self.amountInFiat,
             amountInToken: amountInToken ?? self.amountInToken,
