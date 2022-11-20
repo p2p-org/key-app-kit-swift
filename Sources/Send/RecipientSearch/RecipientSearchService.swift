@@ -22,5 +22,5 @@ public enum RecipientSearchResult: Equatable {
 }
 
 public protocol RecipientSearchService: AnyObject {
-    func search(input: String, state: UserWalletState) async -> RecipientSearchResult
+    func search(input: String, env: UserWalletEnvironments) async -> RecipientSearchResult
 }

@@ -9,5 +9,5 @@ public class RecipientSearchServiceMock: RecipientSearchService {
 
     public init(result: RecipientSearchResult) { self.result = result }
 
-    public func search(input _: String, state _: UserWalletState) async -> RecipientSearchResult { result }
+    public func search(input _: String, env _: UserWalletEnvironments) async -> RecipientSearchResult { result }
 }

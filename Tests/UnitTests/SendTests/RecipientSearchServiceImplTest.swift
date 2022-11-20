@@ -8,56 +8,62 @@ import XCTest
 @testable import Send
 
 class RecipientSearchServiceImplTest: XCTestCase {
+    let defaultInitialWalletEnvs: UserWalletEnvironments = .init(
+        wallets: [],
+        exchangeRate: [:],
+        exchangeService: MockedExchangeService(result: nil)
+    )
+
     func testOkTests() async throws {
         let service = RecipientSearchServiceImpl(nameService: MockedNameService())
 
-        let userWalletState = UserWalletState(wallets: [], exchangeRate: [:])
-        let result = await service.search(input: "kirill", state: userWalletState)
+        let result = await service.search(input: "kirill", env: defaultInitialWalletEnvs)
         expectResult(.ok([]), result)
     }
 
     func testInvalidLongInputTests() async throws {
         let service = RecipientSearchServiceImpl(nameService: MockedNameService())
 
-        let userWalletState = UserWalletState(wallets: [], exchangeRate: [:])
-        let result = await service.search(input: "epstein didn’t kill himself", state: userWalletState)
+        let result = await service.search(
+            input: "epstein didn’t kill himself",
+            env: defaultInitialWalletEnvs
+        )
         expectResult(.invalidInput, result)
     }
 
     func testInvalidShort1SymbolInputTests() async throws {
         let service = RecipientSearchServiceImpl(nameService: MockedNameService())
 
-        let userWalletState = UserWalletState(wallets: [], exchangeRate: [:])
-        let result = await service.search(input: "e", state: userWalletState)
+        let result = await service.search(input: "e", env: defaultInitialWalletEnvs)
         expectResult(.invalidInput, result)
     }
 
     func testInvalidShort2SymbolsInputTests() async throws {
         let service = RecipientSearchServiceImpl(nameService: MockedNameService())
 
-        let userWalletState = UserWalletState(wallets: [], exchangeRate: [:])
-        let result = await service.search(input: "ea", state: userWalletState)
+        let result = await service.search(input: "ea", env: defaultInitialWalletEnvs)
         expectResult(.invalidInput, result)
     }
 
     func testMissingToken() async throws {
         let service = RecipientSearchServiceImpl(nameService: MockedNameService())
 
-        let userWalletState = UserWalletState(wallets: [], exchangeRate: [:])
         let result = await service.search(
             input: "8upjSpvjcdpuzhfR1zriwg5NXkwDruejqNE9WNbPRtyA",
-            state: userWalletState
+            env: defaultInitialWalletEnvs
         )
-        expectResult(.missingUserToken(recipient: .init(address: "", category: .solanaAddress, hasFunds: false)), result)
+        expectResult(
+            .missingUserToken(recipient: .init(address: "", category: .solanaAddress, hasFunds: false)),
+            result
+        )
     }
 
     func testNameServiceError() async throws {
         let service = RecipientSearchServiceImpl(nameService: MockedNameService())
 
-        let userWalletState = UserWalletState(wallets: [], exchangeRate: [:])
         let result = await service.search(
             input: "long",
-            state: userWalletState
+            env: defaultInitialWalletEnvs
         )
         expectResult(.solanaServiceError(NSError(domain: "Internal error", code: 500)), result)
     }
@@ -75,10 +81,9 @@ class RecipientSearchServiceImplTest: XCTestCase {
     func testInsufficientUserFunds() async throws {
         let service = RecipientSearchServiceImpl(nameService: MockedNameService())
 
-        let userWalletState = UserWalletState(wallets: [], exchangeRate: [:])
         let result = await service.search(
             input: "7kWt998XAv4GCPkvexE5Jhjhv3UqEaDgPhKVCsJXKYu8",
-            state: userWalletState
+            env: defaultInitialWalletEnvs
         )
         expectResult(.insufficientUserFunds, result)
     }
