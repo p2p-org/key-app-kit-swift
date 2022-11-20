@@ -27,33 +27,58 @@ public struct SendInputState: Equatable {
         case ready
         case error(reason: ErrorReason)
     }
-    
+
     let status: Status
-    
+
     let recipient: Recipient
-    let userTokenAccount: Wallet
+    let token: Token
     let userWalletState: UserWalletState
 
     let amountInFiat: Double
     let amountInToken: Double
 
     let fee: FeeAmount
-    
+    let feeInToken: FeeAmount
+
     public init(
         status: Status,
         recipient: Recipient,
-        userTokenAccount: Wallet,
+        token: Token,
         userWalletState: UserWalletState,
         amountInFiat: Double,
         amountInToken: Double,
-        fee: FeeAmount
+        fee: FeeAmount,
+        feeInToken: FeeAmount
     ) {
         self.status = status
         self.recipient = recipient
-        self.userTokenAccount = userTokenAccount
+        self.token = token
         self.userWalletState = userWalletState
         self.amountInFiat = amountInFiat
         self.amountInToken = amountInToken
         self.fee = fee
+        self.feeInToken = feeInToken
+    }
+
+    func copy(
+        status: Status? = nil,
+        recipient: Recipient? = nil,
+        token: Token? = nil,
+        userWalletState: UserWalletState? = nil,
+        amountInFiat: Double? = nil,
+        amountInToken: Double? = nil,
+        fee: FeeAmount? = nil,
+        feeInToken: FeeAmount? = nil
+    ) -> SendInputState {
+        .init(
+            status: status ?? self.status,
+            recipient: recipient ?? self.recipient,
+            token: token ?? self.token,
+            userWalletState: userWalletState ?? self.userWalletState,
+            amountInFiat: amountInFiat ?? self.amountInFiat,
+            amountInToken: amountInToken ?? self.amountInToken,
+            fee: fee ?? self.fee,
+            feeInToken: feeInToken ?? self.feeInToken
+        )
     }
 }
