@@ -10,8 +10,7 @@ import XCTest
 class RecipientSearchServiceImplTest: XCTestCase {
     let defaultInitialWalletEnvs: UserWalletEnvironments = .init(
         wallets: [],
-        exchangeRate: [:],
-        exchangeService: MockedExchangeService(result: nil)
+        exchangeRate: [:]
     )
 
     func testOkTests() async throws {

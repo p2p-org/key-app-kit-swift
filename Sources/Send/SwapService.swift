@@ -9,7 +9,7 @@ public protocol SwapService {
     func calculateFeeInPayingToken(feeInSOL: FeeAmount, payingFeeTokenMint: PublicKey) async throws -> FeeAmount?
 }
 
-public struct MockedExchangeService: SwapService {
+public struct MockedSwapService: SwapService {
     let result: FeeAmount?
 
     init(result: FeeAmount?) { self.result = result }

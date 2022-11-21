@@ -24,7 +24,7 @@ struct SendInputBusinessLogic {
         amount: Double,
         services _: SendInputServices
     ) async -> SendInputState {
-        let userTokenAccount: Wallet? = state.userWalletState.wallets
+        let userTokenAccount: Wallet? = state.userWalletEnvironments.wallets
             .first(where: { $0.token.symbol == state.token.symbol })
         let tokenBalance = userTokenAccount?.lamports ?? 0
 
@@ -38,7 +38,7 @@ struct SendInputBusinessLogic {
 
         return state.copy(
             status: status,
-            amountInFiat: amount * (state.userWalletState.exchangeRate[state.token.symbol]?.value ?? 0),
+            amountInFiat: amount * (state.userWalletEnvironments.exchangeRate[state.token.symbol]?.value ?? 0),
             amountInToken: amount
         )
     }

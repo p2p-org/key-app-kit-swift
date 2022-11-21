@@ -10,12 +10,9 @@ public struct UserWalletEnvironments: Equatable {
     let wallets: [Wallet]
     let exchangeRate: [String: CurrentPrice]
 
-    let exchangeService: SwapService
-
-    public init(wallets: [Wallet], exchangeRate: [String: CurrentPrice], exchangeService: SwapService) {
+    public init(wallets: [Wallet], exchangeRate: [String: CurrentPrice]) {
         self.wallets = wallets
         self.exchangeRate = exchangeRate
-        self.exchangeService = exchangeService
     }
 
     public static func == (lhs: UserWalletEnvironments, rhs: UserWalletEnvironments) -> Bool {
