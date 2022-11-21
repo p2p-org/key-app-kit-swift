@@ -39,7 +39,7 @@ public struct SendInputState: Equatable {
     let recipient: Recipient
     let token: Token
     let tokenFee: Token
-    let userWalletState: UserWalletEnvironments
+    let userWalletEnvironments: UserWalletEnvironments
 
     let amountInFiat: Double
     let amountInToken: Double
@@ -52,7 +52,7 @@ public struct SendInputState: Equatable {
         recipient: Recipient,
         token: Token,
         tokenFee: Token,
-        userWalletState: UserWalletEnvironments,
+        userWalletEnvironments: UserWalletEnvironments,
         amountInFiat: Double,
         amountInToken: Double,
         fee: FeeAmount,
@@ -62,11 +62,30 @@ public struct SendInputState: Equatable {
         self.recipient = recipient
         self.token = token
         self.tokenFee = tokenFee
-        self.userWalletState = userWalletState
+        self.userWalletEnvironments = userWalletEnvironments
         self.amountInFiat = amountInFiat
         self.amountInToken = amountInToken
         self.fee = fee
         self.feeInToken = feeInToken
+    }
+
+    public static func zero(
+        recipient: Recipient,
+        token: Token,
+        feeToken: Token,
+        userWalletState: UserWalletEnvironments
+    ) -> SendInputState {
+        SendInputState(
+            status: .ready,
+            recipient: recipient,
+            token: token,
+            tokenFee: feeToken,
+            userWalletEnvironments: userWalletState,
+            amountInFiat: 0,
+            amountInToken: 0,
+            fee: .zero,
+            feeInToken: .zero
+        )
     }
 
     func copy(
@@ -85,11 +104,28 @@ public struct SendInputState: Equatable {
             recipient: recipient ?? self.recipient,
             token: token ?? self.token,
             tokenFee: tokenFee ?? self.tokenFee,
-            userWalletState: userWalletState ?? self.userWalletState,
+            userWalletEnvironments: userWalletState ?? userWalletEnvironments,
             amountInFiat: amountInFiat ?? self.amountInFiat,
             amountInToken: amountInToken ?? self.amountInToken,
             fee: fee ?? self.fee,
             feeInToken: feeInToken ?? self.feeInToken
         )
+    }
+}
+
+extension SendInputState {
+    var maxAmountInputInToken: Double {
+        var balance: Lamports = userWalletEnvironments.wallets.first(where: { $0.token.address == token.address })?
+            .lamports ?? 0
+
+        if token.address == tokenFee.address {
+            balance = balance - feeInToken.total
+        }
+
+        return Double(balance) / pow(10, Double(token.decimals))
+    }
+
+    var maxAmountInputInFiat: Double {
+        maxAmountInputInToken * (userWalletEnvironments.exchangeRate[token.name]?.value ?? 0)
     }
 }
