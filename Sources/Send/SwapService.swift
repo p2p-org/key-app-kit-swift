@@ -12,7 +12,7 @@ public protocol SwapService {
 public struct MockedSwapService: SwapService {
     let result: FeeAmount?
 
-    init(result: FeeAmount?) { self.result = result }
+    public init(result: FeeAmount?) { self.result = result }
 
     public func calculateFeeInPayingToken(
         feeInSOL _: FeeAmount,
