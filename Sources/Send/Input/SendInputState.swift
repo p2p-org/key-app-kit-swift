@@ -18,6 +18,10 @@ public enum SendInputAction: Equatable {
 
 public struct SendInputServices {
     let swapService: SwapService
+    
+    public init(swapService: SwapService) {
+        self.swapService = swapService
+    }
 }
 
 public struct SendInputState: Equatable {
@@ -126,6 +130,6 @@ extension SendInputState {
     }
 
     var maxAmountInputInFiat: Double {
-        maxAmountInputInToken * (userWalletEnvironments.exchangeRate[token.name]?.value ?? 0)
+        maxAmountInputInToken * (userWalletEnvironments.exchangeRate[token.symbol]?.value ?? 0)
     }
 }

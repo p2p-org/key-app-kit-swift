@@ -14,9 +14,24 @@ struct SendInputBusinessLogic {
         switch action {
         case let .changeAmountInToken(amount):
             return await sendInputChangeAmountInToken(state: state, amount: amount, services: services)
+        case let .changeAmountInFiat(amount):
+            return await sendInputChangeAmountInFiat(state: state, amount: amount, services: services)
+
         default:
             return state
         }
+    }
+
+    static func sendInputChangeAmountInFiat(
+        state: SendInputState,
+        amount: Double,
+        services: SendInputServices
+    ) async -> SendInputState {
+        guard let price = state.userWalletEnvironments.exchangeRate[state.token.symbol]?.value else {
+            return await sendInputChangeAmountInToken(state: state, amount: 0, services: services)
+        }
+        let amountInToken = amount / price
+        return await sendInputChangeAmountInToken(state: state, amount: amountInToken, services: services)
     }
 
     static func sendInputChangeAmountInToken(
