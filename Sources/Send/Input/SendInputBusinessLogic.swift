@@ -16,6 +16,8 @@ struct SendInputBusinessLogic {
             return await sendInputChangeAmountInToken(state: state, amount: amount, services: services)
         case let .changeAmountInFiat(amount):
             return await sendInputChangeAmountInFiat(state: state, amount: amount, services: services)
+        case let .changeUserToken(walletToken):
+            return state.copy(token: walletToken.token)
 
         default:
             return state

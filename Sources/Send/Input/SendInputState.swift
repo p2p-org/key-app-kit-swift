@@ -38,7 +38,7 @@ public struct SendInputState: Equatable {
         case error(reason: ErrorReason)
     }
 
-    let status: Status
+    public let status: Status
 
     let recipient: Recipient
     let token: Token
