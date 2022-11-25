@@ -23,7 +23,8 @@ public class CoinGeckoPricesAPI: SolanaPricesAPI {
         let param = coins.compactMap {$0.extensions?.coingeckoId}.unique.joined(separator: ",")
         let pricesResult: [CoinMarketData] = try await get(urlString: endpoint + "/coins/markets/?vs_currency=\(fiat)&ids=\(param)")
         return pricesResult.reduce(into: [String: CurrentPrice?](), { partialResult, data in
-            partialResult[data.symbol.uppercased()] = .init(
+            let coin = coins.first { $0.extensions?.coingeckoId == data.id }?.symbol ?? data.symbol
+            partialResult[coin.uppercased()] = .init(
                 value: data.current_price,
                 change24h: .init(value: data.price_change_24h, percentage: data.price_change_percentage_24h))
         })
