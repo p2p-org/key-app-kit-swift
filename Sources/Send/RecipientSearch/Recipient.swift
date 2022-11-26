@@ -5,23 +5,39 @@
 import Foundation
 import SolanaSwift
 
-public struct Recipient: Hashable, Equatable {
-    public enum Category: Hashable, Equatable {
+public struct Recipient: Hashable {
+    public struct Attribute: OptionSet, Hashable {
+        public let rawValue: Int
+
+        public static let funds = Attribute(rawValue: 1 << 0)
+        public static let pda = Attribute(rawValue: 1 << 1)
+    
+        public init(rawValue: Int) {
+            self.rawValue = rawValue
+        }
+    }
+
+    public enum Category: Hashable {
         case username(name: String, domain: String)
-        
+
         case solanaAddress
-        case solanaTokenAddress(walletAddress: PublicKey, mintAddress: PublicKey)
-        
+        case solanaTokenAddress(walletAddress: PublicKey, token: Token)
+
         case bitcoinAddress
     }
 
-    public init(address: String, category: Category, hasFunds: Bool) {
+    public init(address: String, category: Category, attributes: Attribute) {
         self.address = address
         self.category = category
-        self.hasFunds = hasFunds
+        self.attributes = attributes
     }
 
     public let address: String
     public let category: Category
-    public let hasFunds: Bool
+
+    public let attributes: Attribute
+}
+
+extension Recipient: Identifiable {
+    public var id: String { "\(address)-\(attributes)-\(category)" }
 }

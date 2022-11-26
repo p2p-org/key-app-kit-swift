@@ -10,7 +10,8 @@ import XCTest
 class SendInputBusinessLogicTests: XCTestCase {
     let defaultUserWalletState: UserWalletEnvironments = .init(
         wallets: [.nativeSolana(pubkey: "8JmwhqewSppZ2sDNqGZoKu3bWh8wUKZP8mdbP4M1XQx1", lamport: 30_000_000)],
-        exchangeRate: ["SOL": .init(value: 12.5)]
+        exchangeRate: ["SOL": .init(value: 12.5)],
+        tokens: [.nativeSolana]
     )
 
     let services: SendInputServices = .init(swapService: MockedSwapService(result: nil))
@@ -23,7 +24,7 @@ class SendInputBusinessLogicTests: XCTestCase {
             recipient: .init(
                 address: "5bYReP8iw5UuLVS5wmnXfEfrYCKdiQ1FFAZQao8JqY7V",
                 category: .solanaAddress,
-                hasFunds: true
+                attributes: [.funds]
             ),
             token: .nativeSolana,
             feeToken: .nativeSolana,
@@ -49,7 +50,7 @@ class SendInputBusinessLogicTests: XCTestCase {
             recipient: .init(
                 address: "5bYReP8iw5UuLVS5wmnXfEfrYCKdiQ1FFAZQao8JqY7V",
                 category: .solanaAddress,
-                hasFunds: true
+                attributes: [.funds]
             ),
             token: .nativeSolana,
             feeToken: .nativeSolana,
@@ -75,7 +76,7 @@ class SendInputBusinessLogicTests: XCTestCase {
             recipient: .init(
                 address: "5bYReP8iw5UuLVS5wmnXfEfrYCKdiQ1FFAZQao8JqY7V",
                 category: .solanaAddress,
-                hasFunds: true
+                attributes: [.funds]
             ),
             token: .nativeSolana,
             feeToken: .nativeSolana,
@@ -101,7 +102,7 @@ class SendInputBusinessLogicTests: XCTestCase {
             recipient: .init(
                 address: "5bYReP8iw5UuLVS5wmnXfEfrYCKdiQ1FFAZQao8JqY7V",
                 category: .solanaAddress,
-                hasFunds: true
+                attributes: [.funds]
             ),
             token: .nativeSolana,
             feeToken: .nativeSolana,
@@ -127,7 +128,7 @@ class SendInputBusinessLogicTests: XCTestCase {
             recipient: .init(
                 address: "5bYReP8iw5UuLVS5wmnXfEfrYCKdiQ1FFAZQao8JqY7V",
                 category: .solanaAddress,
-                hasFunds: true
+                attributes: [.funds]
             ),
             token: .nativeSolana,
             feeToken: .nativeSolana,
@@ -153,7 +154,7 @@ class SendInputBusinessLogicTests: XCTestCase {
             recipient: .init(
                 address: "5bYReP8iw5UuLVS5wmnXfEfrYCKdiQ1FFAZQao8JqY7V",
                 category: .solanaAddress,
-                hasFunds: true
+                attributes: [.funds]
             ),
             token: .nativeSolana,
             feeToken: .nativeSolana,

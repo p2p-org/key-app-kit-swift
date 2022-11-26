@@ -10,6 +10,7 @@ public enum RecipientSearchResult: Equatable {
     
     /// Condition: No response from name service
     case solanaServiceError(_ error: NSError)
+    case nameServiceError(_ error: NSError)
     
     /// Condition: recipient's token account and user's RenBTC balance = 0
     // case notEnoughRenBTC(recipient: Recipient)

@@ -9,15 +9,11 @@ import SolanaSwift
 public struct UserWalletEnvironments: Equatable {
     let wallets: [Wallet]
     let exchangeRate: [String: CurrentPrice]
-
-    public init(wallets: [Wallet], exchangeRate: [String: CurrentPrice]) {
+    let tokens: Set<Token>
+    
+    public init(wallets: [Wallet], exchangeRate: [String: CurrentPrice], tokens: Set<Token>) {
         self.wallets = wallets
         self.exchangeRate = exchangeRate
-    }
-
-    public static func == (lhs: UserWalletEnvironments, rhs: UserWalletEnvironments) -> Bool {
-        if lhs.wallets != rhs.wallets { return false }
-        if lhs.exchangeRate != rhs.exchangeRate { return false }
-        return true
+        self.tokens = tokens
     }
 }
