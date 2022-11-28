@@ -1,5 +1,5 @@
 Pod::Spec.new do |s|
-  s.name             = 'Send'
+  s.name             = 'History'
   s.version          = '1.0.0'
   s.summary          = 'A swift ffi wrapper'
 
@@ -14,13 +14,10 @@ Pod::Spec.new do |s|
 
   s.ios.deployment_target = '13.0'
 
-  s.source_files = 'Sources/Send/**/*'
-  s.dependency 'NameService'
+  s.source_files = 'Sources/History/**/*'
+  s.dependency 'RxSwift'
   s.dependency 'SolanaSwift'
-  s.dependency 'SolanaPricesAPIs'
-  s.dependency 'History'
-  s.dependency 'TransactionParser'
-
+  s.dependency 'RxConcurrency'
   s.swift_version = '5.5'
 
   s.pod_target_xcconfig = {

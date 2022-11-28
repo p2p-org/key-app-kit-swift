@@ -47,6 +47,24 @@
         }
       },
       {
+        "package": "RxConcurrency",
+        "repositoryURL": "https://github.com/TrGiLong/RxConcurrency.git",
+        "state": {
+          "branch": null,
+          "revision": "4bea62d82808f65839534705133f69645da20b63",
+          "version": "0.1.0"
+        }
+      },
+      {
+        "package": "RxSwift",
+        "repositoryURL": "https://github.com/ReactiveX/RxSwift.git",
+        "state": {
+          "branch": null,
+          "revision": "b4307ba0b6425c0ba4178e138799946c3da594f8",
+          "version": "6.5.0"
+        }
+      },
+      {
         "package": "secp256k1",
         "repositoryURL": "https://github.com/Boilertalk/secp256k1.swift.git",
         "state": {

@@ -70,6 +70,8 @@ let package = Package(
         .package(url: "https://github.com/p2p-org/FeeRelayerSwift", branch: "master"),
         .package(url: "https://github.com/amplitude/Amplitude-iOS", from: "8.3.0"),
         .package(url: "https://github.com/krzyzanowskim/CryptoSwift.git", .upToNextMajor(from: "1.6.0")),
+        .package(url: "https://github.com/ReactiveX/RxSwift.git", from: "6.5.0"),
+        .package(url: "https://github.com/TrGiLong/RxConcurrency.git", from: "0.1.0")
     ],
     targets: [
         // Core
@@ -103,7 +105,6 @@ let package = Package(
                 "KeyAppKitLogger",
                 "KeyAppKitCore",
                 .product(name: "SolanaSwift", package: "solana-swift"),
-                
             ]
         ),
         .testTarget(
@@ -207,10 +208,22 @@ let package = Package(
             dependencies: [
                 .product(name: "SolanaSwift", package: "solana-swift"),
                 "NameService",
-                "SolanaPricesAPIs"
+                "SolanaPricesAPIs",
+                "TransactionParser",
+                "History"
             ]
         ),
-        
+
+        .target(
+            name: "History",
+            dependencies: [
+                .product(name: "SolanaSwift", package: "solana-swift"),
+                .product(name: "RxSwift", package: "RxSwift"),
+                .product(name: "RxConcurrency", package: "RxConcurrency")
+                
+            ]
+        ),
+
         .testTarget(
             name: "SendTest",
             dependencies: ["Send"],

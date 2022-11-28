@@ -6,13 +6,13 @@ import Foundation
 import NameService
 
 class MockedNameService: NameService {
-    func getName(_: String) async throws -> String? { fatalError("getName(_:) has not been implemented") }
+    func getName(_: String) async throws -> String? { nil }
 
     func getOwnerAddress(
         _: String
-    ) async throws -> String? { fatalError("getOwnerAddress(_:) has not been implemented") }
+    ) async throws -> String? { nil }
 
-    func getOwners(_: String) async throws -> [NameRecord] { fatalError("getOwners(_:) has not been implemented") }
+    func getOwners(_: String) async throws -> [NameRecord] { [] }
 
     func create(
         name _: String,

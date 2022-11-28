@@ -29,4 +29,24 @@ extension SmartInfo: BufferLayout {
             return
         }
     }
+    
+    public init(from decoder: Decoder) throws {
+        let container = try decoder.singleValueContainer()
+
+        // Unable to get parsed data, fallback to decoding base64
+        let stringData = (try? container.decode([String].self).first) ?? (try? container.decode(String.self))
+        guard let string = stringData else {
+            throw SolanaError.couldNotRetrieveAccountInfo
+        }
+
+        if string.isEmpty, !(Self.self == EmptyInfo.self) {
+            self = .empty
+            return
+        }
+
+        let data = Data(base64Encoded: string) ?? Data(Base58.decode(string))
+
+        var reader = BinaryReader(bytes: data.bytes)
+        try self.init(from: &reader)
+    }
 }
