@@ -78,7 +78,7 @@
         "repositoryURL": "https://github.com/p2p-org/solana-swift",
         "state": {
           "branch": "feature/isOnCurveAsPublic",
-          "revision": "0cf1581ff948e0c9b1e33e4fb12e7ddc4e7c70de",
+          "revision": "8c05cdc5f8cc130b524d388562a844dea6a1bff6",
           "version": null
         }
       },

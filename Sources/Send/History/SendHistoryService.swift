@@ -5,6 +5,7 @@
 import Combine
 import Foundation
 import History
+import NameService
 import SolanaSwift
 import TransactionParser
 
@@ -13,19 +14,34 @@ public protocol SendHistoryProvider {
     func save(_ transactions: [Recipient]) async throws
 }
 
+public class SendHistoryRemoteMockProvider: SendHistoryProvider {
+    let recipients: [Recipient]
+
+    public init(recipients: [Recipient]) { self.recipients = recipients }
+
+    public func getRecipients(
+        _: Int
+    ) async throws -> [Recipient] { recipients }
+
+    public func save(_: [Recipient]) async throws {}
+}
+
 public class SendHistoryRemoteProvider: SendHistoryProvider {
     private let sourceStream: HistoryStreamSource
     private let historyTransactionParser: TransactionParsedRepository
     private let solanaAPIClient: SolanaAPIClient
+    private let nameService: NameService
 
     public init(
         sourceStream: HistoryStreamSource,
         historyTransactionParser: TransactionParsedRepository,
-        solanaAPIClient: SolanaAPIClient
+        solanaAPIClient: SolanaAPIClient,
+        nameService: NameService
     ) {
         self.sourceStream = sourceStream
         self.historyTransactionParser = historyTransactionParser
         self.solanaAPIClient = solanaAPIClient
+        self.nameService = nameService
     }
 
     private func getSignatures(count: Int) async throws -> [HistoryStreamSource.Result] {
@@ -88,19 +104,34 @@ public class SendHistoryRemoteProvider: SendHistoryProvider {
     }
 
     public func getRecipients(_ count: Int) async throws -> [Recipient] {
-        let parsedTransactions = try await getTransactions(count)
+        let parsedTransactions: [ParsedTransaction] = try await getTransactions(count)
 
-        return parsedTransactions
-            .map(\.info)
-            .compactMap { $0 as? TransferInfo }
-            .filter { $0.transferType == .send && $0.destination?.pubkey != nil }
-            .map { (info: TransferInfo) in
-                Recipient(
-                    address: info.destinationAuthority ?? info.destination!.pubkey!,
-                    category: .solanaAddress,
-                    attributes: []
-                )
+        var result: [Recipient] = []
+
+        for parsedTransaction in parsedTransactions {
+            guard
+                let info = parsedTransaction.info as? TransferInfo,
+                info.transferType == .send,
+                let address = info.destinationAuthority ?? info.destination?.pubkey,
+                !result.contains(where: { $0.address == address })
+            else {
+                continue
             }
+
+            let rawName = try? await nameService.getName(address)
+            let (name, domain) = UsernameUtils.splitIntoNameAndDomain(rawName: rawName ?? "")
+
+            let recipient = Recipient(
+                address: address,
+                category: rawName != nil ? .username(name: name, domain: domain) : .solanaAddress,
+                attributes: [],
+                createdData: parsedTransaction.blockTime ?? Date()
+            )
+
+            result.append(recipient)
+        }
+
+        return result
     }
 
     public func save(_: [Recipient]) async throws {}
@@ -112,9 +143,14 @@ public class SendHistoryService: ObservableObject {
         case loading
     }
 
-    @Published public private(set) var status: Status = .loading
-    @Published public private(set) var recipients: [Recipient] = []
-    @Published public private(set) var error: Error? = nil
+    private let statusSubject: CurrentValueSubject<Status, Never> = .init(.loading)
+    public var statusPublisher: AnyPublisher<Status, Never> { statusSubject.eraseToAnyPublisher() }
+
+    private let recipientsSubject: CurrentValueSubject<[Recipient], Never> = .init([])
+    public var recipientsPublisher: AnyPublisher<[Recipient], Never> { recipientsSubject.eraseToAnyPublisher() }
+
+    private let errorSubject: CurrentValueSubject<Error?, Never> = .init(nil)
+    public var errorPublisher: AnyPublisher<Error?, Never> { errorSubject.eraseToAnyPublisher() }
 
     private let localProvider: SendHistoryProvider
     private var remoteProvider: SendHistoryProvider
@@ -128,32 +164,35 @@ public class SendHistoryService: ObservableObject {
         Task { await initialize() }
     }
 
-    func initialize(updateRemoteProvider: SendHistoryProvider? = nil) async {
+    public func initialize() async {
         do {
-            status = .loading
-            defer { status = .ready }
+            statusSubject.send(.loading)
+            defer { statusSubject.send(.ready) }
+
+            let recipients = try await localProvider.getRecipients(fetchCount)
+            recipientsSubject.send(recipients)
+        } catch {
+            debugPrint(error)
+            errorSubject.send(error)
+        }
+    }
+
+    public func synchronize(updateRemoteProvider: SendHistoryProvider? = nil) async {
+        do {
+            statusSubject.send(.loading)
+            defer { statusSubject.send(.ready) }
 
             if let updatedRemoteProvider = updateRemoteProvider {
                 remoteProvider = updatedRemoteProvider
             }
 
-            recipients = try await localProvider.getRecipients(fetchCount)
-        } catch {
-            debugPrint(error)
-            self.error = error
-        }
-    }
+            let recipients = try await remoteProvider.getRecipients(fetchCount)
 
-    public func synchronize() async {
-        do {
-            status = .loading
-            defer { status = .ready }
-
-            recipients = try await remoteProvider.getRecipients(fetchCount)
+            recipientsSubject.send(recipients)
             try await localProvider.save(recipients)
         } catch {
             debugPrint(error)
-            self.error = error
+            errorSubject.send(error)
         }
     }
 }

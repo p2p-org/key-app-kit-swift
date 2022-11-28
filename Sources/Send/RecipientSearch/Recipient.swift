@@ -5,8 +5,8 @@
 import Foundation
 import SolanaSwift
 
-public struct Recipient: Hashable {
-    public struct Attribute: OptionSet, Hashable {
+public struct Recipient: Hashable, Codable {
+    public struct Attribute: OptionSet, Hashable, Codable {
         public let rawValue: Int
 
         public static let funds = Attribute(rawValue: 1 << 0)
@@ -17,7 +17,7 @@ public struct Recipient: Hashable {
         }
     }
 
-    public enum Category: Hashable {
+    public enum Category: Hashable, Codable {
         case username(name: String, domain: String)
 
         case solanaAddress
@@ -25,17 +25,19 @@ public struct Recipient: Hashable {
 
         case bitcoinAddress
     }
-
-    public init(address: String, category: Category, attributes: Attribute) {
+    
+    public init(address: String, category: Category, attributes: Attribute, createdData: Date? = nil) {
         self.address = address
         self.category = category
         self.attributes = attributes
+        self.createdData = createdData
     }
-
+    
     public let address: String
     public let category: Category
 
     public let attributes: Attribute
+    public let createdData: Date?
 }
 
 extension Recipient: Identifiable {

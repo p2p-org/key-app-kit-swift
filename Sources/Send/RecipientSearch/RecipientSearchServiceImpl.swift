@@ -100,18 +100,7 @@ public class RecipientSearchServiceImpl: RecipientSearchService {
             do {
                 let records: [NameRecord] = try await nameService.getOwners(input)
                 let recipients: [Recipient] = records.map { record in
-                    var name = ""
-                    var domain = ""
-
-                    if
-                        let nameComponents: [String] = record.name?.components(separatedBy: "."),
-                        nameComponents.count > 1
-                    {
-                        name = nameComponents.prefix(nameComponents.count - 1).joined(separator: ".")
-                        domain = nameComponents.last ?? ""
-                    } else {
-                        name = record.name ?? ""
-                    }
+                    let (name, domain) = UsernameUtils.splitIntoNameAndDomain(rawName: record.name ?? "")
 
                     return .init(
                         address: record.owner,
@@ -132,12 +121,20 @@ public class RecipientSearchServiceImpl: RecipientSearchService {
         let wallets = env.wallets
 
         if wallets.contains(where: { !$0.token.isNativeSOL }) {
+            // User has spl account
             if try await checkBalanceForCreateSPLAccount(env: env) {
                 return true
             }
         }
 
-        return try await checkBalanceForCreateNativeAccount(env: env)
+        if wallets.contains(where: \.token.isNativeSOL) {
+            // User has only SOL
+            if try await checkBalanceForCreateNativeAccount(env: env) {
+                return true
+            }
+        }
+
+        return false
     }
 
     func checkBalanceForCreateNativeAccount(env: UserWalletEnvironments) async throws -> Bool {
