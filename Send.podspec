@@ -20,6 +20,7 @@ Pod::Spec.new do |s|
   s.dependency 'SolanaPricesAPIs'
   s.dependency 'History'
   s.dependency 'TransactionParser'
+  s.dependency 'FeeRelayerSwift'
 
   s.swift_version = '5.5'
 

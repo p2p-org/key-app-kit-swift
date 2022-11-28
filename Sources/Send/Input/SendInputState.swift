@@ -14,22 +14,26 @@ public enum SendInputAction: Equatable {
     case changeAmountInFiat(Double)
     case changeAmountInToken(Double)
     case changeUserToken(Wallet)
+    case changeFeeToken(Wallet)
 }
 
 public struct SendInputServices {
     let swapService: SwapService
-    
-    public init(swapService: SwapService) {
+    let feeService: SendFeeCalculator
+
+    public init(swapService: SwapService, feeService: SendFeeCalculator) {
         self.swapService = swapService
+        self.feeService = feeService
     }
 }
 
 public struct SendInputState: Equatable {
     public enum ErrorReason: Equatable {
         case networkConnectionError(NSError)
-        case minimumAmount(Amount)
         case inputTooHigh
-        case inputTooLow
+        case inputTooLow(Double)
+        case inputZero
+        case feeCalculationFailed
     }
 
     public enum Status: Equatable {
@@ -39,6 +43,7 @@ public struct SendInputState: Equatable {
     }
 
     public let status: Status
+    public let fee: FeeAmount
 
     let recipient: Recipient
     let token: Token
@@ -48,7 +53,6 @@ public struct SendInputState: Equatable {
     let amountInFiat: Double
     let amountInToken: Double
 
-    let fee: FeeAmount
     let feeInToken: FeeAmount
 
     public init(
@@ -118,7 +122,7 @@ public struct SendInputState: Equatable {
 }
 
 extension SendInputState {
-    var maxAmountInputInToken: Double {
+    public var maxAmountInputInToken: Double {
         var balance: Lamports = userWalletEnvironments.wallets.first(where: { $0.token.address == token.address })?
             .lamports ?? 0
 
@@ -129,7 +133,7 @@ extension SendInputState {
         return Double(balance) / pow(10, Double(token.decimals))
     }
 
-    var maxAmountInputInFiat: Double {
+    public var maxAmountInputInFiat: Double {
         maxAmountInputInToken * (userWalletEnvironments.exchangeRate[token.symbol]?.value ?? 0)
     }
 }
