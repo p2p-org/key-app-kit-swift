@@ -129,6 +129,7 @@ public class SendHistoryRemoteProvider: SendHistoryProvider {
             )
 
             result.append(recipient)
+            if result.count >= 10 { break }
         }
 
         return result
