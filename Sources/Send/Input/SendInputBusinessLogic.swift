@@ -89,7 +89,10 @@ struct SendInputBusinessLogic {
     ) async -> SendInputState {
         do {
             let fee = try await services.feeService.getFees(from: token, receiver: state.recipient.address, payingTokenMint: state.tokenFee.address) ?? .zero
-            let feeInToken = try await services.feeService.getFeesInPayingToken(feeInSOL: fee, payingFeeToken: state.tokenFee) ?? .zero
+            var feeInToken: FeeAmount = .zero
+            if fee != .zero {
+                feeInToken = try await services.feeService.getFeesInPayingToken(feeInSOL: fee, payingFeeToken: state.tokenFee) ?? .zero
+            }
 
             return state.copy(
                 token: token.token,
@@ -109,7 +112,10 @@ struct SendInputBusinessLogic {
         do {
             let walletToken = Wallet(token: state.token)
             let fee = try await services.feeService.getFees(from: walletToken, receiver: state.recipient.address, payingTokenMint: feeToken.address) ?? .zero
-            let feeInToken = try await services.feeService.getFeesInPayingToken(feeInSOL: fee, payingFeeToken: state.tokenFee) ?? .zero
+            var feeInToken: FeeAmount = .zero
+            if fee != .zero {
+                feeInToken = try await services.feeService.getFeesInPayingToken(feeInSOL: fee, payingFeeToken: state.tokenFee) ?? .zero
+            }
 
             return state.copy(
                 tokenFee: feeToken,
@@ -129,20 +135,9 @@ struct SendInputBusinessLogic {
         let status: SendInputState.Status
         if let error = error as? NSError, error.code == NSURLErrorNetworkConnectionLost || error.code == NSURLErrorNotConnectedToInternet {
             status = .error(reason: .networkConnectionError(error))
-            return state.copy(status: status)
         } else {
-            do {
-                let userStatus = try await services.feeService.getFreeTransactionFeeLimit()
-                if userStatus.currentUsage < userStatus.maxUsage {
-                    status = .ready
-                } else {
-                    status = .error(reason: .feeCalculationFailed)
-                }
-                return state.copy(status: status, fee: .zero, feeInToken: .zero)
-            } catch {
-                status = .error(reason: .feeCalculationFailed)
-                return state.copy(status: status)
-            }
+            status = .error(reason: .feeCalculationFailed)
         }
+        return state.copy(status: status)
     }
 }
