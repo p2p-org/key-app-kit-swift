@@ -15,15 +15,22 @@ public enum SendInputAction: Equatable {
     case changeAmountInToken(Double)
     case changeUserToken(Wallet)
     case changeFeeToken(Wallet)
+    case send
 }
 
 public struct SendInputServices {
     let swapService: SwapService
     let feeService: SendFeeCalculator
+    let sendService: SendService
 
-    public init(swapService: SwapService, feeService: SendFeeCalculator) {
+    public init(
+        swapService: SwapService,
+        feeService: SendFeeCalculator,
+        sendService: SendService
+    ) {
         self.swapService = swapService
         self.feeService = feeService
+        self.sendService = sendService
     }
 }
 

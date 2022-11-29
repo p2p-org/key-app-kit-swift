@@ -127,6 +127,24 @@ struct SendInputBusinessLogic {
         }
     }
 
+    static func send(
+        state: SendInputState,
+        services: SendInputServices
+    ) async -> SendInputState {
+        do {
+            let transactionId = try await services.sendService.send(
+                from: Wallet(token: state.token),
+                receiver: state.recipient.address,
+                amount: state.amountInToken,
+                feeWallet: Wallet(token: state.tokenFee)
+            )
+            debugPrint(transactionId)
+            return state
+        } catch let error {
+            return await handleFeeCalculationError(state: state, services: services, error: error)
+        }
+    }
+
     private static func handleFeeCalculationError(
         state: SendInputState,
         services: SendInputServices,
