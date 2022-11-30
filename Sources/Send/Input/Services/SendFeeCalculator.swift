@@ -18,8 +18,6 @@ public protocol SendFeeCalculator: AnyObject {
 
     // TODO: hide direct usage of ``UsageStatus``
     func getFreeTransactionFeeLimit() async throws -> UsageStatus
-
-    func getAvailableWalletsToPayFee(feeInSOL: FeeAmount) async throws -> [Wallet]
 }
 
 public class SendFeeCalculatorImpl: SendFeeCalculator {
@@ -72,29 +70,6 @@ public class SendFeeCalculatorImpl: SendFeeCalculator {
             payingTokenMint: payingTokenMint
         )
 
-    }
-
-    public func getAvailableWalletsToPayFee(feeInSOL: FeeAmount) async throws -> [Wallet] {
-        try await
-            env.wallets
-                .filter { ($0.lamports ?? 0) > 0 }
-                .asyncMap { wallet -> Wallet? in
-                    if wallet.token.address == PublicKey.wrappedSOLMint.base58EncodedString {
-                        return (wallet.lamports ?? 0) >= feeInSOL.total ? wallet : nil
-                    }
-
-                    let feeAmount = try await self.feeRelayer.feeCalculator.calculateFeeInPayingToken(
-                        orcaSwap: self.orcaSwap,
-                        feeInSOL: feeInSOL,
-                        payingFeeTokenMint: try PublicKey(string: wallet.token.address)
-                    )
-                    if (feeAmount?.total ?? 0) <= (wallet.lamports ?? 0) {
-                        return wallet
-                    } else {
-                        return nil
-                    }
-                }
-                .compactMap({ $0 })
     }
 
     public func getFeesInPayingToken(

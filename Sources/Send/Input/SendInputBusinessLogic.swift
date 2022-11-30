@@ -20,9 +20,6 @@ struct SendInputBusinessLogic {
             return try await changeToken(state: state, token: walletToken, services: services)
         case let .changeFeeToken(feeToken):
             return try await changeFeeToken(state: state, feeToken: feeToken, services: services)
-        case let .send:
-            return try await send(state: state, services: services)
-
         default:
             return state
         }
@@ -125,29 +122,6 @@ struct SendInputBusinessLogic {
             )
         } catch let error {
             return await handleFeeCalculationError(state: state, services: services, error: error)
-        }
-    }
-
-    static func send(
-        state: SendInputState,
-        services: SendInputServices
-    ) async -> SendInputState {
-        do {
-            let transactionId = try await services.sendService.send(
-                from: state.token,
-                receiver: state.recipient.address,
-                amount: state.amountInToken,
-                feeWallet: state.tokenFee
-            )
-            return state.copy(status: .finished(transactionId))
-        } catch let error {
-            let status: SendInputState.Status
-            if let error = error as? NSError, error.code == NSURLErrorNetworkConnectionLost || error.code == NSURLErrorNotConnectedToInternet {
-                status = .error(reason: .networkConnectionError(error))
-            } else {
-                status = .error(reason: .send)
-            }
-            return state.copy(status: status)
         }
     }
 

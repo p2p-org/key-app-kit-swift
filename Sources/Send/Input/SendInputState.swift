@@ -15,22 +15,18 @@ public enum SendInputAction: Equatable {
     case changeAmountInToken(Double)
     case changeUserToken(Wallet)
     case changeFeeToken(Wallet)
-    case send
 }
 
 public struct SendInputServices {
     let swapService: SwapService
     let feeService: SendFeeCalculator
-    let sendService: SendService
 
     public init(
         swapService: SwapService,
-        feeService: SendFeeCalculator,
-        sendService: SendService
+        feeService: SendFeeCalculator
     ) {
         self.swapService = swapService
         self.feeService = feeService
-        self.sendService = sendService
     }
 }
 
@@ -41,14 +37,12 @@ public struct SendInputState: Equatable {
         case inputTooLow(Double)
         case inputZero
         case feeCalculationFailed
-        case send
     }
 
     public enum Status: Equatable {
         case processing
         case ready
         case error(reason: ErrorReason)
-        case finished(TransactionID)
     }
 
     public let status: Status
