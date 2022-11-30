@@ -1,11 +1,11 @@
 import SolanaSwift
 import FeeRelayerSwift
 
-public protocol SendService {
+public protocol SendActionService {
     func send(from wallet: Wallet, receiver: String, amount: Double, feeWallet: Wallet) async throws -> String
 }
 
-public class SendServiceImpl: SendService {
+public class SendActionServiceImpl: SendActionService {
 
     private let contextManager: FeeRelayerContextManager
     private let solanaAPIClient: SolanaAPIClient

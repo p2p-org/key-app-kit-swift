@@ -15,22 +15,18 @@ public enum SendInputAction: Equatable {
     case changeAmountInToken(Double)
     case changeUserToken(Wallet)
     case changeFeeToken(Wallet)
-    case send
 }
 
 public struct SendInputServices {
     let swapService: SwapService
     let feeService: SendFeeCalculator
-    let sendService: SendService
 
     public init(
         swapService: SwapService,
-        feeService: SendFeeCalculator,
-        sendService: SendService
+        feeService: SendFeeCalculator
     ) {
         self.swapService = swapService
         self.feeService = feeService
-        self.sendService = sendService
     }
 }
 
@@ -50,23 +46,21 @@ public struct SendInputState: Equatable {
     }
 
     public let status: Status
+    public let recipient: Recipient
+    public let token: Wallet
+    public let tokenFee: Wallet
+    public let amountInFiat: Double
+    public let amountInToken: Double
     public let fee: FeeAmount
+    public let feeInToken: FeeAmount
 
-    let recipient: Recipient
-    let token: Token
-    let tokenFee: Token
     let userWalletEnvironments: UserWalletEnvironments
-
-    let amountInFiat: Double
-    let amountInToken: Double
-
-    let feeInToken: FeeAmount
 
     public init(
         status: Status,
         recipient: Recipient,
-        token: Token,
-        tokenFee: Token,
+        token: Wallet,
+        tokenFee: Wallet,
         userWalletEnvironments: UserWalletEnvironments,
         amountInFiat: Double,
         amountInToken: Double,
@@ -86,8 +80,8 @@ public struct SendInputState: Equatable {
 
     public static func zero(
         recipient: Recipient,
-        token: Token,
-        feeToken: Token,
+        token: Wallet,
+        feeToken: Wallet,
         userWalletState: UserWalletEnvironments
     ) -> SendInputState {
         SendInputState(
@@ -106,8 +100,8 @@ public struct SendInputState: Equatable {
     func copy(
         status: Status? = nil,
         recipient: Recipient? = nil,
-        token: Token? = nil,
-        tokenFee: Token? = nil,
+        token: Wallet? = nil,
+        tokenFee: Wallet? = nil,
         userWalletState: UserWalletEnvironments? = nil,
         amountInFiat: Double? = nil,
         amountInToken: Double? = nil,
@@ -130,17 +124,17 @@ public struct SendInputState: Equatable {
 
 extension SendInputState {
     public var maxAmountInputInToken: Double {
-        var balance: Lamports = userWalletEnvironments.wallets.first(where: { $0.token.address == token.address })?
+        var balance: Lamports = userWalletEnvironments.wallets.first(where: { $0.token.address == token.token.address })?
             .lamports ?? 0
 
-        if token.address == tokenFee.address {
+        if token.token.address == tokenFee.token.address {
             balance = balance - feeInToken.total
         }
 
-        return Double(balance) / pow(10, Double(token.decimals))
+        return Double(balance) / pow(10, Double(token.token.decimals))
     }
 
     public var maxAmountInputInFiat: Double {
-        maxAmountInputInToken * (userWalletEnvironments.exchangeRate[token.symbol]?.value ?? 0)
+        maxAmountInputInToken * (userWalletEnvironments.exchangeRate[token.token.symbol]?.value ?? 0)
     }
 }
