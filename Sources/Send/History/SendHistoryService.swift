@@ -10,8 +10,8 @@ import SolanaSwift
 import TransactionParser
 
 public protocol SendHistoryProvider {
-    func getRecipients(_ count: Int) async throws -> [Recipient]
-    func save(_ transactions: [Recipient]) async throws
+    func getRecipients(_ count: Int) async throws -> [Recipient]?
+    func save(_ transactions: [Recipient]?) async throws
 }
 
 public class SendHistoryRemoteMockProvider: SendHistoryProvider {
@@ -19,11 +19,9 @@ public class SendHistoryRemoteMockProvider: SendHistoryProvider {
 
     public init(recipients: [Recipient]) { self.recipients = recipients }
 
-    public func getRecipients(
-        _: Int
-    ) async throws -> [Recipient] { recipients }
+    public func getRecipients(_: Int) async throws -> [Recipient]? { recipients }
 
-    public func save(_: [Recipient]) async throws {}
+    public func save(_: [Recipient]?) async throws {}
 }
 
 public class SendHistoryRemoteProvider: SendHistoryProvider {
@@ -103,7 +101,7 @@ public class SendHistoryRemoteProvider: SendHistoryProvider {
         return parsedTransactions
     }
 
-    public func getRecipients(_ count: Int) async throws -> [Recipient] {
+    public func getRecipients(_ count: Int) async throws -> [Recipient]? {
         let parsedTransactions: [ParsedTransaction] = try await getTransactions(count)
 
         var result: [Recipient] = []
@@ -135,16 +133,17 @@ public class SendHistoryRemoteProvider: SendHistoryProvider {
         return result
     }
 
-    public func save(_: [Recipient]) async throws {}
+    public func save(_: [Recipient]?) async throws {}
 }
 
 public class SendHistoryService: ObservableObject {
     public enum Status {
+        case initializing
         case ready
-        case loading
+        case synchronizing
     }
 
-    private let statusSubject: CurrentValueSubject<Status, Never> = .init(.loading)
+    private let statusSubject: CurrentValueSubject<Status, Never> = .init(.ready)
     public var statusPublisher: AnyPublisher<Status, Never> { statusSubject.eraseToAnyPublisher() }
 
     private let recipientsSubject: CurrentValueSubject<[Recipient], Never> = .init([])
@@ -167,10 +166,7 @@ public class SendHistoryService: ObservableObject {
 
     public func initialize() async {
         do {
-            statusSubject.send(.loading)
-            defer { statusSubject.send(.ready) }
-
-            let recipients = try await localProvider.getRecipients(fetchCount)
+            guard let recipients = try await localProvider.getRecipients(fetchCount) else { return }
             recipientsSubject.send(recipients)
         } catch {
             debugPrint(error)
@@ -179,15 +175,22 @@ public class SendHistoryService: ObservableObject {
     }
 
     public func synchronize(updateRemoteProvider: SendHistoryProvider? = nil) async {
+        if statusSubject.value != .ready { return }
+
         do {
-            statusSubject.send(.loading)
+            if try await localProvider.getRecipients(fetchCount) == nil {
+                statusSubject.send(.initializing)
+            } else {
+                statusSubject.send(.synchronizing)
+            }
+
             defer { statusSubject.send(.ready) }
 
             if let updatedRemoteProvider = updateRemoteProvider {
                 remoteProvider = updatedRemoteProvider
             }
 
-            let recipients = try await remoteProvider.getRecipients(fetchCount)
+            guard let recipients = try await remoteProvider.getRecipients(fetchCount) else { return }
 
             recipientsSubject.send(recipients)
             try await localProvider.save(recipients)
