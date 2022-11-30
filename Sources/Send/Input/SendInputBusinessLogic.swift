@@ -62,16 +62,6 @@ struct SendInputBusinessLogic {
 
         if amount == .zero {
             status = .error(reason: .inputZero)
-        } else if state.token.isNativeSOL {
-            if amountLamports < state.userWalletEnvironments.rentExemptionAmountForWalletAccount {
-                let minAmount = state.userWalletEnvironments.rentExemptionAmountForWalletAccount.convertToBalance(decimals: state.token.token.decimals)
-                status = .error(reason: .inputTooLow(minAmount))
-            }
-        } else {
-            if amountLamports < state.userWalletEnvironments.rentExemptionAmountForSPLAccount {
-                let minAmount = state.userWalletEnvironments.rentExemptionAmountForSPLAccount.convertToBalance(decimals: state.token.token.decimals)
-                status = .error(reason: .inputTooLow(minAmount))
-            }
         }
 
         return state.copy(
