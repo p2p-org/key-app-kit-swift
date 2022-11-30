@@ -2,25 +2,31 @@
 // Use of this source code is governed by a MIT-style license that can be
 // found in the LICENSE file.
 
+import FeeRelayerSwift
 import Foundation
 import NameService
 import XCTest
 @testable import Send
 
-class SendInputBusinessLogicTests: XCTestCase {
+class SendInputBusinessLogicInputTests: XCTestCase {
     let defaultUserWalletState: UserWalletEnvironments = .init(
         wallets: [.nativeSolana(pubkey: "8JmwhqewSppZ2sDNqGZoKu3bWh8wUKZP8mdbP4M1XQx1", lamport: 30_000_000)],
         exchangeRate: ["SOL": .init(value: 12.5)],
         tokens: [.nativeSolana]
     )
 
-    let services: SendInputServices = .init(swapService: MockedSwapService(result: nil))
+    let services: SendInputServices = .init(
+        swapService: MockedSwapService(result: nil),
+        feeService: SendFeeCalculatorImpl(feeRelayerCalculator: DefaultFreeRelayerCalculator()),
+        solanaAPIClient: MockedSolanaAPIClient()
+    )
 
     /// Change input amount
     ///
     /// Token: SOL
     func testChangeInToken() async throws {
         let initialState = SendInputState.zero(
+            status: .ready,
             recipient: .init(
                 address: "5bYReP8iw5UuLVS5wmnXfEfrYCKdiQ1FFAZQao8JqY7V",
                 category: .solanaAddress,
@@ -47,6 +53,7 @@ class SendInputBusinessLogicTests: XCTestCase {
     /// Token: SOL
     func testChangeInTokenToMax() async throws {
         let initialState = SendInputState.zero(
+            status: .ready,
             recipient: .init(
                 address: "5bYReP8iw5UuLVS5wmnXfEfrYCKdiQ1FFAZQao8JqY7V",
                 category: .solanaAddress,
@@ -73,6 +80,7 @@ class SendInputBusinessLogicTests: XCTestCase {
     /// Token: SOL
     func testChangeInTokenInputTooLarge() async throws {
         let initialState = SendInputState.zero(
+            status: .ready,
             recipient: .init(
                 address: "5bYReP8iw5UuLVS5wmnXfEfrYCKdiQ1FFAZQao8JqY7V",
                 category: .solanaAddress,
@@ -99,6 +107,7 @@ class SendInputBusinessLogicTests: XCTestCase {
     /// Token: SOL
     func testChangeInFiatInput() async throws {
         let initialState = SendInputState.zero(
+            status: .ready,
             recipient: .init(
                 address: "5bYReP8iw5UuLVS5wmnXfEfrYCKdiQ1FFAZQao8JqY7V",
                 category: .solanaAddress,
@@ -125,6 +134,7 @@ class SendInputBusinessLogicTests: XCTestCase {
     /// Token: SOL
     func testChangeInFiatInputToMax() async throws {
         let initialState = SendInputState.zero(
+            status: .ready,
             recipient: .init(
                 address: "5bYReP8iw5UuLVS5wmnXfEfrYCKdiQ1FFAZQao8JqY7V",
                 category: .solanaAddress,
@@ -151,6 +161,7 @@ class SendInputBusinessLogicTests: XCTestCase {
     /// Token: SOL
     func testChangeInFiatInputTooHigh() async throws {
         let initialState = SendInputState.zero(
+            status: .ready,
             recipient: .init(
                 address: "5bYReP8iw5UuLVS5wmnXfEfrYCKdiQ1FFAZQao8JqY7V",
                 category: .solanaAddress,

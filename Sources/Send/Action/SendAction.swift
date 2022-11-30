@@ -1,12 +1,20 @@
-import SolanaSwift
 import FeeRelayerSwift
+import SolanaSwift
 
-public protocol SendService {
+public protocol SendAction {
     func send(from wallet: Wallet, receiver: String, amount: Double, feeWallet: Wallet) async throws -> String
 }
 
-public class SendServiceImpl: SendService {
+public class SendMockAction: SendAction {
+    public func send(
+        from _: Wallet,
+        receiver _: String,
+        amount _: Double,
+        feeWallet _: Wallet
+    ) async throws -> String { "" }
+}
 
+public class SendActionImpl: SendAction {
     private let contextManager: FeeRelayerContextManager
     private let solanaAPIClient: SolanaAPIClient
     private let blockchainClient: BlockchainClient
@@ -165,14 +173,8 @@ public class SendServiceImpl: SendService {
     }
 }
 
-public enum SendError: String, Swift.Error, LocalizedError {
+public enum SendError: String, Swift.Error {
     case invalidSourceWallet = "Source wallet is not valid"
     case sendToYourself = "You can not send tokens to yourself"
     case invalidPayingFeeWallet = "Paying fee wallet is not valid"
-
-    public var errorDescription: String? {
-        // swiftlint:disable swiftgen_strings
-        NSLocalizedString(rawValue, comment: "")
-        // swiftlint:enable swiftgen_strings
-    }
 }

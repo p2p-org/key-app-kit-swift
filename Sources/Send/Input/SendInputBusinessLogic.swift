@@ -2,6 +2,7 @@
 // Use of this source code is governed by a MIT-style license that can be
 // found in the LICENSE file.
 
+import FeeRelayerSwift
 import Foundation
 import SolanaSwift
 
@@ -12,18 +13,53 @@ struct SendInputBusinessLogic {
         services: SendInputServices
     ) async -> SendInputState {
         switch action {
+        case let .initialize(feeRelayerContext):
+            return await initialize(state: state, services: services, feeRelayerContext: feeRelayerContext)
         case let .changeAmountInToken(amount):
             return await sendInputChangeAmountInToken(state: state, amount: amount, services: services)
         case let .changeAmountInFiat(amount):
             return await sendInputChangeAmountInFiat(state: state, amount: amount, services: services)
-        case let .changeUserToken(walletToken):
-            return try await changeToken(state: state, token: walletToken, services: services)
+        case let .changeUserToken(token):
+            return await changeToken(state: state, token: token, services: services)
         case let .changeFeeToken(feeToken):
-            return try await changeFeeToken(state: state, feeToken: feeToken.token, services: services)
+            return await changeFeeToken(state: state, feeToken: feeToken, services: services)
 
         default:
             return state
         }
+    }
+
+    static func initialize(
+        state: SendInputState,
+        services: SendInputServices,
+        feeRelayerContext: FeeRelayerContext
+    ) async -> SendInputState {
+        var recipientAdditionalInfo = SendInputState.RecipientAdditionalInfo.zero
+
+        if state.recipient.category == .solanaAddress {
+            // Analyse destination spl addresses
+            do {
+                let destinationsSPLAccounts = try await services.solanaAPIClient
+                    .getTokenAccountsByOwner(
+                        pubkey: state.recipient.address,
+                        params: .init(
+                            mint: nil,
+                            programId: TokenProgram.id.base58EncodedString
+                        ),
+                        configs: .init(encoding: "base64")
+                    )
+                recipientAdditionalInfo = .init(splAccounts: destinationsSPLAccounts)
+            } catch {
+                return state.copy(status: .error(reason: .initializeFailed(error as NSError)))
+            }
+        }
+
+        let state = state.copy(
+            status: .ready,
+            recipientAdditionalInfo: recipientAdditionalInfo,
+            feeRelayerContext: feeRelayerContext
+        )
+        return await changeFeeToken(state: state, feeToken: state.tokenFee, services: services)
     }
 
     static func sendInputChangeAmountInFiat(
@@ -37,6 +73,8 @@ struct SendInputBusinessLogic {
         let amountInToken = amount / price
         return await sendInputChangeAmountInToken(state: state, amount: amountInToken, services: services)
     }
+
+    static func checkIsReady(_ state: SendInputState) -> Bool { state.status == .ready }
 
     static func sendInputChangeAmountInToken(
         state: SendInputState,
@@ -61,18 +99,8 @@ struct SendInputBusinessLogic {
             }
         }
 
-        if amount == .zero {
-            status = .error(reason: .inputZero)
-        } else if state.token.isNativeSOL {
-            if amountLamports < state.userWalletEnvironments.rentExemptionAmountForWalletAccount {
-                let minAmount = state.userWalletEnvironments.rentExemptionAmountForWalletAccount.convertToBalance(decimals: state.token.decimals)
-                status = .error(reason: .inputTooLow(minAmount))
-            }
-        } else {
-            if amountLamports < state.userWalletEnvironments.rentExemptionAmountForSPLAccount {
-                let minAmount = state.userWalletEnvironments.rentExemptionAmountForSPLAccount.convertToBalance(decimals: state.token.decimals)
-                status = .error(reason: .inputTooLow(minAmount))
-            }
+        if !checkIsReady(state) {
+            status = .error(reason: .requiredInitialize)
         }
 
         return state.copy(
@@ -84,23 +112,37 @@ struct SendInputBusinessLogic {
 
     static func changeToken(
         state: SendInputState,
-        token: Wallet,
+        token: Token,
         services: SendInputServices
     ) async -> SendInputState {
+        guard let feeRelayerContext = state.feeRelayerContext else {
+            return state.copy(
+                status: .error(reason: .missingFeeRelayer),
+                token: token
+            )
+        }
+
         do {
-            let fee = try await services.feeService.getFees(from: token, receiver: state.recipient.address, payingTokenMint: state.tokenFee.address) ?? .zero
-            var feeInToken: FeeAmount = .zero
-            if fee != .zero {
-                feeInToken = try await services.feeService.getFeesInPayingToken(feeInSOL: fee, payingFeeToken: state.tokenFee) ?? .zero
-            }
+            let fee = try await services.feeService.getFees(
+                from: token,
+                recipient: state.recipient,
+                recipientAdditionalInfo: state.recipientAdditionalInfo,
+                payingTokenMint: state.tokenFee.address,
+                feeRelayerContext: feeRelayerContext
+            ) ?? .zero
+
+            let feeInToken = try? await services.swapService.calculateFeeInPayingToken(
+                feeInSOL: fee,
+                payingFeeTokenMint: try PublicKey(string: state.tokenFee.address)
+            ) ?? .zero
 
             return state.copy(
-                token: token.token,
+                token: token,
                 fee: fee,
                 feeInToken: feeInToken
             )
-        } catch let error {
-            return await handleFeeCalculationError(state: state, services: services, error: error)
+        } catch {
+            return state.copy(status: .error(reason: .unknown(error as NSError)))
         }
     }
 
@@ -109,49 +151,46 @@ struct SendInputBusinessLogic {
         feeToken: Token,
         services: SendInputServices
     ) async -> SendInputState {
+        guard let feeRelayerContext = state.feeRelayerContext else {
+            return state.copy(
+                status: .error(reason: .missingFeeRelayer),
+                tokenFee: feeToken
+            )
+        }
+
         do {
-            let walletToken = Wallet(token: state.token)
-            let fee = try await services.feeService.getFees(from: walletToken, receiver: state.recipient.address, payingTokenMint: feeToken.address) ?? .zero
-            var feeInToken: FeeAmount = .zero
-            if fee != .zero {
-                feeInToken = try await services.feeService.getFeesInPayingToken(feeInSOL: fee, payingFeeToken: state.tokenFee) ?? .zero
-            }
+            let fee = try await services.feeService.getFees(
+                from: state.token,
+                recipient: state.recipient,
+                recipientAdditionalInfo: state.recipientAdditionalInfo,
+                payingTokenMint: feeToken.address,
+                feeRelayerContext: feeRelayerContext
+            ) ?? .zero
+
+            let feeInToken = try? await services.swapService.calculateFeeInPayingToken(
+                feeInSOL: fee,
+                payingFeeTokenMint: try PublicKey(string: state.tokenFee.address)
+            ) ?? .zero
 
             return state.copy(
-                tokenFee: feeToken,
                 fee: fee,
+                tokenFee: feeToken,
                 feeInToken: feeInToken
             )
-        } catch let error {
-            return await handleFeeCalculationError(state: state, services: services, error: error)
-        }
-    }
-
-    static func send(
-        state: SendInputState,
-        services: SendInputServices
-    ) async -> SendInputState {
-        do {
-            let transactionId = try await services.sendService.send(
-                from: Wallet(token: state.token),
-                receiver: state.recipient.address,
-                amount: state.amountInToken,
-                feeWallet: Wallet(token: state.tokenFee)
-            )
-            debugPrint(transactionId)
-            return state
-        } catch let error {
+        } catch {
             return await handleFeeCalculationError(state: state, services: services, error: error)
         }
     }
 
     private static func handleFeeCalculationError(
         state: SendInputState,
-        services: SendInputServices,
+        services _: SendInputServices,
         error: Error
     ) async -> SendInputState {
         let status: SendInputState.Status
-        if let error = error as? NSError, error.code == NSURLErrorNetworkConnectionLost || error.code == NSURLErrorNotConnectedToInternet {
+        let error = error as NSError
+
+        if error.code == NSURLErrorNetworkConnectionLost || error.code == NSURLErrorNotConnectedToInternet {
             status = .error(reason: .networkConnectionError(error))
         } else {
             status = .error(reason: .feeCalculationFailed)
