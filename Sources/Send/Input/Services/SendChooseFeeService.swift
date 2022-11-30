@@ -6,38 +6,43 @@ public protocol SendChooseFeeService {
     func getAvailableWalletsToPayFee(feeInSOL: FeeAmount) async throws -> [Wallet]
 }
 
-final class SendChooseFeeServiceImpl: SendChooseFeeService {
+public final class SendChooseFeeServiceImpl: SendChooseFeeService {
 
     private let orcaSwap: OrcaSwapType
     private let feeRelayer: FeeRelayer
-    private let env: UserWalletEnvironments
+    private let wallets: [Wallet]
 
-    init(env: UserWalletEnvironments, feeRelayer: FeeRelayer, orcaSwap: OrcaSwapType) {
-        self.env = env
+    public init(wallets: [Wallet], feeRelayer: FeeRelayer, orcaSwap: OrcaSwapType) {
+        self.wallets = wallets
         self.feeRelayer = feeRelayer
         self.orcaSwap = orcaSwap
     }
 
     public func getAvailableWalletsToPayFee(feeInSOL: FeeAmount) async throws -> [Wallet] {
-        try await
-            env.wallets
-                .filter { ($0.lamports ?? 0) > 0 }
-                .asyncMap { wallet -> Wallet? in
-                    if wallet.token.address == PublicKey.wrappedSOLMint.base58EncodedString {
-                        return (wallet.lamports ?? 0) >= feeInSOL.total ? wallet : nil
-                    }
-
-                    let feeAmount = try await self.feeRelayer.feeCalculator.calculateFeeInPayingToken(
-                        orcaSwap: self.orcaSwap,
-                        feeInSOL: feeInSOL,
-                        payingFeeTokenMint: try PublicKey(string: wallet.token.address)
-                    )
-                    if (feeAmount?.total ?? 0) <= (wallet.lamports ?? 0) {
-                        return wallet
-                    } else {
-                        return nil
-                    }
+        var filteredWallets = wallets.filter { ($0.lamports ?? 0) > 0 }
+        var feeWallets = [Wallet]()
+        for element in filteredWallets {
+            if element.token.address == PublicKey.wrappedSOLMint.base58EncodedString && (element.lamports ?? 0) >= feeInSOL.total {
+                feeWallets.append(element)
+                continue
+            }
+            do {
+                let feeAmount = try await self.feeRelayer.feeCalculator.calculateFeeInPayingToken(
+                    orcaSwap: self.orcaSwap,
+                    feeInSOL: feeInSOL,
+                    payingFeeTokenMint: try PublicKey(string: element.token.address)
+                )
+                if (feeAmount?.total ?? 0) <= (element.lamports ?? 0) {
+                    feeWallets.append(element)
                 }
-                .compactMap({ $0 })
+            }
+            catch let error {
+                if (error as? FeeRelayerError) != FeeRelayerError.swapPoolsNotFound {
+                    throw error
+                }
+            }
+        }
+        
+        return feeWallets
     }
 }
