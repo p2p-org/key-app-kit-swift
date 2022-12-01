@@ -17,20 +17,22 @@ public class RecipientSearchServiceImpl: RecipientSearchService {
         self.swapService = swapService
     }
 
-    public func search(input: String, env: UserWalletEnvironments, preChosenToken: Token?) async -> RecipientSearchResult {
+    public func search(
+        input: String,
+        env: UserWalletEnvironments,
+        preChosenToken: Token?
+    ) async -> RecipientSearchResult {
         // assertion
         guard !input.isEmpty else {
             return .ok([])
         }
-        
+
         // search by solana address
-        if let address = try? PublicKey(string: input) {
+        if !input.contains(" "), let address = try? PublicKey(string: input) {
             return await searchBySolanaAddress(address, env: env, preChosenToken: preChosenToken)
         }
-        
+
         // search by name
-        else {
-            return await searchByName(input, env: env)
-        }
+        return await searchByName(input, env: env)
     }
 }

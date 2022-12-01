@@ -3,15 +3,33 @@ import SolanaSwift
 
 extension RecipientSearchServiceImpl {
     /// Search by solana address
-    func searchBySolanaAddress(_ address: PublicKey, env: UserWalletEnvironments, preChosenToken: Token?) async -> RecipientSearchResult {
+    func searchBySolanaAddress(_ address: PublicKey, env: UserWalletEnvironments,
+                               preChosenToken: Token?) async -> RecipientSearchResult
+    {
         do {
             // get address
             let addressBase58 = address.base58EncodedString
-            let account: BufferInfo<SolanaAddressInfo>? = try await solanaClient
-                .getAccountInfo(account: addressBase58)
 
             // set attributes
             var attributes: Recipient.Attribute = []
+
+            // Check self-sending
+            if let wallet: Wallet = env.wallets
+                .first(where: { (wallet: Wallet) in wallet.pubkey == addressBase58 })
+            {
+                return .selfSendingError(recipient: .init(
+                    address: addressBase58,
+                    category: wallet.isNativeSOL ? .solanaAddress : .solanaTokenAddress(
+                        walletAddress: (try? PublicKey(string: env.wallets.first(where: \.isNativeSOL)?
+                                .pubkey)) ?? address,
+                        token: wallet.token
+                    ),
+                    attributes: [.funds, attributes]
+                ))
+            }
+
+            let account: BufferInfo<SolanaAddressInfo>? = try await solanaClient
+                .getAccountInfo(account: addressBase58)
 
             // detect pda wallet
             if PublicKey.isOnCurve(publicKeyBytes: address.data) == 0 {
@@ -34,20 +52,20 @@ extension RecipientSearchServiceImpl {
                     let token = env.tokens
                         .first(where: { $0.address == accountInfo.mint.base58EncodedString }) ??
                         .unsupported(mint: accountInfo.mint.base58EncodedString)
-                    
+
                     // detect category
                     let category = Recipient.Category.solanaTokenAddress(
                         walletAddress: try .init(string: accountInfo.owner.base58EncodedString),
                         token: token
                     )
-                    
+
                     // detect incompatibility with preChosenToken
                     if let preChosenToken,
                        preChosenToken.address != token.address
                     {
                         attributes.insert(.incompatibleWithpreChosenToken)
                     }
-                    
+
                     // Detect token account
                     let recipient: Recipient = .init(
                         address: addressBase58,
@@ -89,9 +107,9 @@ extension RecipientSearchServiceImpl {
             return .solanaServiceError(error as NSError)
         }
     }
-    
+
     // MARK: - Helpers
-    
+
     func checkBalanceForCreateAccount(env: UserWalletEnvironments) async throws -> Bool {
         let wallets = env.wallets
 
@@ -161,7 +179,7 @@ extension RecipientSearchServiceImpl {
 
         return false
     }
-    
+
     func handleSolanaAPIClientError(_ error: APIClientError) -> RecipientSearchResult {
         switch error {
         case let .responseError(detailedError):
