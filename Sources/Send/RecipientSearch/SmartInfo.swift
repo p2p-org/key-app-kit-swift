@@ -5,12 +5,12 @@
 import Foundation
 import SolanaSwift
 
-public enum SmartInfo {
+public enum SolanaAddressInfo {
     case empty
     case splAccount(AccountInfo)
 }
 
-extension SmartInfo: BufferLayout {
+extension SolanaAddressInfo: BufferLayout {
     public init(from reader: inout SolanaSwift.BinaryReader) throws {
         if reader.isEmpty {
             self = .empty

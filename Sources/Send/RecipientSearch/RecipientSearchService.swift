@@ -3,6 +3,7 @@
 // found in the LICENSE file.
 
 import Foundation
+import SolanaSwift
 
 public enum RecipientSearchResult: Equatable {
     case ok([Recipient])
@@ -22,5 +23,5 @@ public enum RecipientSearchResult: Equatable {
 }
 
 public protocol RecipientSearchService: AnyObject {
-    func search(input: String, env: UserWalletEnvironments) async -> RecipientSearchResult
+    func search(input: String, env: UserWalletEnvironments, preChosenToken: Token?) async -> RecipientSearchResult
 }
