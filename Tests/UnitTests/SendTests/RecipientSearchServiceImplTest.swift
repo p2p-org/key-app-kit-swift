@@ -45,7 +45,7 @@ class RecipientSearchServiceImplTest: XCTestCase {
             swapService: MockedSwapService(result: nil)
         )
 
-        let result = await service.search(input: "kirill", env: defaultInitialWalletEnvs)
+        let result = await service.search(input: "kirill", env: defaultInitialWalletEnvs, preChosenToken: nil)
         XCTAssertEqual(result, .ok([]))
     }
 
@@ -53,7 +53,7 @@ class RecipientSearchServiceImplTest: XCTestCase {
         class SolanaAPIClient: MockedSolanaAPIClient {
             override func getAccountInfo<T: BufferLayout>(account: String) async throws -> BufferInfo<T>? {
                 if account == "9sdwzJWooFrjNGVX6GkkWUG9GyeBnhgJYqh27AsPqwbM" {
-                    return BufferInfo<SmartInfo>(
+                    return BufferInfo<SolanaAddressInfo>(
                         lamports: 12000,
                         owner: SystemProgram.id.base58EncodedString,
                         data: .empty,
@@ -74,7 +74,8 @@ class RecipientSearchServiceImplTest: XCTestCase {
 
         let result = await service.search(
             input: "9sdwzJWooFrjNGVX6GkkWUG9GyeBnhgJYqh27AsPqwbM",
-            env: defaultInitialWalletEnvs
+            env: defaultInitialWalletEnvs,
+            preChosenToken: nil
         )
 
         XCTAssertEqual(result, .ok([
@@ -99,7 +100,8 @@ class RecipientSearchServiceImplTest: XCTestCase {
 
         let result = await service.search(
             input: "9sdwzJWooFrjNGVX6GkkWUG9GyeBnhgJYqh27AsPqwbM",
-            env: defaultInitialWalletEnvs
+            env: defaultInitialWalletEnvs,
+            preChosenToken: nil
         )
 
         XCTAssertEqual(result, .ok([
@@ -115,7 +117,7 @@ class RecipientSearchServiceImplTest: XCTestCase {
         class SolanaAPIClient: MockedSolanaAPIClient {
             override func getAccountInfo<T: BufferLayout>(account: String) async throws -> BufferInfo<T>? {
                 if account == "CCtYXZHmeJXxR9U1QLMGYxRuPx5HRP5g3QaXNA4UWqFU" {
-                    return BufferInfo<SmartInfo>(
+                    return BufferInfo<SolanaAddressInfo>(
                         lamports: 5000,
                         owner: SystemProgram.id.base58EncodedString,
                         data: .splAccount(
@@ -151,7 +153,8 @@ class RecipientSearchServiceImplTest: XCTestCase {
 
         let result = await service.search(
             input: "CCtYXZHmeJXxR9U1QLMGYxRuPx5HRP5g3QaXNA4UWqFU",
-            env: defaultInitialWalletEnvs
+            env: defaultInitialWalletEnvs,
+            preChosenToken: nil
         )
         XCTAssertEqual(
             result,
@@ -172,7 +175,7 @@ class RecipientSearchServiceImplTest: XCTestCase {
         class SolanaAPIClient: MockedSolanaAPIClient {
             override func getAccountInfo<T: BufferLayout>(account: String) async throws -> BufferInfo<T>? {
                 if account == "CCtYXZHmeJXxR9U1QLMGYxRuPx5HRP5g3QaXNA4UWqFU" {
-                    return BufferInfo<SmartInfo>(
+                    return BufferInfo<SolanaAddressInfo>(
                         lamports: 5000,
                         owner: SystemProgram.id.base58EncodedString,
                         data: .splAccount(
@@ -225,7 +228,8 @@ class RecipientSearchServiceImplTest: XCTestCase {
 
         let result = await service.search(
             input: "CCtYXZHmeJXxR9U1QLMGYxRuPx5HRP5g3QaXNA4UWqFU",
-            env: defaultInitialWalletEnvs
+            env: defaultInitialWalletEnvs,
+            preChosenToken: nil
         )
         XCTAssertEqual(
             result,
@@ -244,7 +248,7 @@ class RecipientSearchServiceImplTest: XCTestCase {
         class SolanaAPIClient: MockedSolanaAPIClient {
             override func getAccountInfo<T: BufferLayout>(account: String) async throws -> BufferInfo<T>? {
                 if account == "CCtYXZHmeJXxR9U1QLMGYxRuPx5HRP5g3QaXNA4UWqFU" {
-                    return BufferInfo<SmartInfo>(
+                    return BufferInfo<SolanaAddressInfo>(
                         lamports: 5000,
                         owner: SystemProgram.id.base58EncodedString,
                         data: .splAccount(
@@ -302,7 +306,8 @@ class RecipientSearchServiceImplTest: XCTestCase {
 
         let result = await service.search(
             input: "CCtYXZHmeJXxR9U1QLMGYxRuPx5HRP5g3QaXNA4UWqFU",
-            env: defaultInitialWalletEnvs
+            env: defaultInitialWalletEnvs,
+            preChosenToken: nil
         )
         XCTAssertEqual(
             result,
@@ -330,7 +335,8 @@ class RecipientSearchServiceImplTest: XCTestCase {
 
         let result = await service.search(
             input: "CCtYXZHmeJXxR9U1QLMGYxRuPx5HRP5g3QaXNA4UWqFU",
-            env: defaultInitialWalletEnvs
+            env: defaultInitialWalletEnvs,
+            preChosenToken: nil
         )
         XCTAssertEqual(
             result,
@@ -339,6 +345,64 @@ class RecipientSearchServiceImplTest: XCTestCase {
                     address: "CCtYXZHmeJXxR9U1QLMGYxRuPx5HRP5g3QaXNA4UWqFU",
                     category: .solanaAddress,
                     attributes: [.pda]
+                ),
+            ])
+        )
+    }
+    
+    func testSolanaTokenAddressIncompatibleWithPreChosenWallet() async throws {
+        class SolanaAPIClient: MockedSolanaAPIClient {
+            override func getAccountInfo<T: BufferLayout>(account: String) async throws -> BufferInfo<T>? {
+                if account == "CCtYXZHmeJXxR9U1QLMGYxRuPx5HRP5g3QaXNA4UWqFU" {
+                    return BufferInfo<SolanaAddressInfo>(
+                        lamports: 5000,
+                        owner: SystemProgram.id.base58EncodedString,
+                        data: .splAccount(
+                            .init(
+                                mint: try PublicKey(string: "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v"),
+                                owner: try PublicKey(string: "9sdwzJWooFrjNGVX6GkkWUG9GyeBnhgJYqh27AsPqwbM"),
+                                lamports: 1579,
+                                delegateOption: 0,
+                                isInitialized: false,
+                                isFrozen: false,
+                                state: 0,
+                                isNativeOption: 0,
+                                isNativeRaw: 0,
+                                isNative: false,
+                                delegatedAmount: 0,
+                                closeAuthorityOption: 0
+                            )
+                        ),
+                        executable: false,
+                        rentEpoch: 361
+                    ) as? BufferInfo<T>
+                } else {
+                    return nil
+                }
+            }
+        }
+
+        let service = RecipientSearchServiceImpl(
+            nameService: MockedNameService(),
+            solanaClient: SolanaAPIClient(),
+            swapService: MockedSwapService(result: nil)
+        )
+
+        let result = await service.search(
+            input: "CCtYXZHmeJXxR9U1QLMGYxRuPx5HRP5g3QaXNA4UWqFU",
+            env: defaultInitialWalletEnvs,
+            preChosenToken: .usdt
+        )
+        XCTAssertEqual(
+            result,
+            .ok([
+                .init(
+                    address: "CCtYXZHmeJXxR9U1QLMGYxRuPx5HRP5g3QaXNA4UWqFU",
+                    category: .solanaTokenAddress(
+                        walletAddress: try! .init(string: "9sdwzJWooFrjNGVX6GkkWUG9GyeBnhgJYqh27AsPqwbM"),
+                        token: .usdc
+                    ),
+                    attributes: [.funds, .pda, .incompatibleWithpreChosenToken]
                 ),
             ])
         )
@@ -353,7 +417,8 @@ class RecipientSearchServiceImplTest: XCTestCase {
 
         let result = await service.search(
             input: "epstein didn’t kill himself",
-            env: defaultInitialWalletEnvs
+            env: defaultInitialWalletEnvs,
+            preChosenToken: nil
         )
 
         XCTAssertEqual(result, .ok([]))
@@ -366,7 +431,7 @@ class RecipientSearchServiceImplTest: XCTestCase {
             swapService: MockedSwapService(result: nil)
         )
 
-        let result = await service.search(input: "e", env: defaultInitialWalletEnvs)
+        let result = await service.search(input: "e", env: defaultInitialWalletEnvs, preChosenToken: nil)
         XCTAssertEqual(result, .ok([]))
     }
 
@@ -377,7 +442,7 @@ class RecipientSearchServiceImplTest: XCTestCase {
             swapService: MockedSwapService(result: nil)
         )
 
-        let result = await service.search(input: "ea", env: defaultInitialWalletEnvs)
+        let result = await service.search(input: "ea", env: defaultInitialWalletEnvs, preChosenToken: nil)
         XCTAssertEqual(result, .ok([]))
     }
 
@@ -409,7 +474,8 @@ class RecipientSearchServiceImplTest: XCTestCase {
 
         let result = await service.search(
             input: "kirill",
-            env: defaultInitialWalletEnvs
+            env: defaultInitialWalletEnvs,
+            preChosenToken: nil
         )
 
         XCTAssertEqual(result, .ok([
@@ -443,7 +509,8 @@ class RecipientSearchServiceImplTest: XCTestCase {
 
         let result = await service.search(
             input: "kirill",
-            env: defaultInitialWalletEnvs
+            env: defaultInitialWalletEnvs,
+            preChosenToken: nil
         )
 
         XCTAssertEqual(result, .nameServiceError(TestMockNameService.error))
@@ -484,7 +551,8 @@ class RecipientSearchServiceImplTest: XCTestCase {
 
         let result = await service.search(
             input: "7kWt998XAv4GCPkvexE5Jhjhv3UqEaDgPhKVCsJXKYu8",
-            env: defaultInitialWalletEnvs
+            env: defaultInitialWalletEnvs,
+            preChosenToken: nil
         )
 
         XCTAssertEqual(
@@ -527,7 +595,8 @@ class RecipientSearchServiceImplTest: XCTestCase {
 
         let result = await service.search(
             input: "7kWt998XAv4GCPkvexE5Jhjhv3UqEaDgPhKVCsJXKYu8",
-            env: defaultInitialWalletEnvs
+            env: defaultInitialWalletEnvs,
+            preChosenToken: nil
         )
 
         XCTAssertEqual(
