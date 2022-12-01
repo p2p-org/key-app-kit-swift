@@ -13,8 +13,8 @@ struct SendInputBusinessLogic {
         services: SendInputServices
     ) async -> SendInputState {
         switch action {
-        case let .initialize(feeRelayerContext):
-            return await initialize(state: state, services: services, feeRelayerContext: feeRelayerContext)
+        case let .initialize(params):
+            return await initialize(state: state, services: services, params: params)
         case let .changeAmountInToken(amount):
             return await sendInputChangeAmountInToken(state: state, amount: amount, services: services)
         case let .changeAmountInFiat(amount):
@@ -32,13 +32,14 @@ struct SendInputBusinessLogic {
     static func initialize(
         state: SendInputState,
         services: SendInputServices,
-        feeRelayerContext: FeeRelayerContext
+        params: SendInputActionInitializeParams
     ) async -> SendInputState {
-        var recipientAdditionalInfo = SendInputState.RecipientAdditionalInfo.zero
+        do {
+            var recipientAdditionalInfo = SendInputState.RecipientAdditionalInfo.zero
 
-        if state.recipient.category == .solanaAddress {
-            // Analyse destination spl addresses
-            do {
+            switch state.recipient.category {
+            case .solanaAddress, .username:
+                // Analyse destination spl addresses
                 let destinationsSPLAccounts = try await services.solanaAPIClient
                     .getTokenAccountsByOwner(
                         pubkey: state.recipient.address,
@@ -49,17 +50,30 @@ struct SendInputBusinessLogic {
                         configs: .init(encoding: "base64")
                     )
                 recipientAdditionalInfo = .init(splAccounts: destinationsSPLAccounts)
-            } catch {
-                return state.copy(status: .error(reason: .initializeFailed(error as NSError)))
+            case let .solanaTokenAddress(walletAddress, _):
+                let destinationsSPLAccounts = try await services.solanaAPIClient
+                    .getTokenAccountsByOwner(
+                        pubkey: walletAddress.base58EncodedString,
+                        params: .init(
+                            mint: nil,
+                            programId: TokenProgram.id.base58EncodedString
+                        ),
+                        configs: .init(encoding: "base64")
+                    )
+                recipientAdditionalInfo = .init(splAccounts: destinationsSPLAccounts)
+            default:
+                break
             }
-        }
 
-        let state = state.copy(
-            status: .ready,
-            recipientAdditionalInfo: recipientAdditionalInfo,
-            feeRelayerContext: feeRelayerContext
-        )
-        return await changeFeeToken(state: state, feeToken: state.tokenFee, services: services)
+            let state = state.copy(
+                status: .ready,
+                recipientAdditionalInfo: recipientAdditionalInfo,
+                feeRelayerContext: try await params.feeRelayerContext()
+            )
+            return await changeFeeToken(state: state, feeToken: state.tokenFee, services: services)
+        } catch {
+            return state.copy(status: .error(reason: .initializeFailed(error as NSError)))
+        }
     }
 
     static func sendInputChangeAmountInFiat(
@@ -74,7 +88,18 @@ struct SendInputBusinessLogic {
         return await sendInputChangeAmountInToken(state: state, amount: amountInToken, services: services)
     }
 
-    static func checkIsReady(_ state: SendInputState) -> Bool { state.status == .ready }
+    static func checkIsReady(_ state: SendInputState) -> Bool {
+        switch state.status {
+        case .requiredInitialize:
+            return false
+        case .error(reason: .requiredInitialize):
+            return false
+        case .error(reason: .initializeFailed(_)):
+            return false
+        default:
+            return true
+        }
+    }
 
     static func sendInputChangeAmountInToken(
         state: SendInputState,
@@ -89,6 +114,7 @@ struct SendInputBusinessLogic {
         var status: SendInputState.Status = .ready
 
         // More than available amount in wallet
+        print(amountLamports, tokenBalance)
         if state.token.address == state.tokenFee.address {
             if amountLamports + state.feeInToken.total > tokenBalance {
                 status = .error(reason: .inputTooHigh)
@@ -102,11 +128,12 @@ struct SendInputBusinessLogic {
         if !checkIsReady(state) {
             status = .error(reason: .requiredInitialize)
         }
-        
+
         if amount == .zero {
             status = .error(reason: .inputZero)
         }
 
+        print(status)
         return state.copy(
             status: status,
             amountInFiat: amount * (state.userWalletEnvironments.exchangeRate[state.token.symbol]?.value ?? 0),
@@ -141,7 +168,7 @@ struct SendInputBusinessLogic {
             ) ?? .zero
 
             return state.copy(
-                token: token.token,
+                token: token,
                 fee: fee,
                 feeInToken: feeInToken
             )

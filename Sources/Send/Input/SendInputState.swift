@@ -11,8 +11,25 @@ public enum Amount: Equatable {
     case token(lamport: UInt64, mint: String, decimals: Int)
 }
 
+public struct SendInputActionInitializeParams: Equatable {
+    let feeRelayerContext: () async throws -> FeeRelayerContext
+
+    public init(feeRelayerContext: @escaping () async throws -> FeeRelayerContext) {
+        self.feeRelayerContext = feeRelayerContext
+    }
+
+    public init(feeRelayerContext: FeeRelayerContext) {
+        self.feeRelayerContext = { feeRelayerContext }
+    }
+
+    public static func == (
+        _: SendInputActionInitializeParams,
+        _: SendInputActionInitializeParams
+    ) -> Bool { true }
+}
+
 public enum SendInputAction: Equatable {
-    case initialize(FeeRelayerContext)
+    case initialize(SendInputActionInitializeParams)
 
     case update
 
@@ -174,5 +191,17 @@ public extension SendInputState {
 
     var maxAmountInputInFiat: Double {
         maxAmountInputInToken * (userWalletEnvironments.exchangeRate[token.symbol]?.value ?? 0)
+    }
+
+    var sourceWallet: Wallet? {
+        userWalletEnvironments.wallets.first { (wallet: Wallet) -> Bool in
+            wallet.token.address == token.address
+        }
+    }
+
+    var feeWallet: Wallet? {
+        userWalletEnvironments.wallets.first { (wallet: Wallet) -> Bool in
+            wallet.token.address == tokenFee.address
+        }
     }
 }

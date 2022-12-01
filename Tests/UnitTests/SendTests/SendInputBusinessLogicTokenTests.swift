@@ -73,7 +73,7 @@ class SendInputBusinessLogicTokenTests: XCTestCase {
 
         let nextState = await SendInputBusinessLogic.sendInputBusinessLogic(
             state: initialState,
-            action: .initialize(feeContext(currentUsage: 100)),
+            action: .initialize(.init(feeRelayerContext: feeContext(currentUsage: 100))),
             services: services
         )
 
@@ -203,7 +203,7 @@ class SendInputBusinessLogicTokenTests: XCTestCase {
 
         var nextState = await SendInputBusinessLogic.sendInputBusinessLogic(
             state: initialState,
-            action: .initialize(feeContext()),
+            action: .initialize(.init(feeRelayerContext: feeContext(currentUsage: 0))),
             services: services
         )
 

@@ -185,21 +185,3 @@ class SendInputBusinessLogicInputTests: XCTestCase {
         XCTAssertEqual(nextState.status, .error(reason: .inputTooHigh))
     }
 }
-
-private class MockSendFeeCalculator: SendFeeCalculator {
-    func load() async throws {
-        fatalError()
-    }
-    
-    func getFees(from wallet: SolanaSwift.Wallet, receiver: String, payingTokenMint: String?) async throws -> SolanaSwift.FeeAmount? {
-        fatalError()
-    }
-    
-    func getFeesInPayingToken(feeInSOL: SolanaSwift.FeeAmount, payingFeeToken: SolanaSwift.Token) async throws -> SolanaSwift.FeeAmount? {
-        fatalError()
-    }
-    
-    func getFreeTransactionFeeLimit() async throws -> FeeRelayerSwift.UsageStatus {
-        fatalError()
-    }
-}
