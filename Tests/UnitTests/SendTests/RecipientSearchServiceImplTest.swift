@@ -395,16 +395,14 @@ class RecipientSearchServiceImplTest: XCTestCase {
         )
         XCTAssertEqual(
             result,
-            .ok([
-                .init(
-                    address: "CCtYXZHmeJXxR9U1QLMGYxRuPx5HRP5g3QaXNA4UWqFU",
-                    category: .solanaTokenAddress(
-                        walletAddress: try! .init(string: "9sdwzJWooFrjNGVX6GkkWUG9GyeBnhgJYqh27AsPqwbM"),
-                        token: .usdc
-                    ),
-                    attributes: [.funds, .pda, .incompatibleWithpreChosenToken]
+            .missingUserToken(recipient: .init(
+                address: "CCtYXZHmeJXxR9U1QLMGYxRuPx5HRP5g3QaXNA4UWqFU",
+                category: .solanaTokenAddress(
+                    walletAddress: try! .init(string: "9sdwzJWooFrjNGVX6GkkWUG9GyeBnhgJYqh27AsPqwbM"),
+                    token: .usdc
                 ),
-            ])
+                attributes: [.funds, .pda]
+            ))
         )
     }
 

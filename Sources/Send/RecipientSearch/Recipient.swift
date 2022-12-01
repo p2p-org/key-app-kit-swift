@@ -11,7 +11,6 @@ public struct Recipient: Hashable, Codable {
 
         public static let funds = Attribute(rawValue: 1 << 0)
         public static let pda = Attribute(rawValue: 1 << 1)
-        public static let incompatibleWithpreChosenToken = Attribute(rawValue: 1 << 2)
     
         public init(rawValue: Int) {
             self.rawValue = rawValue
