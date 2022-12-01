@@ -1,4 +1,5 @@
 import SolanaSwift
+import Foundation
 import FeeRelayerSwift
 
 public protocol SendActionService {

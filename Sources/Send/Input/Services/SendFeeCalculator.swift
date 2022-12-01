@@ -1,6 +1,7 @@
 import FeeRelayerSwift
 import OrcaSwapSwift
 import SolanaSwift
+import Foundation
 
 public protocol SendFeeCalculator: AnyObject {
     func load() async throws
