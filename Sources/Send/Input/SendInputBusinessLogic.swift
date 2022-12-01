@@ -102,6 +102,10 @@ struct SendInputBusinessLogic {
         if !checkIsReady(state) {
             status = .error(reason: .requiredInitialize)
         }
+        
+        if amount == .zero {
+            status = .error(reason: .inputZero)
+        }
 
         return state.copy(
             status: status,
@@ -137,7 +141,7 @@ struct SendInputBusinessLogic {
             ) ?? .zero
 
             return state.copy(
-                token: token,
+                token: token.token,
                 fee: fee,
                 feeInToken: feeInToken
             )

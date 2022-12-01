@@ -20,7 +20,6 @@ public enum SendInputAction: Equatable {
     case changeAmountInToken(Double)
     case changeUserToken(Token)
     case changeFeeToken(Token)
-    case send
 }
 
 public struct SendInputServices {
@@ -69,13 +68,13 @@ public struct SendInputState: Equatable {
 
     public let status: Status
 
-    let recipient: Recipient
-    let recipientAdditionalInfo: RecipientAdditionalInfo
-    let token: Token
-    let userWalletEnvironments: UserWalletEnvironments
+    public let recipient: Recipient
+    public let recipientAdditionalInfo: RecipientAdditionalInfo
+    public let token: Token
+    public let userWalletEnvironments: UserWalletEnvironments
 
-    let amountInFiat: Double
-    let amountInToken: Double
+    public let amountInFiat: Double
+    public let amountInToken: Double
 
     public let fee: FeeAmount
     public let tokenFee: Token

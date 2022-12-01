@@ -166,6 +166,8 @@ let package = Package(
                 "JSBridge",
                 .product(name: "SolanaSwift", package: "solana-swift"),
                 .product(name: "CryptoSwift", package: "CryptoSwift"),
+                "AnalyticsManager",
+                "KeyAppKitCore",
             ],
             resources: [
                 .process("Resource/index.html"),
@@ -207,6 +209,7 @@ let package = Package(
             name: "Send",
             dependencies: [
                 .product(name: "SolanaSwift", package: "solana-swift"),
+                .product(name: "FeeRelayerSwift", package: "FeeRelayerSwift"),
                 "NameService",
                 "SolanaPricesAPIs",
                 "TransactionParser",
