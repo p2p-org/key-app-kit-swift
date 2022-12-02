@@ -153,7 +153,7 @@ class SendInputBusinessLogicTokenTests: XCTestCase {
                 configs _: RequestConfiguration?
             ) async throws -> [SolanaSwift.TokenAccount<AccountInfo>] {
                 [
-                    try .init(
+                    .init(
                         pubkey: "7cRd5jTqByhQVVEDdhzoANiD98JV2MW27b64tKLiRDaC",
                         account: .init(
                             lamports: 100_000,
