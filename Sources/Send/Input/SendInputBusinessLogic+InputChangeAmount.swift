@@ -22,7 +22,7 @@ extension SendInputBusinessLogic {
     static func sendInputChangeAmountInToken(
         state: SendInputState,
         amount: Double,
-        services _: SendInputServices
+        services: SendInputServices
     ) async -> SendInputState {
         let userTokenAccount: Wallet? = state.userWalletEnvironments.wallets
             .first(where: { $0.token.symbol == state.token.symbol })
@@ -42,18 +42,35 @@ extension SendInputBusinessLogic {
             }
         }
 
-        if !checkIsReady(state) {
-            status = .error(reason: .requiredInitialize)
+        var cachedMinAmount: UInt64 = state.minAmount
+        // Minimum amount to send to the account with no funds
+        if state.recipient.category == .solanaAddress && !state.recipient.attributes.contains(.funds) {
+            do {
+                let minAmount: UInt64
+                if cachedMinAmount != .zero {
+                    minAmount = cachedMinAmount
+                } else {
+                    minAmount = try await services.solanaAPIClient.getMinimumBalanceForRentExemption(span: .zero)
+                    cachedMinAmount = minAmount
+                }
+                if amountLamports < minAmount {
+                    status = .error(reason: .inputTooLow(minAmount.convertToBalance(decimals: 9)))
+                }
+            }
+            catch let error {
+                return await handleMinAmountCalculationError(state: state, error: error)
+            }
         }
 
-        if amount == .zero {
-            status = .error(reason: .inputZero)
+        if !checkIsReady(state) {
+            status = .error(reason: .requiredInitialize)
         }
 
         return state.copy(
             status: status,
             amountInFiat: amount * (state.userWalletEnvironments.exchangeRate[state.token.symbol]?.value ?? 0),
-            amountInToken: amount
+            amountInToken: amount,
+            minAmount: cachedMinAmount
         )
     }
 }
