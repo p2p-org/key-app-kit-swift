@@ -50,11 +50,32 @@ struct SendInputBusinessLogic {
         let status: SendInputState.Status
         let error = error as NSError
 
-        if error.code == NSURLErrorNetworkConnectionLost || error.code == NSURLErrorNotConnectedToInternet {
+        if error.isNetworkConnectionError {
             status = .error(reason: .networkConnectionError(error))
         } else {
             status = .error(reason: .feeCalculationFailed)
         }
         return state.copy(status: status)
+    }
+
+    static func handleMinAmountCalculationError(
+        state: SendInputState,
+        error: Error
+    ) async -> SendInputState {
+        let status: SendInputState.Status
+        let error = error as NSError
+
+        if error.isNetworkConnectionError {
+            status = .error(reason: .networkConnectionError(error))
+        } else {
+            status = .error(reason: .unknown(error))
+        }
+        return state.copy(status: status)
+    }
+}
+
+private extension NSError {
+    var isNetworkConnectionError: Bool {
+        self.code == NSURLErrorNetworkConnectionLost || self.code == NSURLErrorNotConnectedToInternet
     }
 }

@@ -57,7 +57,6 @@ public struct SendInputState: Equatable {
 
         case inputTooHigh
         case inputTooLow(Double)
-        case inputZero
 
         case feeCalculationFailed
 
@@ -97,6 +96,7 @@ public struct SendInputState: Equatable {
     public let tokenFee: Token
     public let feeInToken: FeeAmount
     public let feeRelayerContext: FeeRelayerContext?
+    public let minAmount: UInt64
 
     public init(
         status: Status,
@@ -109,7 +109,8 @@ public struct SendInputState: Equatable {
         fee: FeeAmount,
         tokenFee: Token,
         feeInToken: FeeAmount,
-        feeRelayerContext: FeeRelayerContext?
+        feeRelayerContext: FeeRelayerContext?,
+        minAmount: UInt64
     ) {
         self.status = status
         self.recipient = recipient
@@ -122,6 +123,7 @@ public struct SendInputState: Equatable {
         self.tokenFee = tokenFee
         self.feeInToken = feeInToken
         self.feeRelayerContext = feeRelayerContext
+        self.minAmount = minAmount
     }
 
     public static func zero(
@@ -144,7 +146,8 @@ public struct SendInputState: Equatable {
             fee: .zero,
             tokenFee: feeToken,
             feeInToken: .zero,
-            feeRelayerContext: feeRelayerContext
+            feeRelayerContext: feeRelayerContext,
+            minAmount: .zero
         )
     }
 
@@ -159,9 +162,10 @@ public struct SendInputState: Equatable {
         fee: FeeAmount? = nil,
         tokenFee: Token? = nil,
         feeInToken: FeeAmount? = nil,
-        feeRelayerContext: FeeRelayerContext? = nil
+        feeRelayerContext: FeeRelayerContext? = nil,
+        minAmount: UInt64? = nil
     ) -> SendInputState {
-        .init(
+        return .init(
             status: status ?? self.status,
             recipient: recipient ?? self.recipient,
             recipientAdditionalInfo: recipientAdditionalInfo ?? self.recipientAdditionalInfo,
@@ -172,7 +176,8 @@ public struct SendInputState: Equatable {
             fee: fee ?? self.fee,
             tokenFee: tokenFee ?? self.tokenFee,
             feeInToken: feeInToken ?? self.feeInToken,
-            feeRelayerContext: feeRelayerContext ?? self.feeRelayerContext
+            feeRelayerContext: feeRelayerContext ?? self.feeRelayerContext,
+            minAmount: minAmount ?? self.minAmount
         )
     }
 }
