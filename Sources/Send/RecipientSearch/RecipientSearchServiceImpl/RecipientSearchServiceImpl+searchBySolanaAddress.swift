@@ -3,9 +3,11 @@ import SolanaSwift
 
 extension RecipientSearchServiceImpl {
     /// Search by solana address
-    func searchBySolanaAddress(_ address: PublicKey, env: UserWalletEnvironments,
-                               preChosenToken: Token?) async -> RecipientSearchResult
-    {
+    func searchBySolanaAddress(
+        _ address: PublicKey,
+        env: UserWalletEnvironments,
+        preChosenToken: Token?
+    ) async -> RecipientSearchResult {
         do {
             // get address
             let addressBase58 = address.base58EncodedString
@@ -85,19 +87,36 @@ extension RecipientSearchServiceImpl {
                     }
                 }
             } else {
-                // This account doesn't exits in blockchain
-                if try await checkBalanceForCreateAccount(env: env) {
+                let splAccounts = try await solanaClient.getTokenAccountsByOwner(
+                    pubkey: address.base58EncodedString,
+                    params: .init(
+                        mint: nil,
+                        programId: TokenProgram.id.base58EncodedString
+                    ),
+                    configs: .init(encoding: "base64")
+                )
+
+                if splAccounts.isEmpty {
+                    // This account doesn't exits in blockchain
+                    if try await checkBalanceForCreateAccount(env: env) {
+                        return .ok([.init(
+                            address: addressBase58,
+                            category: .solanaAddress,
+                            attributes: [attributes]
+                        )])
+                    } else {
+                        return .insufficientUserFunds(recipient: .init(
+                            address: addressBase58,
+                            category: .solanaAddress,
+                            attributes: [attributes]
+                        ))
+                    }
+                } else {
                     return .ok([.init(
                         address: addressBase58,
                         category: .solanaAddress,
-                        attributes: [attributes]
+                        attributes: [.funds, attributes]
                     )])
-                } else {
-                    return .insufficientUserFunds(recipient: .init(
-                        address: addressBase58,
-                        category: .solanaAddress,
-                        attributes: [attributes]
-                    ))
                 }
             }
         } catch let error as SolanaSwift.APIClientError {

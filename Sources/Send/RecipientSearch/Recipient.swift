@@ -9,8 +9,13 @@ public struct Recipient: Hashable, Codable {
     public struct Attribute: OptionSet, Hashable, Codable {
         public let rawValue: Int
 
+        /// Account has funds (SOL) or has SPL token accounts (PDAs)
         public static let funds = Attribute(rawValue: 1 << 0)
+        
+        /// The address is PDA
         public static let pda = Attribute(rawValue: 1 << 1)
+        
+        /// TODO: Make a part of ``RecipientSearchResult`` enum
         public static let incompatibleWithpreChosenToken = Attribute(rawValue: 1 << 2)
     
         public init(rawValue: Int) {
