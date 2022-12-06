@@ -98,19 +98,11 @@ extension RecipientSearchServiceImpl {
 
                 if splAccounts.isEmpty {
                     // This account doesn't exits in blockchain
-                    if try await checkBalanceForCreateAccount(env: env) {
-                        return .ok([.init(
-                            address: addressBase58,
-                            category: .solanaAddress,
-                            attributes: [attributes]
-                        )])
-                    } else {
-                        return .insufficientUserFunds(recipient: .init(
-                            address: addressBase58,
-                            category: .solanaAddress,
-                            attributes: [attributes]
-                        ))
-                    }
+                    return .ok([.init(
+                        address: addressBase58,
+                        category: .solanaAddress,
+                        attributes: [attributes]
+                    )])
                 } else {
                     return .ok([.init(
                         address: addressBase58,
