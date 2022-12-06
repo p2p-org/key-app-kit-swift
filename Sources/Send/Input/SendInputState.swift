@@ -105,8 +105,6 @@ public struct SendInputState: Equatable {
     ///
     /// Current state for free transactions
     public let feeRelayerContext: FeeRelayerContext?
-    
-    public let minAmount: UInt64
 
     public init(
         status: Status,
@@ -119,8 +117,7 @@ public struct SendInputState: Equatable {
         fee: FeeAmount,
         tokenFee: Token,
         feeInToken: FeeAmount,
-        feeRelayerContext: FeeRelayerContext?,
-        minAmount: UInt64
+        feeRelayerContext: FeeRelayerContext?
     ) {
         self.status = status
         self.recipient = recipient
@@ -133,7 +130,6 @@ public struct SendInputState: Equatable {
         self.tokenFee = tokenFee
         self.feeInToken = feeInToken
         self.feeRelayerContext = feeRelayerContext
-        self.minAmount = minAmount
     }
 
     public static func zero(
@@ -156,8 +152,7 @@ public struct SendInputState: Equatable {
             fee: .zero,
             tokenFee: feeToken,
             feeInToken: .zero,
-            feeRelayerContext: feeRelayerContext,
-            minAmount: .zero
+            feeRelayerContext: feeRelayerContext
         )
     }
 
@@ -172,8 +167,7 @@ public struct SendInputState: Equatable {
         fee: FeeAmount? = nil,
         tokenFee: Token? = nil,
         feeInToken: FeeAmount? = nil,
-        feeRelayerContext: FeeRelayerContext? = nil,
-        minAmount: UInt64? = nil
+        feeRelayerContext: FeeRelayerContext? = nil
     ) -> SendInputState {
         .init(
             status: status ?? self.status,
@@ -186,8 +180,7 @@ public struct SendInputState: Equatable {
             fee: fee ?? self.fee,
             tokenFee: tokenFee ?? self.tokenFee,
             feeInToken: feeInToken ?? self.feeInToken,
-            feeRelayerContext: feeRelayerContext ?? self.feeRelayerContext,
-            minAmount: minAmount ?? self.minAmount
+            feeRelayerContext: feeRelayerContext ?? self.feeRelayerContext
         )
     }
 }

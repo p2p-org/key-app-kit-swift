@@ -24,6 +24,10 @@ extension SendInputBusinessLogic {
         amount: Double,
         services: SendInputServices
     ) async -> SendInputState {
+        guard let feeRelayerContext = state.feeRelayerContext else {
+            return state.copy(status: .error(reason: .missingFeeRelayer))
+        }
+
         let userTokenAccount: Wallet? = state.userWalletEnvironments.wallets
             .first(where: { $0.token.symbol == state.token.symbol })
         let tokenBalance = userTokenAccount?.lamports ?? 0
@@ -42,17 +46,10 @@ extension SendInputBusinessLogic {
             }
         }
 
-        var cachedMinAmount: UInt64 = state.minAmount
         // Minimum amount to send to the account with no funds
         if state.recipient.category == .solanaAddress && !state.recipient.attributes.contains(.funds) {
             do {
-                let minAmount: UInt64
-                if cachedMinAmount != .zero {
-                    minAmount = cachedMinAmount
-                } else {
-                    minAmount = try await services.solanaAPIClient.getMinimumBalanceForRentExemption(span: .zero)
-                    cachedMinAmount = minAmount
-                }
+                let minAmount = state.token.isNativeSOL ? feeRelayerContext.minimumRelayAccountBalance : feeRelayerContext.minimumTokenAccountBalance
                 if amountLamports < minAmount {
                     status = .error(reason: .inputTooLow(minAmount.convertToBalance(decimals: 9)))
                 }
@@ -69,8 +66,7 @@ extension SendInputBusinessLogic {
         return state.copy(
             status: status,
             amountInFiat: amount * (state.userWalletEnvironments.exchangeRate[state.token.symbol]?.value ?? 0),
-            amountInToken: amount,
-            minAmount: cachedMinAmount
+            amountInToken: amount
         )
     }
 }
