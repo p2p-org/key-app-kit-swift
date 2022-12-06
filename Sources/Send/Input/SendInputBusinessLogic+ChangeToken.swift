@@ -31,8 +31,7 @@ extension SendInputBusinessLogic {
 
             var state = state.copy(
                 token: token,
-                fee: fee,
-                minAmount: .zero
+                fee: fee
             )
 
             // Auto select fee  token
