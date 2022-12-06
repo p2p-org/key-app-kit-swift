@@ -92,10 +92,20 @@ public struct SendInputState: Equatable {
     public let amountInFiat: Double
     public let amountInToken: Double
 
+    /// Amount fee in SOL
     public let fee: FeeAmount
+
+    /// Selected fee token
     public let tokenFee: Token
+
+    /// Amount fee in Token (Converted from amount fee in SOL)
     public let feeInToken: FeeAmount
+    
+    /// Fee relayer context
+    ///
+    /// Current state for free transactions
     public let feeRelayerContext: FeeRelayerContext?
+    
     public let minAmount: UInt64
 
     public init(
@@ -165,7 +175,7 @@ public struct SendInputState: Equatable {
         feeRelayerContext: FeeRelayerContext? = nil,
         minAmount: UInt64? = nil
     ) -> SendInputState {
-        return .init(
+        .init(
             status: status ?? self.status,
             recipient: recipient ?? self.recipient,
             recipientAdditionalInfo: recipientAdditionalInfo ?? self.recipientAdditionalInfo,
