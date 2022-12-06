@@ -5,10 +5,9 @@
 import FeeRelayerSwift
 import Foundation
 import NameService
+import SolanaSwift
 import XCTest
 @testable import Send
-import SolanaSwift
-import FeeRelayerSwift
 
 class SendInputBusinessLogicInputTests: XCTestCase {
     let defaultUserWalletState: UserWalletEnvironments = .init(
@@ -23,6 +22,22 @@ class SendInputBusinessLogicInputTests: XCTestCase {
         solanaAPIClient: MockedSolanaAPIClient()
     )
 
+    private func feeContext(currentUsage: Int = 0) -> FeeRelayerContext {
+        .init(
+            minimumTokenAccountBalance: 2_039_280,
+            minimumRelayAccountBalance: 890_880,
+            feePayerAddress: "FG4Y3yX4AAchp1HvNZ7LfzFTewF2f6nDoMDCohTFrdpT",
+            lamportsPerSignature: 5000,
+            relayAccountStatus: .notYetCreated,
+            usageStatus: .init(
+                maxUsage: 100,
+                currentUsage: currentUsage,
+                maxAmount: 1_000_000,
+                amountUsed: 0
+            )
+        )
+    }
+
     /// Change input amount
     ///
     /// Token: SOL
@@ -36,7 +51,8 @@ class SendInputBusinessLogicInputTests: XCTestCase {
             ),
             token: .nativeSolana,
             feeToken: .nativeSolana,
-            userWalletState: defaultUserWalletState
+            userWalletState: defaultUserWalletState,
+            feeRelayerContext: feeContext()
         )
 
         let nextState = await SendInputBusinessLogic.sendInputBusinessLogic(
@@ -63,7 +79,8 @@ class SendInputBusinessLogicInputTests: XCTestCase {
             ),
             token: .nativeSolana,
             feeToken: .nativeSolana,
-            userWalletState: defaultUserWalletState
+            userWalletState: defaultUserWalletState,
+            feeRelayerContext: feeContext()
         )
 
         let nextState = await SendInputBusinessLogic.sendInputBusinessLogic(
@@ -90,7 +107,8 @@ class SendInputBusinessLogicInputTests: XCTestCase {
             ),
             token: .nativeSolana,
             feeToken: .nativeSolana,
-            userWalletState: defaultUserWalletState
+            userWalletState: defaultUserWalletState,
+            feeRelayerContext: feeContext()
         )
 
         let nextState = await SendInputBusinessLogic.sendInputBusinessLogic(
@@ -117,7 +135,8 @@ class SendInputBusinessLogicInputTests: XCTestCase {
             ),
             token: .nativeSolana,
             feeToken: .nativeSolana,
-            userWalletState: defaultUserWalletState
+            userWalletState: defaultUserWalletState,
+            feeRelayerContext: feeContext()
         )
 
         let nextState = await SendInputBusinessLogic.sendInputBusinessLogic(
@@ -144,7 +163,8 @@ class SendInputBusinessLogicInputTests: XCTestCase {
             ),
             token: .nativeSolana,
             feeToken: .nativeSolana,
-            userWalletState: defaultUserWalletState
+            userWalletState: defaultUserWalletState,
+            feeRelayerContext: feeContext()
         )
 
         let nextState = await SendInputBusinessLogic.sendInputBusinessLogic(
@@ -171,7 +191,8 @@ class SendInputBusinessLogicInputTests: XCTestCase {
             ),
             token: .nativeSolana,
             feeToken: .nativeSolana,
-            userWalletState: defaultUserWalletState
+            userWalletState: defaultUserWalletState,
+        feeRelayerContext: feeContext()
         )
 
         let nextState = await SendInputBusinessLogic.sendInputBusinessLogic(

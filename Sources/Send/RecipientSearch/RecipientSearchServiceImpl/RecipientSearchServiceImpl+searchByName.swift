@@ -10,13 +10,20 @@ extension RecipientSearchServiceImpl {
             let records: [NameRecord] = try await nameService.getOwners(input)
             let recipients: [Recipient] = records
                 .map { record in
-                    let (name, domain) = UsernameUtils.splitIntoNameAndDomain(rawName: record.name ?? "")
-
-                    return .init(
-                        address: record.owner,
-                        category: .username(name: name, domain: domain),
-                        attributes: []
-                    )
+                    if let name = record.name {
+                        let (name, domain) = UsernameUtils.splitIntoNameAndDomain(rawName: record.name ?? "")
+                        return .init(
+                            address: record.owner,
+                            category: .username(name: name, domain: domain),
+                            attributes: []
+                        )
+                    } else {
+                        return .init(
+                            address: record.owner,
+                            category: .solanaAddress,
+                            attributes: [.funds]
+                        )
+                    }
                 }
                 .filter { (recipient: Recipient) -> Bool in
                     !env.wallets.contains { (wallet: Wallet) in wallet.pubkey == recipient.address }
@@ -25,7 +32,7 @@ extension RecipientSearchServiceImpl {
                     switch (lhs.category, rhs.category) {
                     case let (.username(_, lhsDomain), .username(_, rhsDomain)):
                         return (orders[lhsDomain] ?? 0) > (orders[rhsDomain] ?? 0)
-                    case let (.username(_, _), _):
+                    case (.username(_, _), _):
                         return true
                     default:
                         return false

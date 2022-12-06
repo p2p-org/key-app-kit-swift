@@ -100,7 +100,7 @@ public struct SendInputState: Equatable {
 
     /// Amount fee in Token (Converted from amount fee in SOL)
     public let feeInToken: FeeAmount
-    
+
     /// Fee relayer context
     ///
     /// Current state for free transactions
