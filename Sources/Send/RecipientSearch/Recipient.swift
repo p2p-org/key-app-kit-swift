@@ -14,9 +14,6 @@ public struct Recipient: Hashable, Codable {
         
         /// The address is PDA
         public static let pda = Attribute(rawValue: 1 << 1)
-        
-        /// TODO: Make a part of ``RecipientSearchResult`` enum
-        public static let incompatibleWithpreChosenToken = Attribute(rawValue: 1 << 2)
     
         public init(rawValue: Int) {
             self.rawValue = rawValue

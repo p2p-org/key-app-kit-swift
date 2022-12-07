@@ -61,13 +61,6 @@ extension RecipientSearchServiceImpl {
                         token: token
                     )
 
-                    // detect incompatibility with preChosenToken
-                    if let preChosenToken,
-                       preChosenToken.address != token.address
-                    {
-                        attributes.insert(.incompatibleWithpreChosenToken)
-                    }
-
                     // Detect token account
                     let recipient: Recipient = .init(
                         address: addressBase58,
@@ -77,7 +70,8 @@ extension RecipientSearchServiceImpl {
 
                     if let wallet = env.wallets
                         .first(where: { $0.token.address == accountInfo.mint.base58EncodedString }),
-                        (wallet.lamports ?? 0) > 0
+                        (wallet.lamports ?? 0) > 0,
+                       token.address == preChosenToken?.address ?? token.address
                     {
                         // User has the same token
                         return .ok([recipient])
