@@ -110,6 +110,7 @@ class SendInputBusinessLogicTokenTests: XCTestCase {
                 attributes: [.funds]
             ),
             recipientAdditionalInfo: .init(
+                walletAccount: nil,
                 splAccounts: []
             ),
             token: .nativeSolana,
@@ -194,6 +195,7 @@ class SendInputBusinessLogicTokenTests: XCTestCase {
                 attributes: [.funds]
             ),
             recipientAdditionalInfo: .init(
+                walletAccount: nil,
                 splAccounts: []
             ),
             token: .nativeSolana,

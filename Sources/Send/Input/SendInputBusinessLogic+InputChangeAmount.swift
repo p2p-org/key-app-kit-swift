@@ -22,7 +22,7 @@ extension SendInputBusinessLogic {
     static func sendInputChangeAmountInToken(
         state: SendInputState,
         amount: Double,
-        services: SendInputServices
+        services _: SendInputServices
     ) async -> SendInputState {
         guard let feeRelayerContext = state.feeRelayerContext else {
             return state.copy(status: .error(reason: .missingFeeRelayer))
@@ -47,15 +47,10 @@ extension SendInputBusinessLogic {
         }
 
         // Minimum amount to send to the account with no funds
-        if state.recipient.category == .solanaAddress && !state.recipient.attributes.contains(.funds) {
-            do {
-                let minAmount = state.token.isNativeSOL ? feeRelayerContext.minimumRelayAccountBalance : feeRelayerContext.minimumTokenAccountBalance
-                if amountLamports < minAmount {
-                    status = .error(reason: .inputTooLow(minAmount.convertToBalance(decimals: 9)))
-                }
-            }
-            catch let error {
-                return await handleMinAmountCalculationError(state: state, error: error)
+        if state.token.isNativeSOL, state.recipientAdditionalInfo.walletAccount != nil {
+            let minAmount = feeRelayerContext.minimumRelayAccountBalance
+            if amountLamports < minAmount {
+                status = .error(reason: .inputTooLow(minAmount.convertToBalance(decimals: 9)))
             }
         }
 

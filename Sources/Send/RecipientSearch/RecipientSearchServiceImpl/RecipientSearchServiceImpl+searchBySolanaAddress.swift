@@ -71,7 +71,7 @@ extension RecipientSearchServiceImpl {
                     if let wallet = env.wallets
                         .first(where: { $0.token.address == accountInfo.mint.base58EncodedString }),
                         (wallet.lamports ?? 0) > 0,
-                       token.address == preChosenToken?.address ?? token.address
+                        token.address == preChosenToken?.address ?? token.address
                     {
                         // User has the same token
                         return .ok([recipient])

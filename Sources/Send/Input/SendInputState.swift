@@ -74,12 +74,23 @@ public struct SendInputState: Equatable {
     }
 
     public struct RecipientAdditionalInfo: Equatable {
+        public let walletAccount: BufferInfo<SolanaAddressInfo>?
+
         ///  Usable when recipient category is ``Recipient.Category.solanaAddress``
         public let splAccounts: [SolanaSwift.TokenAccount<AccountInfo>]
 
-        public init(splAccounts: [SolanaSwift.TokenAccount<AccountInfo>]) { self.splAccounts = splAccounts }
+        public init(
+            walletAccount: BufferInfo<SolanaAddressInfo>?,
+            splAccounts: [SolanaSwift.TokenAccount<AccountInfo>]
+        ) {
+            self.walletAccount = walletAccount
+            self.splAccounts = splAccounts
+        }
 
-        public static let zero: RecipientAdditionalInfo = .init(splAccounts: [])
+        public static let zero: RecipientAdditionalInfo = .init(
+            walletAccount: nil,
+            splAccounts: []
+        )
     }
 
     public let status: Status

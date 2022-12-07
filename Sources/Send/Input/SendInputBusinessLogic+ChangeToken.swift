@@ -59,11 +59,12 @@ extension SendInputBusinessLogic {
         token: Token,
         services: SendInputServices
     ) async -> (token: Token, fee: FeeAmount?) {
-        let preferOrder: [String: Int] = ["usdc": 1, "usdt": 2, token.symbol: 3, "sol": 4]
+        let preferOrder: [String: Int] = ["USDC": 1, "USDT": 2, token.symbol: 3, "SOL": 4]
         let sortedWallets = userWallets.sorted { (lhs: Wallet, rhs: Wallet) -> Bool in
             (preferOrder[lhs.token.symbol] ?? 5) < (preferOrder[rhs.token.symbol] ?? 5)
         }
 
+        print(sortedWallets)
         for wallet in sortedWallets {
             do {
                 let feeInToken: FeeAmount = (try await services.swapService.calculateFeeInPayingToken(
@@ -71,6 +72,7 @@ extension SendInputBusinessLogic {
                     payingFeeTokenMint: try PublicKey(string: wallet.token.address)
                 )) ?? .zero
 
+                print(feeInToken, wallet.lamports, feeInToken.total < (wallet.lamports ?? 0))
                 if feeInToken.total < (wallet.lamports ?? 0) {
                     return (wallet.token, feeInToken)
                 }
