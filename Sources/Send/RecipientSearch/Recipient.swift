@@ -27,6 +27,15 @@ public struct Recipient: Hashable, Codable {
         case solanaTokenAddress(walletAddress: PublicKey, token: Token)
 
         case bitcoinAddress
+        
+        var isDirectSPLTokenAddress: Bool {
+            switch self {
+            case .solanaTokenAddress:
+                return true
+            default:
+                return false
+            }
+        }
     }
     
     public init(address: String, category: Category, attributes: Attribute, createdData: Date? = nil) {
