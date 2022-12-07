@@ -28,7 +28,7 @@ public struct Recipient: Hashable, Codable {
 
         case bitcoinAddress
         
-        var isDirectSPLTokenAddress: Bool {
+        public var isDirectSPLTokenAddress: Bool {
             switch self {
             case .solanaTokenAddress:
                 return true
