@@ -59,12 +59,15 @@ extension SendInputBusinessLogic {
         token: Token,
         services: SendInputServices
     ) async -> (token: Token, fee: FeeAmount?) {
-        let preferOrder: [String: Int] = ["USDC": 1, "USDT": 2, token.symbol: 3, "SOL": 4]
+        var preferOrder: [String: Int] = ["USDC": 1, "USDT": 2, "SOL": 4]
+        if !preferOrder.keys.contains(token.symbol) {
+            preferOrder[token.symbol] = 3
+        }
+
         let sortedWallets = userWallets.sorted { (lhs: Wallet, rhs: Wallet) -> Bool in
             (preferOrder[lhs.token.symbol] ?? 5) < (preferOrder[rhs.token.symbol] ?? 5)
         }
 
-        print(sortedWallets)
         for wallet in sortedWallets {
             do {
                 let feeInToken: FeeAmount = (try await services.swapService.calculateFeeInPayingToken(
@@ -76,8 +79,7 @@ extension SendInputBusinessLogic {
                 if feeInToken.total < (wallet.lamports ?? 0) {
                     return (wallet.token, feeInToken)
                 }
-            }
-            catch {
+            } catch {
                 continue
             }
         }

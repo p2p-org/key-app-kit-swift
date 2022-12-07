@@ -202,7 +202,11 @@ public extension SendInputState {
             .lamports ?? 0
 
         if token.address == tokenFee.address {
-            balance = balance - feeInToken.total
+            if balance >= feeInToken.total {
+                balance = balance - feeInToken.total
+            } else {
+                return 0
+            }
         }
 
         return Double(balance) / pow(10, Double(token.decimals))
