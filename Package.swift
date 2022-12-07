@@ -64,6 +64,18 @@ let package = Package(
             name: "Solend",
             targets: ["Solend"]
         ),
+        
+        // Send
+        .library(
+            name: "Send",
+            targets: ["Send"]
+        ),
+        
+        // History
+        .library(
+            name: "History",
+            targets: ["History"]
+        ),
     ],
     dependencies: [
         .package(url: "https://github.com/p2p-org/solana-swift", branch: "feature/isOnCurveAsPublic"),
