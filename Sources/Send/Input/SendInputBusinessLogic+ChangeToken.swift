@@ -34,26 +34,19 @@ extension SendInputBusinessLogic {
                 fee: fee
             )
 
-            // Auto select fee  token
-            state = state.copy(
-                tokenFee: await autoSelectTokenFee(
+            if fee != .zero {
+                // Auto select fee token
+                let feeInfo = await autoSelectTokenFee(
                     userWallets: state.userWalletEnvironments.wallets,
                     feeInSol: state.fee,
                     token: state.token,
                     services: services
                 )
-            )
-
-            // Update fee in token
-            let feeInToken = try? await services.swapService.calculateFeeInPayingToken(
-                feeInSOL: fee,
-                payingFeeTokenMint: try PublicKey(string: state.tokenFee.address)
-            ) ?? .zero
-
-            state = state.copy(
-                feeInToken: feeInToken
-            )
-
+                state = state.copy(
+                    tokenFee: feeInfo.token,
+                    feeInToken: feeInfo.fee
+                )
+            }
             return state
         } catch {
             return state.copy(status: .error(reason: .unknown(error as NSError)))
@@ -65,23 +58,28 @@ extension SendInputBusinessLogic {
         feeInSol: FeeAmount,
         token: Token,
         services: SendInputServices
-    ) async -> Token? {
+    ) async -> (token: Token, fee: FeeAmount?) {
         let preferOrder: [String: Int] = ["usdc": 1, "usdt": 2, token.symbol: 3, "sol": 4]
         let sortedWallets = userWallets.sorted { (lhs: Wallet, rhs: Wallet) -> Bool in
             (preferOrder[lhs.token.symbol] ?? 5) < (preferOrder[rhs.token.symbol] ?? 5)
         }
 
         for wallet in sortedWallets {
-            let feeInToken: FeeAmount = (try? await services.swapService.calculateFeeInPayingToken(
-                feeInSOL: feeInSol,
-                payingFeeTokenMint: try PublicKey(string: wallet.token.address)
-            )) ?? .zero
+            do {
+                let feeInToken: FeeAmount = (try await services.swapService.calculateFeeInPayingToken(
+                    feeInSOL: feeInSol,
+                    payingFeeTokenMint: try PublicKey(string: wallet.token.address)
+                )) ?? .zero
 
-            if feeInToken.total < (wallet.lamports ?? 0) {
-                return wallet.token
+                if feeInToken.total < (wallet.lamports ?? 0) {
+                    return (wallet.token, feeInToken)
+                }
+            }
+            catch {
+                continue
             }
         }
 
-        return .nativeSolana
+        return (.nativeSolana, feeInSol)
     }
 }
