@@ -220,10 +220,7 @@ let package = Package(
         .target(
             name: "History",
             dependencies: [
-                .product(name: "SolanaSwift", package: "solana-swift"),
-                .product(name: "RxSwift", package: "RxSwift"),
-                .product(name: "RxConcurrency", package: "RxConcurrency")
-                
+                .product(name: "SolanaSwift", package: "solana-swift")
             ]
         ),
 
