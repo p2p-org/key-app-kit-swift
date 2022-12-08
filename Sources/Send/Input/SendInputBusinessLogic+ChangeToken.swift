@@ -34,7 +34,9 @@ extension SendInputBusinessLogic {
                 fee: fee
             )
 
-            if fee != .zero {
+            if fee == .zero {
+                state = state.copy(feeInToken: .zero)
+            } else {
                 // Auto select fee token
                 let feeInfo = await autoSelectTokenFee(
                     userWallets: state.userWalletEnvironments.wallets,
@@ -48,10 +50,28 @@ extension SendInputBusinessLogic {
                 )
             }
 
-            return try await sendInputChangeAmountInToken(state: state, amount: state.amountInToken, services: services)
+            state = await sendInputChangeAmountInToken(state: state, amount: state.amountInToken, services: services)
+            state = await validateFee(state: state)
+
+            print(state.status)
+            return state
         } catch {
             return state.copy(status: .error(reason: .unknown(error as NSError)))
         }
+    }
+
+    static func validateFee(state: SendInputState) async -> SendInputState {
+        guard let wallet: Wallet = state.userWalletEnvironments.wallets
+            .first(where: { (wallet: Wallet) in wallet.token.address == state.tokenFee.address })
+        else {
+            return state.copy(status: .error(reason: .insufficientAmountToCoverFee))
+        }
+
+        if state.feeInToken.total > (wallet.lamports ?? 0) {
+            return state.copy(status: .error(reason: .insufficientAmountToCoverFee))
+        }
+
+        return state
     }
 
     static func autoSelectTokenFee(
@@ -76,7 +96,7 @@ extension SendInputBusinessLogic {
                     payingFeeTokenMint: try PublicKey(string: wallet.token.address)
                 )) ?? .zero
 
-                if feeInToken.total < (wallet.lamports ?? 0) {
+                if feeInToken.total <= (wallet.lamports ?? 0) {
                     return (wallet.token, feeInToken)
                 }
             } catch {

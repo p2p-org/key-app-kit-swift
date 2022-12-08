@@ -33,11 +33,13 @@ extension SendInputBusinessLogic {
                 payingFeeTokenMint: try PublicKey(string: state.tokenFee.address)
             ) ?? .zero
 
-            return state.copy(
+            let state = state.copy(
                 fee: fee,
                 tokenFee: feeToken,
                 feeInToken: feeInToken
             )
+
+            return await validateFee(state: state)
         } catch {
             return await handleFeeCalculationError(state: state, services: services, error: error)
         }

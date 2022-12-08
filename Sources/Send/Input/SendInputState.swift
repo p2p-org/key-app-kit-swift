@@ -57,6 +57,7 @@ public struct SendInputState: Equatable {
 
         case inputTooHigh
         case inputTooLow(Double)
+        case insufficientAmountToCoverFee
 
         case feeCalculationFailed
 
@@ -64,8 +65,6 @@ public struct SendInputState: Equatable {
         case missingFeeRelayer
         case initializeFailed(NSError)
         
-        case insufficientAmount
-
         case unknown(NSError)
     }
 

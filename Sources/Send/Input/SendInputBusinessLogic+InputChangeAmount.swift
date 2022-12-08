@@ -58,10 +58,14 @@ extension SendInputBusinessLogic {
             status = .error(reason: .requiredInitialize)
         }
 
-        return state.copy(
+        var state = state.copy(
             status: status,
             amountInFiat: amount * (state.userWalletEnvironments.exchangeRate[state.token.symbol]?.value ?? 0),
             amountInToken: amount
         )
+        
+        state = await validateFee(state: state)
+        
+        return state
     }
 }
