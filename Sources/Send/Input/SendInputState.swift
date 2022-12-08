@@ -63,6 +63,8 @@ public struct SendInputState: Equatable {
         case requiredInitialize
         case missingFeeRelayer
         case initializeFailed(NSError)
+        
+        case insufficientAmount
 
         case unknown(NSError)
     }
@@ -74,6 +76,7 @@ public struct SendInputState: Equatable {
     }
 
     public struct RecipientAdditionalInfo: Equatable {
+        /// Destination wallet
         public let walletAccount: BufferInfo<SolanaAddressInfo>?
 
         ///  Usable when recipient category is ``Recipient.Category.solanaAddress``

@@ -47,10 +47,10 @@ extension SendInputBusinessLogic {
         }
 
         // Minimum amount to send to the account with no funds
-        if state.token.isNativeSOL, state.recipientAdditionalInfo.walletAccount != nil {
+        if state.token.isNativeSOL, state.recipientAdditionalInfo.walletAccount == nil {
             let minAmount = feeRelayerContext.minimumRelayAccountBalance
             if amountLamports < minAmount {
-                status = .error(reason: .inputTooLow(minAmount.convertToBalance(decimals: 9)))
+                status = .error(reason: .inputTooLow(minAmount.convertToBalance(decimals: state.token.decimals)))
             }
         }
 

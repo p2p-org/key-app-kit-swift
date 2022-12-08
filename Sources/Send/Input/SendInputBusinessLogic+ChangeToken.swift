@@ -47,7 +47,8 @@ extension SendInputBusinessLogic {
                     feeInToken: feeInfo.fee
                 )
             }
-            return state
+
+            return try await sendInputChangeAmountInToken(state: state, amount: state.amountInToken, services: services)
         } catch {
             return state.copy(status: .error(reason: .unknown(error as NSError)))
         }
@@ -75,7 +76,6 @@ extension SendInputBusinessLogic {
                     payingFeeTokenMint: try PublicKey(string: wallet.token.address)
                 )) ?? .zero
 
-                print(feeInToken, wallet.lamports, feeInToken.total < (wallet.lamports ?? 0))
                 if feeInToken.total < (wallet.lamports ?? 0) {
                     return (wallet.token, feeInToken)
                 }
