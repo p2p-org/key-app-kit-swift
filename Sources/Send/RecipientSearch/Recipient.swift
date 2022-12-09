@@ -10,6 +10,7 @@ public struct Recipient: Hashable, Codable {
         public let rawValue: Int
 
         /// Account has funds (SOL) or has SPL token accounts (PDAs)
+        @available(*, deprecated, message: "Will be removed")
         public static let funds = Attribute(rawValue: 1 << 0)
         
         /// The address is PDA

@@ -30,7 +30,7 @@ extension SendInputBusinessLogic {
 
             let feeInToken = try? await services.swapService.calculateFeeInPayingToken(
                 feeInSOL: fee,
-                payingFeeTokenMint: try PublicKey(string: state.tokenFee.address)
+                payingFeeTokenMint: try PublicKey(string: feeToken.address)
             ) ?? .zero
 
             let state = state.copy(

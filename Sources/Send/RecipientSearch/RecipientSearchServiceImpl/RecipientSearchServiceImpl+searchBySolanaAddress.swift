@@ -95,7 +95,7 @@ extension RecipientSearchServiceImpl {
                     return .ok([.init(
                         address: addressBase58,
                         category: .solanaAddress,
-                        attributes: [attributes]
+                        attributes: [.funds, attributes]
                     )])
                 } else {
                     return .ok([.init(

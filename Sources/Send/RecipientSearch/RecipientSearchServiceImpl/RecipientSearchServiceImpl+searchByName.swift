@@ -11,11 +11,11 @@ extension RecipientSearchServiceImpl {
             let recipients: [Recipient] = records
                 .map { record in
                     if let name = record.name {
-                        let (name, domain) = UsernameUtils.splitIntoNameAndDomain(rawName: record.name ?? "")
+                        let (name, domain) = UsernameUtils.splitIntoNameAndDomain(rawName: name)
                         return .init(
                             address: record.owner,
                             category: .username(name: name, domain: domain),
-                            attributes: []
+                            attributes: [.funds]
                         )
                     } else {
                         return .init(
