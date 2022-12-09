@@ -31,7 +31,9 @@ extension SendInputBusinessLogic {
         let userTokenAccount: Wallet? = state.userWalletEnvironments.wallets
             .first(where: { $0.token.symbol == state.token.symbol })
         let tokenBalance = userTokenAccount?.lamports ?? 0
-        let amountLamports = Lamports(amount * pow(10, Double(state.token.decimals)))
+        
+        let value: NSNumber = NSNumber(value: amount * pow(10, Double(state.token.decimals)))
+        let amountLamports = Lamports(value.int64Value)
 
         var status: SendInputState.Status = .ready
 
@@ -63,9 +65,9 @@ extension SendInputBusinessLogic {
             amountInFiat: amount * (state.userWalletEnvironments.exchangeRate[state.token.symbol]?.value ?? 0),
             amountInToken: amount
         )
-        
+
         state = await validateFee(state: state)
-        
+
         return state
     }
 }
