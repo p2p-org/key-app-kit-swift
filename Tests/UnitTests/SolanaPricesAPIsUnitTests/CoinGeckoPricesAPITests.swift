@@ -11,7 +11,7 @@ class CoinGeckoPricesAPITests: XCTestCase {
         let btcTokenExtension = try! JSONDecoder().decode(TokenExtensions.self, from: #"{"coingeckoId": "bitcoin"}"#.data(using: .utf8)!)
         let etcTokenExtension = try! JSONDecoder().decode(TokenExtensions.self, from: #"{"coingeckoId": "ethereum"}"#.data(using: .utf8)!)
         let btc = Token(_tags: [], chainId: 0, address: "", symbol: "BTC", name: "Bitcoin", decimals: 18, logoURI: nil, extensions: btcTokenExtension)
-        let etc = Token(_tags: [], chainId: 0, address: "", symbol: "ETC", name: "Bitcoin", decimals: 18, logoURI: nil, extensions: etcTokenExtension)
+        let etc = Token(_tags: [], chainId: 0, address: "", symbol: "ETH", name: "Bitcoin", decimals: 18, logoURI: nil, extensions: etcTokenExtension)
         let prices = try await api.getCurrentPrices(coins: [btc, etc], toFiat: "USD")
         XCTAssertEqual(prices["ETH"]??.value, 1055.31)
         XCTAssertEqual(prices["BTC"]??.value, 19725.28)
@@ -34,7 +34,6 @@ class CoinGeckoPricesAPITests: XCTestCase {
 
 public struct CoinGeckoMockNetworkManager: PricesNetworkManager {
     public func get(urlString: String) async throws -> Data {
-        print(urlString)
         if urlString == "https://api.coingecko.com/api/v3/coins/list" {
             return "[{\"id\":\"ethereum\",\"symbol\":\"eth\",\"name\":\"ethereum\"},{\"id\":\"bitcoin\",\"symbol\":\"btc\",\"name\":\"bitcoin\"}]"
                 .data(using: .utf8)!
