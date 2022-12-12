@@ -58,11 +58,11 @@ public class SendHistoryService: ObservableObject {
             newList.remove(at: index)
         }
 
-        newList.insert(newRecipient, at: 0)
+        newList.insert(newRecipient.copy(createdData: Date()), at: 0)
         newList = Array(newList.prefix(10))
 
         try await provider.save(Array(newList))
-        
+
         recipientsSubject.send(newList)
     }
 }

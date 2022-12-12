@@ -12,10 +12,10 @@ public struct Recipient: Hashable, Codable {
         /// Account has funds (SOL) or has SPL token accounts (PDAs)
         @available(*, deprecated, message: "Will be removed")
         public static let funds = Attribute(rawValue: 1 << 0)
-        
+
         /// The address is PDA
         public static let pda = Attribute(rawValue: 1 << 1)
-    
+
         public init(rawValue: Int) {
             self.rawValue = rawValue
         }
@@ -28,7 +28,7 @@ public struct Recipient: Hashable, Codable {
         case solanaTokenAddress(walletAddress: PublicKey, token: Token)
 
         case bitcoinAddress
-        
+
         public var isDirectSPLTokenAddress: Bool {
             switch self {
             case .solanaTokenAddress:
@@ -38,14 +38,23 @@ public struct Recipient: Hashable, Codable {
             }
         }
     }
-    
+
     public init(address: String, category: Category, attributes: Attribute, createdData: Date? = nil) {
         self.address = address
         self.category = category
         self.attributes = attributes
         self.createdData = createdData
     }
-    
+
+    public func copy(createdData: Date? = nil) -> Self {
+        .init(
+            address: address,
+            category: category,
+            attributes: attributes,
+            createdData: createdData ?? self.createdData
+        )
+    }
+
     public let address: String
     public let category: Category
 
