@@ -55,8 +55,9 @@ public struct SendInputState: Equatable {
     public enum ErrorReason: Equatable {
         case networkConnectionError(NSError)
 
-        case inputTooHigh
+        case inputTooHigh(Double)
         case inputTooLow(Double)
+        case insufficientFunds
         case insufficientAmountToCoverFee
 
         case feeCalculationFailed
@@ -212,10 +213,6 @@ public extension SendInputState {
         }
 
         return Double(balance) / pow(10, Double(token.decimals))
-    }
-
-    var maxAmountInputInFiat: Double {
-        maxAmountInputInToken * (userWalletEnvironments.exchangeRate[token.symbol]?.value ?? 0)
     }
 
     var sourceWallet: Wallet? {
