@@ -57,6 +57,7 @@ public struct SendInputState: Equatable {
 
         case inputTooHigh
         case inputTooLow(Double)
+        case insufficientFunds
         case insufficientAmountToCoverFee
 
         case feeCalculationFailed
@@ -199,6 +200,14 @@ public struct SendInputState: Equatable {
 }
 
 public extension SendInputState {
+    var maxAmountInputInSOLWithLeftAmount: Double? {
+        guard let context = feeRelayerContext, token.isNativeSOL else { return nil }
+
+        var maxAmountInToken = maxAmountInputInToken.toLamport(decimals: token.decimals)
+        maxAmountInToken = maxAmountInToken - context.minimumRelayAccountBalance
+        return Double(maxAmountInToken) / pow(10, Double(token.decimals))
+    }
+
     var maxAmountInputInToken: Double {
         var balance: Lamports = userWalletEnvironments.wallets.first(where: { $0.token.address == token.address })?
             .lamports ?? 0
@@ -212,10 +221,6 @@ public extension SendInputState {
         }
 
         return Double(balance) / pow(10, Double(token.decimals))
-    }
-
-    var maxAmountInputInFiat: Double {
-        maxAmountInputInToken * (userWalletEnvironments.exchangeRate[token.symbol]?.value ?? 0)
     }
 
     var sourceWallet: Wallet? {

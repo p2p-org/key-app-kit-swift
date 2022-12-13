@@ -28,30 +28,33 @@ extension SendInputBusinessLogic {
             return state.copy(status: .error(reason: .missingFeeRelayer))
         }
 
-        let userTokenAccount: Wallet? = state.userWalletEnvironments.wallets
-            .first(where: { $0.token.symbol == state.token.symbol })
-        let tokenBalance = userTokenAccount?.lamports ?? 0
-        
         let value: NSNumber = NSNumber(value: amount * pow(10, Double(state.token.decimals)))
         let amountLamports = Lamports(value.int64Value)
 
         var status: SendInputState.Status = .ready
 
-        // More than available amount in wallet
-        if state.token.address == state.tokenFee.address {
-            if amountLamports + state.feeInToken.total > tokenBalance {
-                status = .error(reason: .inputTooHigh)
+        // More than available amount in wallet (with different logic for SOL token)
+        if state.token.isNativeSOL, let limitedMax = state.maxAmountInputInSOLWithLeftAmount {
+            if amountLamports > limitedMax.toLamport(decimals: state.token.decimals) {
+                if amountLamports == state.maxAmountInputInToken.toLamport(decimals: state.token.decimals) {
+                    // Return availability to send the absolute max amount for SOL token
+                    status = .ready
+                }
+                else {
+                    status = .error(reason: .inputTooHigh)
+                }
             }
-        } else {
-            if amountLamports > tokenBalance {
-                status = .error(reason: .inputTooHigh)
-            }
+        } else if amountLamports > state.maxAmountInputInToken.toLamport(decimals: state.token.decimals) {
+            status = .error(reason: .inputTooHigh)
         }
 
         // Minimum amount to send to the account with no funds
         if state.token.isNativeSOL, state.recipientAdditionalInfo.walletAccount == nil {
             let minAmount = feeRelayerContext.minimumRelayAccountBalance
-            if amountLamports < minAmount {
+            if amountLamports < minAmount && status == .error(reason: .inputTooHigh) {
+                // If input amount considered as both tooLow and tooHigh => return another error
+                status = .error(reason: .insufficientFunds)
+            } else if amountLamports < minAmount {
                 status = .error(reason: .inputTooLow(minAmount.convertToBalance(decimals: state.token.decimals)))
             }
         }
