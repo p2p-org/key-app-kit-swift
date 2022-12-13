@@ -34,24 +34,24 @@ extension SendInputBusinessLogic {
         var status: SendInputState.Status = .ready
 
         // More than available amount in wallet (with different logic for SOL token)
-        if state.token.isNativeSOL, let limitedMax = state.maxAmountInputInSOLWithLeftAmount {
-            if amountLamports > limitedMax.toLamport(decimals: state.token.decimals) {
+        if state.token.isNativeSOL {
+            if amountLamports > state.maxAmountInputInSOLWithLeftAmount.toLamport(decimals: state.token.decimals) {
                 if amountLamports == state.maxAmountInputInToken.toLamport(decimals: state.token.decimals) {
                     // Return availability to send the absolute max amount for SOL token
                     status = .ready
                 }
                 else {
-                    status = .error(reason: .inputTooHigh)
+                    status = .error(reason: .inputTooHigh(state.maxAmountInputInSOLWithLeftAmount))
                 }
             }
         } else if amountLamports > state.maxAmountInputInToken.toLamport(decimals: state.token.decimals) {
-            status = .error(reason: .inputTooHigh)
+            status = .error(reason: .inputTooHigh(state.maxAmountInputInToken))
         }
 
         // Minimum amount to send to the account with no funds
         if state.token.isNativeSOL, state.recipientAdditionalInfo.walletAccount == nil {
             let minAmount = feeRelayerContext.minimumRelayAccountBalance
-            if amountLamports < minAmount && status == .error(reason: .inputTooHigh) {
+            if amountLamports < minAmount && status == .error(reason: .inputTooHigh(state.maxAmountInputInSOLWithLeftAmount)) {
                 // If input amount considered as both tooLow and tooHigh => return another error
                 status = .error(reason: .insufficientFunds)
             } else if amountLamports < minAmount {
@@ -72,5 +72,15 @@ extension SendInputBusinessLogic {
         state = await validateFee(state: state)
 
         return state
+    }
+}
+
+private extension SendInputState {
+    var maxAmountInputInSOLWithLeftAmount: Double {
+        guard let context = feeRelayerContext, token.isNativeSOL else { return maxAmountInputInToken }
+
+        var maxAmountInToken = maxAmountInputInToken.toLamport(decimals: token.decimals)
+        maxAmountInToken = maxAmountInToken - context.minimumRelayAccountBalance
+        return Double(maxAmountInToken) / pow(10, Double(token.decimals))
     }
 }
