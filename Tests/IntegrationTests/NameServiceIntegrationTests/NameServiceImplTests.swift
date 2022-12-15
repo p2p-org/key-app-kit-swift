@@ -9,7 +9,7 @@ import XCTest
 class NameServiceImplTests: XCTestCase {
     let cache: NameServiceCacheType = TmpCache()
     lazy var service: NameService = NameServiceImpl(
-        endpoint: "https://fee-relayer.solana.p2p.org/name_register",
+        endpoint: "https://name-register.key.app",
         cache: cache
     )
 
@@ -32,7 +32,7 @@ class NameServiceImplTests: XCTestCase {
     }
 
     func testGetOwners() async throws {
-        let publicKeys = try await service.getOwners("all")
+        let publicKeys = try await service.getOwners("kirill")
         XCTAssertTrue(!publicKeys.isEmpty)
     }
 

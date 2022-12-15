@@ -33,7 +33,7 @@
         "repositoryURL": "https://github.com/p2p-org/FeeRelayerSwift",
         "state": {
           "branch": "master",
-          "revision": "99c7800f66e17f60500a5c11eb2b5cdc0f5b1984",
+          "revision": "b1f1251591389fec1763360cd763123e624d111b",
           "version": null
         }
       },
@@ -59,9 +59,9 @@
         "package": "SolanaSwift",
         "repositoryURL": "https://github.com/p2p-org/solana-swift",
         "state": {
-          "branch": null,
-          "revision": "596dab76f1e82f8e6c5d6b64534d989b2ba47f69",
-          "version": "2.5.2"
+          "branch": "feature/isOnCurveAsPublic",
+          "revision": "d665ff969a5e83c7aa6dbfdc313fdeed680ab87d",
+          "version": null
         }
       },
       {
