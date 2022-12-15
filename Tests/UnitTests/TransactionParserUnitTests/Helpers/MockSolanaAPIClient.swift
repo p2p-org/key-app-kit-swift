@@ -192,4 +192,10 @@ class MockSolanaAPIClient: SolanaAPIClient {
     func batchRequest<Entity>(method: String, params: [[Encodable]]) async throws -> [Entity?] where Entity : Decodable {
         fatalError()
     }
+    
+    func getRecentPerformanceSamples(
+        limit: [UInt]
+    ) async throws -> [PerfomanceSamples] {
+        fatalError("getRecentPerformanceSamples(limit:) has not been implemented")
+    }
 }
