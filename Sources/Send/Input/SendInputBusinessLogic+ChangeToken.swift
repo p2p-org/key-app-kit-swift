@@ -61,6 +61,7 @@ extension SendInputBusinessLogic {
     }
 
     static func validateFee(state: SendInputState) async -> SendInputState {
+        guard state.fee != .zero else { return state }
         guard let wallet: Wallet = state.userWalletEnvironments.wallets
             .first(where: { (wallet: Wallet) in wallet.token.address == state.tokenFee.address })
         else {
