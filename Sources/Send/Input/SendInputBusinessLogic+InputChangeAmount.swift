@@ -29,7 +29,7 @@ extension SendInputBusinessLogic {
         }
 
         let value: NSNumber = NSNumber(value: amount * pow(10, Double(state.token.decimals)))
-        let amountLamports = Lamports(value.int64Value)
+        let amountLamports = Lamports(value.uint64Value)
 
         var status: SendInputState.Status = .ready
 
