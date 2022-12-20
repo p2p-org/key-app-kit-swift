@@ -7,7 +7,7 @@ extension RecipientSearchServiceImpl {
     func searchByName(_ input: String, env: UserWalletEnvironments) async -> RecipientSearchResult {
         do {
             let orders: [String: Int] = ["key": 2, "sol": 1, "": 0]
-            let records: [NameRecord] = try await nameService.getOwners(input)
+            let records: [NameRecord] = try await nameService.getOwners(input.lowercased())
             let recipients: [Recipient] = records
                 .map { record in
                     if let name = record.name {
