@@ -77,9 +77,13 @@ extension SendInputBusinessLogic {
 
 private extension SendInputState {
     var maxAmountInputInSOLWithLeftAmount: Double {
-        guard let context = feeRelayerContext, token.isNativeSOL else { return maxAmountInputInToken }
-
         var maxAmountInToken = maxAmountInputInToken.toLamport(decimals: token.decimals)
+
+        guard
+            let context = feeRelayerContext, token.isNativeSOL,
+            maxAmountInToken >= context.minimumRelayAccountBalance
+        else { return .zero }
+
         maxAmountInToken = maxAmountInToken - context.minimumRelayAccountBalance
         return Double(maxAmountInToken) / pow(10, Double(token.decimals))
     }
