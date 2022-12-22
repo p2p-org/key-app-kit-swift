@@ -28,7 +28,7 @@ public class RecipientSearchServiceImpl: RecipientSearchService {
         }
 
         // search by solana address
-        if !input.contains(" "), let address = try? PublicKey(string: input) {
+        if !input.contains(" "), let address = try? PublicKey(string: input), !address.bytes.isEmpty {
             return await searchBySolanaAddress(address, env: env, preChosenToken: preChosenToken)
         }
 
