@@ -63,5 +63,5 @@ public enum SellDataServiceError: Error {
 }
 
 public protocol SellPriceProvider {
-    func currentPrice(for tokenSymbol: String) -> Double?
+    func getCurrentPrice(for tokenSymbol: String) -> Double?
 }

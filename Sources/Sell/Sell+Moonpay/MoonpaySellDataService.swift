@@ -9,16 +9,20 @@ final class MoonpaySellDataService: SellDataService {
     
     // MARK: - Dependencies
 
+    private let provider: Provider
     private let priceProvider: SellPriceProvider
-    @Injected private var userWalletManager: UserWalletManager
-    @Injected private var sellTransactionsRepository: SellTransactionsRepository
+    private let sellTransactionsRepository: SellTransactionsRepository
     
     // MARK: - Properties
-
-    private var provider = Provider()
     
-    @SwiftyUserDefault(keyPath: \.isSellAvailable, options: .cached)
-    private var cachedIsAvailable: Bool?
+    private var cachedIsAvailable: Bool? {
+        get {
+            UserDefaults.standard.bool(forKey: "MoonpaySellDataService.cachedIsAvailable")
+        }
+        set {
+            UserDefaults.standard.set(newValue, forKey: "MoonpaySellDataService.cachedIsAvailable")
+        }
+    }
     
     @Published private var status: SellDataServiceStatus = .initialized
     var statusPublisher: AnyPublisher<SellDataServiceStatus, Never> {
@@ -37,9 +41,16 @@ final class MoonpaySellDataService: SellDataService {
     let userId: String
     
     // MARK: - Initializer
-    init(userId: String, priceProvider: SellPriceProvider) {
+    init(
+        userId: String,
+        provider: Provider,
+        priceProvider: SellPriceProvider,
+        sellTransactionsRepository: SellTransactionsRepository
+    ) {
         self.userId = userId
+        self.provider = provider
         self.priceProvider = priceProvider
+        self.sellTransactionsRepository = sellTransactionsRepository
     }
     
     // MARK: - Methods
@@ -96,11 +107,10 @@ final class MoonpaySellDataService: SellDataService {
             var transactions = [SellDataServiceTransaction?]()
             
             for id in txs.map(\.id) {
-                group.addTask { [weak self] in
-                    guard let self = self else {return nil}
+                group.addTask { [unowned self] in
                     let detailed = try await self.provider.detailSellTransaction(id: id)
                     
-                    let quoteCurrencyAmount = detailed.quoteCurrencyAmount ?? (self.priceProvider.currentPrice(for: "SOL")?.value ?? 0) * detailed.baseCurrencyAmount
+                    let quoteCurrencyAmount = detailed.quoteCurrencyAmount ?? (priceProvider.getCurrentPrice(for: "SOL") ?? 0) * detailed.baseCurrencyAmount
                     guard
                         let usdRate = detailed.usdRate,
                         let eurRate = detailed.eurRate,

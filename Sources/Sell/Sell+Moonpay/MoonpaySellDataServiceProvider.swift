@@ -9,9 +9,9 @@ class MoonpaySellDataServiceProvider: SellDataServiceProvider {
     
     // MARK: - Type aliases
 
-    typealias Currency = MoonpaySellDataServiceProvider.MoonpayCurrency
-    typealias Transaction = MoonpaySellDataServiceProvider.MoonpayTransaction
-    typealias Fiat = MoonpaySellDataServiceProvider.MoonpayFiat
+    typealias Currency = MoonpayCurrency
+    typealias Transaction = MoonpayTransaction
+    typealias Fiat = MoonpayFiat
 
     // MARK: - Properties
 
