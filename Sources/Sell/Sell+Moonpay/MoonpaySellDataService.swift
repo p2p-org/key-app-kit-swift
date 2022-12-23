@@ -1,11 +1,11 @@
 import Combine
 import Foundation
 
-final class MoonpaySellDataService: SellDataService {
+public final class MoonpaySellDataService: SellDataService {
     
     // MARK: - Associated type
 
-    typealias Provider = MoonpaySellDataServiceProvider
+    public typealias Provider = MoonpaySellDataServiceProvider
     
     // MARK: - Dependencies
 
@@ -25,23 +25,23 @@ final class MoonpaySellDataService: SellDataService {
     }
     
     @Published private var status: SellDataServiceStatus = .initialized
-    var statusPublisher: AnyPublisher<SellDataServiceStatus, Never> {
+    public var statusPublisher: AnyPublisher<SellDataServiceStatus, Never> {
         $status.eraseToAnyPublisher()
     }
     
-    @Published private(set) var transactions: [SellDataServiceTransaction] = []
-    var transactionsPublisher: AnyPublisher<[SellDataServiceTransaction], Never> {
+    @Published public private(set) var transactions: [SellDataServiceTransaction] = []
+    public var transactionsPublisher: AnyPublisher<[SellDataServiceTransaction], Never> {
         $transactions.eraseToAnyPublisher()
     }
     
-    var currency: MoonpaySellDataServiceProvider.MoonpayCurrency?
+    public var currency: MoonpaySellDataServiceProvider.MoonpayCurrency?
     
-    var fiat: MoonpaySellDataServiceProvider.Fiat?
+    public var fiat: MoonpaySellDataServiceProvider.Fiat?
     
-    let userId: String
+    public let userId: String
     
     // MARK: - Initializer
-    init(
+    public init(
         userId: String,
         provider: Provider,
         priceProvider: SellPriceProvider,
@@ -55,7 +55,7 @@ final class MoonpaySellDataService: SellDataService {
     
     // MARK: - Methods
     
-    func isAvailable() async -> Bool {
+    public func isAvailable() async -> Bool {
         return true
         guard cachedIsAvailable == nil else {
             defer {
@@ -75,7 +75,7 @@ final class MoonpaySellDataService: SellDataService {
         return (cachedIsAvailable ?? false)
     }
     
-    func update() async {
+    public func update() async {
         // mark as updating
         status = .updating
         
@@ -100,7 +100,7 @@ final class MoonpaySellDataService: SellDataService {
         }
     }
     
-    func updateIncompletedTransactions() async throws {
+    public func updateIncompletedTransactions() async throws {
         let txs = try await provider.sellTransactions(externalTransactionId: userId)
         
         let incompletedTransactions = try await withThrowingTaskGroup(of: SellDataServiceTransaction?.self) { group in
@@ -149,11 +149,11 @@ final class MoonpaySellDataService: SellDataService {
         transactions = await sellTransactionsRepository.transactions
     }
     
-    func getTransactionDetail(id: String) async throws -> Provider.Transaction {
+    public func getTransactionDetail(id: String) async throws -> Provider.Transaction {
         try await provider.detailSellTransaction(id: id)
     }
 
-    func deleteTransaction(id: String) async throws {
+    public func deleteTransaction(id: String) async throws {
         try await provider.deleteSellTransaction(id: id)
         await sellTransactionsRepository.deleteTransaction(id: id)
         transactions = await sellTransactionsRepository.transactions

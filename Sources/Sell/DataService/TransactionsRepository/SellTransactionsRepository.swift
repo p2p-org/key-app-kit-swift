@@ -9,7 +9,7 @@ import Foundation
 import Combine
 
 /// Repository that control the flow of sell transactions
-protocol SellTransactionsRepository: Actor {
+public protocol SellTransactionsRepository: Actor {
     /// Get/Set current fetched transactions
     var transactions: [SellDataServiceTransaction] { get }
     
@@ -20,20 +20,20 @@ protocol SellTransactionsRepository: Actor {
     func deleteTransaction(id: String)
 }
 
-actor SellTransactionsRepositoryImpl: SellTransactionsRepository {
+public actor SellTransactionsRepositoryImpl: SellTransactionsRepository {
     
     // MARK: - Properties
     /// Transactions subject
-    @Published var transactions: [SellDataServiceTransaction] = []
+    @Published public var transactions: [SellDataServiceTransaction] = []
     
     // MARK: - Methods
     /// Set transactions
-    func setTransactions(_ transactions: [SellDataServiceTransaction]) {
+    public func setTransactions(_ transactions: [SellDataServiceTransaction]) {
         self.transactions = transactions
     }
     
     /// Delete transaction
-    func deleteTransaction(id: String) {
+    public func deleteTransaction(id: String) {
         transactions.removeAll(where: {$0.id == id})
     }
 }
