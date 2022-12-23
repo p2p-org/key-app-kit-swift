@@ -13,6 +13,11 @@ public extension Moonpay {
 
         public let endpoint: String
         public let apiKey: String
+        
+        public init(endpoint: String, apiKey: String) {
+            self.endpoint = endpoint
+            self.apiKey = apiKey
+        }
     }
 
     enum Kind {
