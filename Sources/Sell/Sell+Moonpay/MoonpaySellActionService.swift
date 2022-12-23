@@ -1,14 +1,14 @@
 import Foundation
 
-class MoonpaySellActionService: SellActionService {
-    typealias Provider = MoonpaySellActionServiceProvider
+public class MoonpaySellActionService: SellActionService {
+    public typealias Provider = MoonpaySellActionServiceProvider
     
     private let endpoint: String
     private let apiKey: String
     private var provider: Provider
     private let refundWalletAddress: String
 
-    init(
+    public init(
         provider: Provider,
         refundWalletAddress: String,
         endpoint: String,
@@ -20,7 +20,7 @@ class MoonpaySellActionService: SellActionService {
         self.apiKey = apiKey
     }
 
-    func sellQuote(
+    public func sellQuote(
         baseCurrencyCode: String,
         quoteCurrencyCode: String,
         baseCurrencyAmount: Double,
@@ -33,7 +33,7 @@ class MoonpaySellActionService: SellActionService {
         )
     }
 
-    func createSellURL(
+    public func createSellURL(
         quoteCurrencyCode: String,
         baseCurrencyAmount: Double,
         externalTransactionId: String
