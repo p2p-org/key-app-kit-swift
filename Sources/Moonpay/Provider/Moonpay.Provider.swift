@@ -16,8 +16,8 @@ extension Moonpay {
     }
 
     public class Provider {
-        private let api: API
-        private let serverSideAPI: API
+        public let api: API
+        public let serverSideAPI: API
 
         public init(api: API, serverSideAPI: API) {
             self.api = api
