@@ -1,9 +1,14 @@
 import Foundation
+import Moonpay
 
 public class MoonpaySellActionServiceProvider: SellActionServiceProvider {
     public typealias Quote = Moonpay.SellQuote
 
-    @Injected private var moonpayAPI: Moonpay.Provider
+    private var moonpayAPI: Moonpay.Provider
+    
+    init(moonpayAPI: Moonpay.Provider) {
+        self.moonpayAPI = moonpayAPI
+    }
 
     public func sellQuote(
         baseCurrencyCode: String,

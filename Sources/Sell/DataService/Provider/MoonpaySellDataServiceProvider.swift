@@ -77,6 +77,16 @@ extension MoonpaySellDataServiceProvider {
         var maxSellAmount: Double?
         var isSuspended: Bool
     }
+    
+    struct MoonpayFiat: ProviderFiat, Codable {
+//        var id: String
+//        var name: String
+//        var code: String
+//        var precision: Int
+//        var minSellAmount: Double?
+//        var maxSellAmount: Double?
+//        var isSuspended: Bool
+    }
 
     struct MoonpayTransaction: Codable, ProviderTransaction {
         var id: String

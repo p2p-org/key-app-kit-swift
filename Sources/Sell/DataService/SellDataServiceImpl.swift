@@ -32,7 +32,7 @@ final class SellDataServiceImpl: SellDataService {
     
     var currency: MoonpaySellDataServiceProvider.MoonpayCurrency?
     
-    var fiat: Fiat?
+    var fiat: MoonpaySellDataServiceProvider.Fiat?
     
     let userId: String
     

@@ -25,6 +25,14 @@ public protocol ProviderCurrency: Equatable {
     var maxSellAmount: Double? { get }
 }
 
+public protocol ProviderFiat: Equatable {
+//    var id: String { get }
+//    var name: String { get }
+//    var code: String { get }
+//    var minSellAmount: Double? { get }
+//    var maxSellAmount: Double? { get }
+}
+
 public protocol ProviderTransaction: Hashable {
     var id: String { get }
 //    var status: String { get }
@@ -55,7 +63,7 @@ public enum SellDataServiceError: Error {
     case couldNotLoadSellData
 }
 
-public enum SellPriceProvider {
+public protocol SellPriceProvider {
     func currentPrice(for tokenSymbol: String) -> Double?
 }
 
@@ -75,7 +83,7 @@ public protocol SellDataService {
     var currency: Provider.Currency? { get }
     
     /// Get fiat
-    var fiat: Fiat? { get }
+    var fiat: Provider.Fiat? { get }
     
     /// Get userId
     var userId: String { get }
