@@ -215,6 +215,18 @@ public extension SendInputState {
         return Double(balance) / pow(10, Double(token.decimals))
     }
 
+    var maxAmountInputInSOLWithLeftAmount: Double {
+        var maxAmountInToken = maxAmountInputInToken.toLamport(decimals: token.decimals)
+
+        guard
+            let context = feeRelayerContext, token.isNativeSOL,
+            maxAmountInToken >= context.minimumRelayAccountBalance
+        else { return .zero }
+
+        maxAmountInToken = maxAmountInToken - context.minimumRelayAccountBalance
+        return Double(maxAmountInToken) / pow(10, Double(token.decimals))
+    }
+
     var sourceWallet: Wallet? {
         userWalletEnvironments.wallets.first { (wallet: Wallet) -> Bool in
             wallet.token.address == token.address
