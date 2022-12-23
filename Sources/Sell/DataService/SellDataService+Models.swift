@@ -26,6 +26,7 @@ public protocol ProviderCurrency: Equatable {
 
 public protocol ProviderFiat: Equatable {
     var code: String { get }
+    var rawValue: String { get }
 }
 
 public protocol ProviderTransaction: Hashable {
