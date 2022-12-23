@@ -6,7 +6,7 @@ public enum SellDataServiceStatus {
     case ready
     case error(Error)
     
-    var isReady: Bool {
+    public var isReady: Bool {
         switch self {
         case .ready:
             return true
@@ -40,17 +40,17 @@ public protocol ProviderTransaction: Hashable {
 }
 
 public struct SellDataServiceTransaction: Hashable {
-    var id: String
-    var createdAt: Date?
-    var status: Status
-    var baseCurrencyAmount: Double
-    var quoteCurrencyAmount: Double
-    var usdRate: Double
-    var eurRate: Double
-    var gbpRate: Double
-    var depositWallet: String
+    public var id: String
+    public var createdAt: Date?
+    public var status: Status
+    public var baseCurrencyAmount: Double
+    public var quoteCurrencyAmount: Double
+    public var usdRate: Double
+    public var eurRate: Double
+    public var gbpRate: Double
+    public var depositWallet: String
     
-    enum Status: String {
+    public enum Status: String {
         case waitingForDeposit
         case pending
         case failed
