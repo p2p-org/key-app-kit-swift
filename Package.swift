@@ -82,6 +82,12 @@ let package = Package(
             name: "Sell",
             targets: ["Sell"]
         ),
+        
+        // Moonpay
+        .library(
+            name: "Moonpay",
+            targets: ["Moonpay"]
+        ),
     ],
     dependencies: [
         .package(url: "https://github.com/p2p-org/solana-swift", branch: "main"),
@@ -250,6 +256,12 @@ let package = Package(
         // Sell
         .target(
             name: "Sell",
+            dependencies: ["Moonpay"]
+        ),
+        
+        // Moonpay
+        .target(
+            name: "Moonpay",
             dependencies: []
         ),
     ]
