@@ -25,11 +25,7 @@ public protocol ProviderCurrency: Equatable {
 }
 
 public protocol ProviderFiat: Equatable {
-//    var id: String { get }
-//    var name: String { get }
-//    var code: String { get }
-//    var minSellAmount: Double? { get }
-//    var maxSellAmount: Double? { get }
+    var code: String { get }
 }
 
 public protocol ProviderTransaction: Hashable {

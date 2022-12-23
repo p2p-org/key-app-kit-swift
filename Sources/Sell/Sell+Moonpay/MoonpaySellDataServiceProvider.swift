@@ -94,7 +94,11 @@ extension MoonpaySellDataServiceProvider {
         var isSuspended: Bool
     }
     
-    enum MoonpayFiat: ProviderFiat {
+    enum MoonpayFiat: String, ProviderFiat {
+        public var code: String {
+            rawValue.uppercased()
+        }
+        
         case gbp
         case eur
         case usd
