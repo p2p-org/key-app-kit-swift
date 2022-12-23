@@ -1,16 +1,32 @@
 import Foundation
+import Moonpay
 
 enum MoonpaySellDataServiceProviderError: Error {
     case unsupportedRegion
 }
 
 class MoonpaySellDataServiceProvider: SellDataServiceProvider {
+    
+    // MARK: - Type aliases
+
     typealias Currency = MoonpaySellDataServiceProvider.MoonpayCurrency
     typealias Transaction = MoonpaySellDataServiceProvider.MoonpayTransaction
+    typealias Fiat = MoonpaySellDataServiceProvider.MoonpayFiat
 
-    @Injected private var moonpayAPI: Moonpay.Provider
+    // MARK: - Properties
 
+    private let moonpayAPI: Moonpay.Provider
     private(set) var ipAddressesResponse: Moonpay.Provider.IpAddressResponse?
+    
+    // MARK: - Initializer
+
+    init(moonpayAPI: Moonpay.Provider, ipAddressesResponse: Moonpay.Provider.IpAddressResponse? = nil) {
+        self.moonpayAPI = moonpayAPI
+        self.ipAddressesResponse = ipAddressesResponse
+    }
+    
+    // MARK: - Methods
+
     func isAvailable() async throws -> Bool {
         guard let ipAddressesResponse else {
             let resp = try await moonpayAPI.ipAddresses()
@@ -78,14 +94,10 @@ extension MoonpaySellDataServiceProvider {
         var isSuspended: Bool
     }
     
-    struct MoonpayFiat: ProviderFiat, Codable {
-//        var id: String
-//        var name: String
-//        var code: String
-//        var precision: Int
-//        var minSellAmount: Double?
-//        var maxSellAmount: Double?
-//        var isSuspended: Bool
+    enum MoonpayFiat: ProviderFiat {
+        case gbp
+        case eur
+        case usd
     }
 
     struct MoonpayTransaction: Codable, ProviderTransaction {

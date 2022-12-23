@@ -234,24 +234,24 @@ extension Moonpay.Provider {
         ]
     }
 
-    func UKAlpha3Code() -> String {
-        return "GBR"
+    public func UKAlpha3Code() -> String {
+        "GBR"
     }
 
-    func USAlpha3Code() -> String {
-        return "USA"
+    public func USAlpha3Code() -> String {
+        "USA"
     }
 }
 
 extension Moonpay.Provider {
     public struct IpAddressResponse: Codable {
-        var alpha2: String
-        var alpha3: String
-        var state: String
-        var ipAddress: String
-        var isAllowed: Bool
-        var isBuyAllowed: Bool
-        var isSellAllowed: Bool
+        public var alpha2: String
+        public var alpha3: String
+        public var state: String
+        public var ipAddress: String
+        public var isAllowed: Bool
+        public var isBuyAllowed: Bool
+        public var isSellAllowed: Bool
     }
 }
 
