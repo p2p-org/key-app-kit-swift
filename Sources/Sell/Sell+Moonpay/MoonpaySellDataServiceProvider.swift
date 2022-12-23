@@ -1,17 +1,17 @@
 import Foundation
 import Moonpay
 
-enum MoonpaySellDataServiceProviderError: Error {
+public enum MoonpaySellDataServiceProviderError: Error {
     case unsupportedRegion
 }
 
-class MoonpaySellDataServiceProvider: SellDataServiceProvider {
+public class MoonpaySellDataServiceProvider: SellDataServiceProvider {
     
     // MARK: - Type aliases
 
-    typealias Currency = MoonpayCurrency
-    typealias Transaction = MoonpayTransaction
-    typealias Fiat = MoonpayFiat
+    public typealias Currency = MoonpayCurrency
+    public typealias Transaction = MoonpayTransaction
+    public typealias Fiat = MoonpayFiat
 
     // MARK: - Properties
 
@@ -20,7 +20,7 @@ class MoonpaySellDataServiceProvider: SellDataServiceProvider {
     
     // MARK: - Initializer
 
-    init(moonpayAPI: Moonpay.Provider, ipAddressesResponse: Moonpay.Provider.IpAddressResponse? = nil) {
+    public init(moonpayAPI: Moonpay.Provider, ipAddressesResponse: Moonpay.Provider.IpAddressResponse? = nil) {
         self.moonpayAPI = moonpayAPI
         self.ipAddressesResponse = ipAddressesResponse
     }
@@ -70,31 +70,31 @@ class MoonpaySellDataServiceProvider: SellDataServiceProvider {
         }
     }
 
-    func sellTransactions(externalTransactionId: String) async throws -> [Transaction] {
+    public func sellTransactions(externalTransactionId: String) async throws -> [Transaction] {
         try await moonpayAPI.sellTransactions(externalTransactionId: externalTransactionId)
     }
 
-    func detailSellTransaction(id: String) async throws -> Transaction {
+    public func detailSellTransaction(id: String) async throws -> Transaction {
         try await moonpayAPI.sellTransaction(id: id)
     }
 
-    func deleteSellTransaction(id: String) async throws {
+    public func deleteSellTransaction(id: String) async throws {
         try await moonpayAPI.deleteSellTransaction(id: id)
     }
 }
 
 extension MoonpaySellDataServiceProvider {
-    struct MoonpayCurrency: ProviderCurrency, Codable {
-        var id: String
-        var name: String
-        var code: String
-        var precision: Int
-        var minSellAmount: Double?
-        var maxSellAmount: Double?
-        var isSuspended: Bool
+    public struct MoonpayCurrency: ProviderCurrency, Codable {
+        public var id: String
+        public var name: String
+        public var code: String
+        public var precision: Int
+        public var minSellAmount: Double?
+        public var maxSellAmount: Double?
+        public var isSuspended: Bool
     }
     
-    enum MoonpayFiat: String, ProviderFiat {
+    public enum MoonpayFiat: String, ProviderFiat {
         public var code: String {
             rawValue.uppercased()
         }
@@ -104,37 +104,37 @@ extension MoonpaySellDataServiceProvider {
         case usd
     }
 
-    struct MoonpayTransaction: Codable, ProviderTransaction {
-        var id: String
-        var createdAt: String
-        var updatedAt: String
-        var baseCurrencyAmount: Double
-        var quoteCurrencyAmount: Double?
-        var feeAmount: Double?
-        var extraFeeAmount: Double?
-        var status: MoonpayTransaction.Status
-        var failureReason: String?
-        var refundWalletAddress: String?
-        var depositHash: String?
-        var depositWalletId: String
-        var quoteCurrencyId: String
-        var baseCurrencyId: String
-        var depositWallet: DepositWallet?
-        var usdRate: Double?
-        var eurRate: Double?
-        var gbpRate: Double?
+    public struct MoonpayTransaction: Codable, ProviderTransaction {
+        public var id: String
+        public var createdAt: String
+        public var updatedAt: String
+        public var baseCurrencyAmount: Double
+        public var quoteCurrencyAmount: Double?
+        public var feeAmount: Double?
+        public var extraFeeAmount: Double?
+        public var status: MoonpayTransaction.Status
+        public var failureReason: String?
+        public var refundWalletAddress: String?
+        public var depositHash: String?
+        public var depositWalletId: String
+        public var quoteCurrencyId: String
+        public var baseCurrencyId: String
+        public var depositWallet: DepositWallet?
+        public var usdRate: Double?
+        public var eurRate: Double?
+        public var gbpRate: Double?
     }
 }
 
 extension MoonpaySellDataServiceProvider.MoonpayTransaction {
-    enum Status: String, Codable, Hashable {
+    public enum Status: String, Codable, Hashable {
         case waitingForDeposit
         case pending
         case failed
         case completed
     }
 
-    struct DepositWallet: Codable, Equatable, Hashable {
-        var walletAddress: String
+    public struct DepositWallet: Codable, Equatable, Hashable {
+        public var walletAddress: String
     }
 }

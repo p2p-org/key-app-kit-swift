@@ -6,7 +6,7 @@ public class MoonpaySellActionServiceProvider: SellActionServiceProvider {
 
     private var moonpayAPI: Moonpay.Provider
     
-    init(moonpayAPI: Moonpay.Provider) {
+    public init(moonpayAPI: Moonpay.Provider) {
         self.moonpayAPI = moonpayAPI
     }
 
