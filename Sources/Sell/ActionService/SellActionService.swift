@@ -1,6 +1,6 @@
 import Foundation
 
-enum SellActionServiceError: Error {
+public enum SellActionServiceError: Error {
     case invalidURL
 }
 

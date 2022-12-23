@@ -1,7 +1,7 @@
 import Combine
 import Foundation
 
-final class SellDataServiceImpl: SellDataService {
+final class MoonpaySellDataService: SellDataService {
     
     // MARK: - Associated type
 

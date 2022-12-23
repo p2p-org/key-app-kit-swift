@@ -2,12 +2,22 @@ import Foundation
 
 class MoonpaySellActionService: SellActionService {
     typealias Provider = MoonpaySellActionServiceProvider
-    private var provider = Provider()
     
+    private let endpoint: String
+    private let apiKey: String
+    private var provider: Provider
     private let refundWalletAddress: String
 
-    init(refundWalletAddress: String) {
+    init(
+        provider: Provider,
+        refundWalletAddress: String,
+        endpoint: String,
+        apiKey: String
+    ) {
+        self.provider = provider
         self.refundWalletAddress = refundWalletAddress
+        self.endpoint = endpoint
+        self.apiKey = apiKey
     }
 
     func sellQuote(
@@ -28,17 +38,6 @@ class MoonpaySellActionService: SellActionService {
         baseCurrencyAmount: Double,
         externalTransactionId: String
     ) throws -> URL {
-        let endpoint: String
-        let apiKey: String
-        switch Defaults.moonpayEnvironment {
-        case .production:
-            endpoint = .secretConfig("MOONPAY_PRODUCTION_SELL_ENDPOINT")!
-            apiKey = .secretConfig("MOONPAY_PRODUCTION_API_KEY")!
-        case .sandbox:
-            endpoint = .secretConfig("MOONPAY_STAGING_SELL_ENDPOINT")!
-            apiKey = .secretConfig("MOONPAY_STAGING_API_KEY")!
-        }
-
         var components = URLComponents(string: endpoint + "sell")!
         components.queryItems = [
             .init(name: "apiKey", value: apiKey),
