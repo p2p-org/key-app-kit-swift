@@ -26,6 +26,9 @@ public actor SellTransactionsRepositoryImpl: SellTransactionsRepository {
     /// Transactions subject
     @Published public var transactions: [SellDataServiceTransaction] = []
     
+    // MARK: - Initializer
+    public init() {}
+    
     // MARK: - Methods
     /// Set transactions
     public func setTransactions(_ transactions: [SellDataServiceTransaction]) {
