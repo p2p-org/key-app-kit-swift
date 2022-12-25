@@ -158,4 +158,9 @@ public final class MoonpaySellDataService: SellDataService {
         await sellTransactionsRepository.deleteTransaction(id: id)
         transactions = await sellTransactionsRepository.transactions
     }
+    
+    public func markAsCompleted(id: String) async {
+        await sellTransactionsRepository.markAsCompleted(id: id)
+        transactions = await sellTransactionsRepository.transactions
+    }
 }

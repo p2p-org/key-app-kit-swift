@@ -36,4 +36,7 @@ public protocol SellDataService {
     
     /// Delete transaction from list
     func deleteTransaction(id: String) async throws
+    
+    /// Mark transaction as completed
+    func markAsCompleted(id: String) async
 }
