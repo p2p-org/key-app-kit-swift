@@ -15,7 +15,7 @@ public final class MoonpaySellDataService: SellDataService {
     
     // MARK: - Properties
     
-    private var cachedIsAvailable: Bool? {
+    private var cachedIsAvailable: Bool {
         get {
             UserDefaults.standard.bool(forKey: "MoonpaySellDataService.cachedIsAvailable")
         }
@@ -56,23 +56,8 @@ public final class MoonpaySellDataService: SellDataService {
     // MARK: - Methods
     
     public func isAvailable() async -> Bool {
-        return true
-        guard cachedIsAvailable == nil else {
-            defer {
-                Task {
-                    do {
-                        cachedIsAvailable = try await provider.isAvailable()
-                    } catch {}
-                }
-            }
-            return cachedIsAvailable ?? false
-        }
-        do {
-            cachedIsAvailable = try await provider.isAvailable()
-        } catch {
-            return false
-        }
-        return (cachedIsAvailable ?? false)
+        cachedIsAvailable = (try? await provider.isAvailable()) ?? cachedIsAvailable
+        return cachedIsAvailable
     }
     
     public func update() async {
