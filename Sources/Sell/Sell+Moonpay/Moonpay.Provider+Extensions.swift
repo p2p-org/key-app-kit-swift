@@ -11,7 +11,7 @@ import Moonpay
 extension Moonpay.Provider {
     func sellTransactions(externalTransactionId: String) async throws -> [MoonpaySellDataServiceProvider.MoonpayTransaction] {
         var components = URLComponents(string: serverSideAPI.endpoint + "api/v3/sell_transactions")!
-        let params = ["apiKey": api.apiKey, "externalTransactionId": externalTransactionId]
+        let params = ["externalTransactionId": externalTransactionId]
         components.queryItems = params.map { key, value in
             URLQueryItem(name: key, value: value)
         }
@@ -24,10 +24,6 @@ extension Moonpay.Provider {
 
     func sellTransaction(id: String) async throws -> MoonpaySellDataServiceProvider.MoonpayTransaction {
         var components = URLComponents(string: api.endpoint + "v3/sell_transactions/\(id)")!
-        let params = ["apiKey": api.apiKey]
-        components.queryItems = params.map { key, value in
-            URLQueryItem(name: key, value: value)
-        }
         components.percentEncodedQuery = components.percentEncodedQuery?.replacingOccurrences(of: "+", with: "%2B")
         let urlRequest = URLRequest(url: components.url!)
         let (data, _) = try await URLSession.shared.data(from: urlRequest)
