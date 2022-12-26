@@ -13,14 +13,15 @@ public final class MoonpaySellDataService: SellDataService {
     private let priceProvider: SellPriceProvider
     private let sellTransactionsRepository: SellTransactionsRepository
     
+    // MARK: - Constants
+    
+    private static let isAvailableKey = "MoonpaySellDataService.isAvailable"
+    
     // MARK: - Properties
     
-    private var cachedIsAvailable: Bool {
-        get {
-            UserDefaults.standard.bool(forKey: "MoonpaySellDataService.cachedIsAvailable")
-        }
-        set {
-            UserDefaults.standard.set(newValue, forKey: "MoonpaySellDataService.cachedIsAvailable")
+    public private(set) var isAvailable: Bool {
+        didSet {
+            UserDefaults.standard.set(isAvailable, forKey: Self.isAvailableKey)
         }
     }
     
@@ -51,13 +52,14 @@ public final class MoonpaySellDataService: SellDataService {
         self.provider = provider
         self.priceProvider = priceProvider
         self.sellTransactionsRepository = sellTransactionsRepository
+        self.isAvailable = UserDefaults.standard.bool(forKey: Self.isAvailableKey)
     }
     
     // MARK: - Methods
     
-    public func isAvailable() async -> Bool {
-        cachedIsAvailable = (try? await provider.isAvailable()) ?? cachedIsAvailable
-        return cachedIsAvailable
+    public func checkAvailability() async -> Bool {
+        isAvailable = (try? await provider.isAvailable()) ?? isAvailable
+        return isAvailable
     }
     
     public func update() async {

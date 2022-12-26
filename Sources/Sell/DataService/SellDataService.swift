@@ -4,6 +4,9 @@ import Foundation
 public protocol SellDataService {
     associatedtype Provider: SellDataServiceProvider
     
+    /// Availability status
+    var isAvailable: Bool { get }
+    
     /// Status of service
     var statusPublisher: AnyPublisher<SellDataServiceStatus, Never> { get }
     
@@ -23,7 +26,7 @@ public protocol SellDataService {
     var userId: String { get }
     
     /// Check if service available
-    func isAvailable() async -> Bool
+    func checkAvailability() async -> Bool
     
     /// Request for pendings, rates, min amounts
     func update() async
