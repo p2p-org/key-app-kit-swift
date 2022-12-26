@@ -26,7 +26,7 @@ public protocol SellDataService {
     var userId: String { get }
     
     /// Check if service available
-    func checkAvailability() async -> Bool
+    func checkAvailability() async
     
     /// Request for pendings, rates, min amounts
     func update() async
