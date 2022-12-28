@@ -16,24 +16,17 @@ public class MoonpaySellDataServiceProvider: SellDataServiceProvider {
     // MARK: - Properties
 
     private let moonpayAPI: Moonpay.Provider
-    private(set) var ipAddressesResponse: Moonpay.Provider.IpAddressResponse?
     
     // MARK: - Initializer
 
-    public init(moonpayAPI: Moonpay.Provider, ipAddressesResponse: Moonpay.Provider.IpAddressResponse? = nil) {
+    public init(moonpayAPI: Moonpay.Provider) {
         self.moonpayAPI = moonpayAPI
-        self.ipAddressesResponse = ipAddressesResponse
     }
     
     // MARK: - Methods
 
     func isAvailable() async throws -> Bool {
-        guard let ipAddressesResponse else {
-            let resp = try await moonpayAPI.ipAddresses()
-            ipAddressesResponse = resp
-            return resp.isSellAllowed
-        }
-        return ipAddressesResponse.isSellAllowed
+        try await moonpayAPI.ipAddresses().isSellAllowed
     }
 
     func fiat() async throws -> Fiat {
@@ -47,12 +40,8 @@ public class MoonpaySellDataServiceProvider: SellDataServiceProvider {
             }
             throw MoonpaySellDataServiceProviderError.unsupportedRegion
         }
-        guard let ipAddressesResponse else {
-            let resp = try await moonpayAPI.ipAddresses()
-            ipAddressesResponse = resp
-            return try fiatByApha3(alpha3: resp.alpha3)
-        }
-        return try fiatByApha3(alpha3: ipAddressesResponse.alpha3)
+        let resp = try await moonpayAPI.ipAddresses()
+        return try fiatByApha3(alpha3: resp.alpha3)
     }
 
     func currencies() async throws -> [Currency] {
