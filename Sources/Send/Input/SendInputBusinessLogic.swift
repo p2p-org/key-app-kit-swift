@@ -6,40 +6,78 @@ import FeeRelayerSwift
 import Foundation
 import SolanaSwift
 
-struct SendInputBusinessLogic {
+typealias SendInputLogicChainNode = (_ state: SendInputState, _ service: SendInputServices) async -> SendInputState
+
+func executeAction(
+    _: SendInputState,
+    _ services: SendInputServices,
+    action: () async -> SendInputState,
+    chains: () -> [SendInputLogicChainNode]
+) async -> SendInputState {
+    let state = await action()
+    return await executeChain(state, services, chains())
+}
+
+func executeChain(_ state: SendInputState, _ service: SendInputServices, _ chains: [SendInputLogicChainNode]) async -> SendInputState {
+    var state = state
+    for node in chains {
+        state = await node(state, service)
+    }
+    return state
+}
+
+enum SendInputBusinessLogic {
     static func sendInputBusinessLogic(
         state: SendInputState,
         action: SendInputAction,
         services: SendInputServices
     ) async -> SendInputState {
+        let newState: SendInputState
+
         switch action {
         case let .initialize(params):
-            return await initialize(state: state, services: services, params: params)
+            newState = await executeAction(state, services) {
+                await initializeAction(state: state, services: services, params: params)
+            } chains: {
+                [
+                    calculateWalletsForPayingFeeChain,
+                    autoSelectionTokenFee
+                ]
+            }
         case let .changeAmountInToken(amount):
-            return await sendInputChangeAmountInToken(state: state, amount: amount, services: services)
+            newState = await executeAction(state, services) {
+                await sendInputChangeAmountInTokenAction(state: state, amount: amount, services: services)
+            } chains: {
+                [
+                    updateAmountChain,
+                    autoSelectionTokenFee
+                ]
+            }
         case let .changeAmountInFiat(amount):
-            return await sendInputChangeAmountInFiat(state: state, amount: amount, services: services)
+            newState = await executeAction(state, services, action: {
+                await sendInputChangeAmountInTokenAction(state: state, amount: amount, services: services)
+            }, chains: {
+                [
+                    updateAmountChain,
+                    autoSelectionTokenFee
+                ]
+            })
         case let .changeUserToken(token):
-            return await changeToken(state: state, token: token, services: services)
+            newState = await executeAction(state, services) {
+                await changeTokenAction(state: state, token: token, services: services)
+            } chains: {
+                [
+                    calculateWalletsForPayingFeeChain,
+                    autoSelectionTokenFee
+                ]
+            }
         case let .changeFeeToken(feeToken):
-            return await changeFeeToken(state: state, feeToken: feeToken, services: services)
-
+            newState = await changeFeeTokenAction(state: state, feeToken: feeToken, services: services)
         default:
             return state
         }
-    }
 
-    static func checkIsReady(_ state: SendInputState) -> Bool {
-        switch state.status {
-        case .requiredInitialize:
-            return false
-        case .error(reason: .requiredInitialize):
-            return false
-        case .error(reason: .initializeFailed(_)):
-            return false
-        default:
-            return true
-        }
+        return await validationChain(newState, services)
     }
 
     static func handleFeeCalculationError(

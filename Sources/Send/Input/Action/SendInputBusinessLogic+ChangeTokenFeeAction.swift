@@ -7,7 +7,7 @@ import Foundation
 import SolanaSwift
 
 extension SendInputBusinessLogic {
-    static func changeFeeToken(
+    static func changeFeeTokenAction(
         state: SendInputState,
         feeToken: Token,
         services: SendInputServices
@@ -36,10 +36,11 @@ extension SendInputBusinessLogic {
             let state = state.copy(
                 fee: fee,
                 tokenFee: feeToken,
-                feeInToken: feeInToken
+                feeInToken: feeInToken,
+                autoSelectionTokenFee: true
             )
 
-            return await validateFee(state: state)
+            return state
         } catch {
             return await handleFeeCalculationError(state: state, services: services, error: error)
         }

@@ -55,17 +55,19 @@ public struct SendInputState: Equatable {
     public enum ErrorReason: Equatable {
         case networkConnectionError(NSError)
 
+        // Validation phase error
         case inputTooHigh(Double)
         case inputTooLow(Double)
         case insufficientFunds
         case insufficientAmountToCoverFee
 
+        // Update fee phase error
         case feeCalculationFailed
 
         case requiredInitialize
-        case missingFeeRelayer
         case initializeFailed(NSError)
-        
+        case missingFeeRelayer
+
         case unknown(NSError)
     }
 
@@ -96,6 +98,18 @@ public struct SendInputState: Equatable {
         )
     }
 
+    public struct PayingWalletFee: Equatable {
+        let wallet: Wallet
+        let fee: FeeAmount
+        let feeInToken: FeeAmount
+
+        init(wallet: Wallet, fee: FeeAmount, feeInToken: FeeAmount) {
+            self.wallet = wallet
+            self.fee = fee
+            self.feeInToken = feeInToken
+        }
+    }
+
     public let status: Status
 
     public let recipient: Recipient
@@ -108,6 +122,12 @@ public struct SendInputState: Equatable {
 
     /// Amount fee in SOL
     public let fee: FeeAmount
+
+    /// Potential wallets for paying fee
+    public let walletsForPayingFee: [PayingWalletFee]
+
+    /// Allow auto select token for paying fee
+    public let autoSelectionTokenFee: Bool
 
     /// Selected fee token
     public let tokenFee: Token
@@ -130,6 +150,8 @@ public struct SendInputState: Equatable {
         amountInToken: Double,
         fee: FeeAmount,
         tokenFee: Token,
+        walletsForPayingFee: [PayingWalletFee],
+        autoSelectionTokenFee: Bool,
         feeInToken: FeeAmount,
         feeRelayerContext: FeeRelayerContext?
     ) {
@@ -142,6 +164,8 @@ public struct SendInputState: Equatable {
         self.amountInToken = amountInToken
         self.fee = fee
         self.tokenFee = tokenFee
+        self.walletsForPayingFee = walletsForPayingFee
+        self.autoSelectionTokenFee = autoSelectionTokenFee
         self.feeInToken = feeInToken
         self.feeRelayerContext = feeRelayerContext
     }
@@ -165,6 +189,8 @@ public struct SendInputState: Equatable {
             amountInToken: 0,
             fee: .zero,
             tokenFee: feeToken,
+            walletsForPayingFee: [],
+            autoSelectionTokenFee: true,
             feeInToken: .zero,
             feeRelayerContext: feeRelayerContext
         )
@@ -181,6 +207,8 @@ public struct SendInputState: Equatable {
         fee: FeeAmount? = nil,
         tokenFee: Token? = nil,
         feeInToken: FeeAmount? = nil,
+        walletsForPayingFee: [PayingWalletFee]? = nil,
+        autoSelectionTokenFee: Bool? = nil,
         feeRelayerContext: FeeRelayerContext? = nil
     ) -> SendInputState {
         .init(
@@ -193,6 +221,8 @@ public struct SendInputState: Equatable {
             amountInToken: amountInToken ?? self.amountInToken,
             fee: fee ?? self.fee,
             tokenFee: tokenFee ?? self.tokenFee,
+            walletsForPayingFee: walletsForPayingFee ?? self.walletsForPayingFee,
+            autoSelectionTokenFee: autoSelectionTokenFee ?? self.autoSelectionTokenFee,
             feeInToken: feeInToken ?? self.feeInToken,
             feeRelayerContext: feeRelayerContext ?? self.feeRelayerContext
         )
@@ -205,10 +235,23 @@ public extension SendInputState {
             .lamports ?? 0
 
         if token.address == tokenFee.address {
-            if balance >= feeInToken.total {
-                balance = balance - feeInToken.total
+            // Auto selection token fee is enabled, user can use max amount in wallet.
+            if
+                autoSelectionTokenFee,
+                walletsForPayingFee
+                .filter({ $0.wallet.token.address != tokenFee.address })
+                .contains(where: { payingWalletFee in
+                    payingWalletFee.feeInToken.total < (payingWalletFee.wallet.lamports ?? 0)
+                })
+            {
+                return Double(balance) / pow(10, Double(token.decimals))
             } else {
-                return 0
+                // User should send less amount to cover fee in same token.
+                if balance >= feeInToken.total {
+                    balance = balance - feeInToken.total
+                } else {
+                    return 0
+                }
             }
         }
 

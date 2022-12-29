@@ -27,11 +27,11 @@ public struct UserWalletEnvironments: Equatable {
         self.rentExemptionAmountForWalletAccount = rentExemptionAmountForWalletAccount
         self.rentExemptionAmountForSPLAccount = rentExemptionAmountForSPLAccount
     }
-    
-    static public var empty: Self {
+
+    public static var empty: Self {
         .init(wallets: [], exchangeRate: [:], tokens: [])
     }
-    
+
     public func copy(tokens: Set<Token>? = nil) -> Self {
         .init(
             wallets: wallets,
@@ -40,5 +40,11 @@ public struct UserWalletEnvironments: Equatable {
             rentExemptionAmountForWalletAccount: rentExemptionAmountForWalletAccount,
             rentExemptionAmountForSPLAccount: rentExemptionAmountForSPLAccount
         )
+    }
+}
+
+extension UserWalletEnvironments {
+    func amountInFiat(_ tokenSymbol: String, _ amount: Double?) -> Double {
+        (exchangeRate[tokenSymbol]?.value ?? 0.0) * (amount ?? 0.0)
     }
 }

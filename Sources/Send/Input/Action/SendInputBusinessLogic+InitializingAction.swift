@@ -7,7 +7,7 @@ import Foundation
 import SolanaSwift
 
 extension SendInputBusinessLogic {
-    static func initialize(
+    static func initializeAction(
         state: SendInputState,
         services: SendInputServices,
         params: SendInputActionInitializeParams
@@ -53,7 +53,7 @@ extension SendInputBusinessLogic {
                 feeRelayerContext: try await params.feeRelayerContext()
             )
 
-            return await changeToken(state: state, token: state.token, services: services)
+            return state
         } catch {
             return state.copy(status: .error(reason: .initializeFailed(error as NSError)))
         }
