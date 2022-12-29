@@ -20,7 +20,7 @@ public protocol SellTransactionsRepository: Actor {
     func deleteTransaction(id: String)
     
     /// Mark transactionas completed
-    func markAsCompleted(id: String)
+    func markAsPending(id: String)
 }
 
 public actor SellTransactionsRepositoryImpl: SellTransactionsRepository {
@@ -34,7 +34,7 @@ public actor SellTransactionsRepositoryImpl: SellTransactionsRepository {
     private static let deletedTransactionIdsKey = "SellTransactionsRepository.deletedTransactionIds"
     
     /// Key for storing completedTransactionIds in UserDefaults
-    private static let completedTransactionIdsKey = "SellTransactionsRepository.completedTransactionIds"
+    private static let pendingTransactionIdsKey = "SellTransactionsRepository.pendingTransactionIds"
     
     /// Deleted transactions id
     private var deletedTransactionIds: [String] {
@@ -47,12 +47,12 @@ public actor SellTransactionsRepositoryImpl: SellTransactionsRepository {
     }
     
     /// Completed transactions id
-    private var completedTransactionIds: [String] {
+    private var pendingTransactionIds: [String] {
         didSet {
-            guard let data = try? JSONEncoder().encode(completedTransactionIds) else {
+            guard let data = try? JSONEncoder().encode(pendingTransactionIds) else {
                 return
             }
-            UserDefaults.standard.set(data, forKey: Self.completedTransactionIdsKey)
+            UserDefaults.standard.set(data, forKey: Self.pendingTransactionIdsKey)
         }
     }
     
@@ -68,12 +68,12 @@ public actor SellTransactionsRepositoryImpl: SellTransactionsRepository {
         }
         
         // retrieve completed transaction ids
-        if let data = UserDefaults.standard.data(forKey: Self.completedTransactionIdsKey),
+        if let data = UserDefaults.standard.data(forKey: Self.pendingTransactionIdsKey),
            let array = try? JSONDecoder().decode([String].self, from: data)
         {
-            completedTransactionIds = array
+            pendingTransactionIds = array
         } else {
-            completedTransactionIds = []
+            pendingTransactionIds = []
         }
     }
     
@@ -83,11 +83,15 @@ public actor SellTransactionsRepositoryImpl: SellTransactionsRepository {
         // filter out all deleted transactions
         var transactions = transactions.filter { !deletedTransactionIds.contains($0.id) }
         
-        // remap all completed transaction
+        // remap all pending transaction
         transactions = transactions.map { transaction in
+            guard transaction.status != .completed && transaction.status != .failed
+            else {
+                return transaction
+            }
             var transaction = transaction
-            if completedTransactionIds.contains(transaction.id) {
-                transaction.status = .completed
+            if pendingTransactionIds.contains(transaction.id) {
+                transaction.status = .pending
             }
             return transaction
         }
@@ -103,14 +107,14 @@ public actor SellTransactionsRepositoryImpl: SellTransactionsRepository {
         deletedTransactionIds.append(id)
     }
     
-    /// Mark transactionas completed
-    public func markAsCompleted(id: String) {
+    /// Mark transaction as sent
+    public func markAsPending(id: String) {
         guard let index = transactions.firstIndex(where: {$0.id == id}) else {
             return
         }
         var transactions = transactions
-        transactions[index].status = .completed
+        transactions[index].status = .pending
         self.transactions = transactions
-        completedTransactionIds.append(id)
+        pendingTransactionIds.append(id)
     }
 }

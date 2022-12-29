@@ -137,8 +137,8 @@ public final class MoonpaySellDataService: SellDataService {
         transactions = await sellTransactionsRepository.transactions
     }
     
-    public func markAsCompleted(id: String) async {
-        await sellTransactionsRepository.markAsCompleted(id: id)
+    public func markAsPending(id: String) async {
+        await sellTransactionsRepository.markAsPending(id: id)
         transactions = await sellTransactionsRepository.transactions
     }
 }
