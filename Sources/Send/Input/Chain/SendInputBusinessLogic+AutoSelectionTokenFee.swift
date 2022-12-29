@@ -49,6 +49,8 @@ extension SendInputBusinessLogic {
         _ state: SendInputState,
         _ services: SendInputServices
     ) async -> SendInputState {
+        guard state.autoSelectionTokenFee else { return state }
+        
         for walletForPayingFee in state.walletsForPayingFee {
             if state.token.address == walletForPayingFee.wallet.token.address {
                 // Same token case
