@@ -79,7 +79,7 @@ public final class MoonpaySellDataService: SellDataService {
     }
     
     public func updateIncompletedTransactions() async throws {
-        let txs = try await provider.sellTransactions(externalTransactionId: userId)
+        let txs = try await provider.sellTransactions(externalCustomerId: userId)
         
         let incompletedTransactions = try await withThrowingTaskGroup(of: SellDataServiceTransaction?.self) { group in
             var transactions = [SellDataServiceTransaction?]()

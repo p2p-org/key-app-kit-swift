@@ -13,6 +13,6 @@ public protocol SellActionService {
     func createSellURL(
         quoteCurrencyCode: String,
         baseCurrencyAmount: Double,
-        externalTransactionId: String
+        externalCustomerId: String
     ) throws -> URL
 }

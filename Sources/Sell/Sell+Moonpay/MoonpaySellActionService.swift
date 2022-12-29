@@ -36,7 +36,7 @@ public class MoonpaySellActionService: SellActionService {
     public func createSellURL(
         quoteCurrencyCode: String,
         baseCurrencyAmount: Double,
-        externalTransactionId: String
+        externalCustomerId: String
     ) throws -> URL {
         var components = URLComponents(string: endpoint + "sell")!
         components.queryItems = [
@@ -45,8 +45,7 @@ public class MoonpaySellActionService: SellActionService {
             .init(name: "refundWalletAddress", value: refundWalletAddress),
             .init(name: "quoteCurrencyCode", value: quoteCurrencyCode),
             .init(name: "baseCurrencyAmount", value: baseCurrencyAmount.toString()),
-            .init(name: "externalTransactionId", value: externalTransactionId),
-            .init(name: "externalCustomerId", value: externalTransactionId)
+            .init(name: "externalCustomerId", value: externalCustomerId)
         ]
 
         guard let url = components.url else {

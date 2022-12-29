@@ -5,7 +5,7 @@ public protocol SellDataServiceProvider {
     associatedtype Currency: ProviderCurrency
     associatedtype Fiat: ProviderFiat
 
-    func sellTransactions(externalTransactionId: String) async throws -> [Transaction]
+    func sellTransactions(externalCustomerId: String) async throws -> [Transaction]
     func detailSellTransaction(id: String) async throws -> Transaction
     func deleteSellTransaction(id: String) async throws
 }

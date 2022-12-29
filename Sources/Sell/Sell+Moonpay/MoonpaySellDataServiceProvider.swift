@@ -59,8 +59,8 @@ public class MoonpaySellDataServiceProvider: SellDataServiceProvider {
         }
     }
 
-    public func sellTransactions(externalTransactionId: String) async throws -> [Transaction] {
-        try await moonpayAPI.sellTransactions(externalTransactionId: externalTransactionId)
+    public func sellTransactions(externalCustomerId: String) async throws -> [Transaction] {
+        try await moonpayAPI.sellTransactions(externalCustomerId: externalCustomerId)
     }
 
     public func detailSellTransaction(id: String) async throws -> Transaction {

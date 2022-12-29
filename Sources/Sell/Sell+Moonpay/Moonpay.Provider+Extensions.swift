@@ -9,9 +9,9 @@ import Foundation
 import Moonpay
 
 extension Moonpay.Provider {
-    func sellTransactions(externalTransactionId: String) async throws -> [MoonpaySellDataServiceProvider.MoonpayTransaction] {
+    func sellTransactions(externalCustomerId: String) async throws -> [MoonpaySellDataServiceProvider.MoonpayTransaction] {
         var components = URLComponents(string: serverSideAPI.endpoint + "api/v3/sell_transactions")!
-        let params = ["apiKey": api.apiKey, "externalTransactionId": externalTransactionId]
+        let params = ["apiKey": api.apiKey, "externalCustomerId": externalCustomerId]
         components.queryItems = params.map { key, value in
             URLQueryItem(name: key, value: value)
         }
