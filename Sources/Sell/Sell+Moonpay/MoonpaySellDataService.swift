@@ -81,6 +81,7 @@ public final class MoonpaySellDataService: SellDataService {
     public func updateIncompletedTransactions() async throws {
         let txs = try await provider.sellTransactions(externalCustomerId: userId)
         
+        // TODO: - Watch for network call limits
         let incompletedTransactions = try await withThrowingTaskGroup(of: SellDataServiceTransaction?.self) { group in
             var transactions = [SellDataServiceTransaction?]()
             
