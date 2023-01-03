@@ -46,7 +46,7 @@ extension SendInputBusinessLogic {
             // Generate tasks
             for tokenAddress in tokenAddresses {
                 group.addTask {
-                    try? await resolveAvailableWalletForPayingFee(state, services, feeRelayerContext, tokenAddress)
+                    try? await resolveTokenWalletForPayingFee(state, services, feeRelayerContext, tokenAddress)
                 }
             }
 
@@ -112,7 +112,7 @@ extension SendInputBusinessLogic {
     }
 
     // Resolve spl account for paying fee
-    fileprivate static func resolveAvailableWalletForPayingFee(
+    fileprivate static func resolveTokenWalletForPayingFee(
         _ state: SendInputState,
         _ services: SendInputServices,
         _ feeRelayerContext: FeeRelayerContext,
