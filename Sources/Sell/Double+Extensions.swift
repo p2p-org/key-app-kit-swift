@@ -1,7 +1,7 @@
 import Foundation
 
 extension Double {
-    public func toString(
+    func toString(
         minimumFractionDigits: Int = 0,
         maximumFractionDigits: Int = 3,
         showPlus: Bool = false,
