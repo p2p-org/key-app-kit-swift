@@ -99,9 +99,9 @@ public struct SendInputState: Equatable {
     }
 
     public struct PayingWalletFee: Equatable {
-        let wallet: Wallet
-        let fee: FeeAmount
-        let feeInToken: FeeAmount
+        public let wallet: Wallet
+        public let fee: FeeAmount
+        public let feeInToken: FeeAmount
 
         init(wallet: Wallet, fee: FeeAmount, feeInToken: FeeAmount) {
             self.wallet = wallet

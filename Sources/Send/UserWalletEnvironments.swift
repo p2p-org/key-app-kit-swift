@@ -7,12 +7,12 @@ import SolanaPricesAPIs
 import SolanaSwift
 
 public struct UserWalletEnvironments: Equatable {
-    let wallets: [Wallet]
-    let exchangeRate: [String: CurrentPrice]
-    let tokens: Set<Token>
+    public let wallets: [Wallet]
+    public let exchangeRate: [String: CurrentPrice]
+    public let tokens: Set<Token>
 
-    let rentExemptionAmountForWalletAccount: Lamports
-    let rentExemptionAmountForSPLAccount: Lamports
+    public let rentExemptionAmountForWalletAccount: Lamports
+    public let rentExemptionAmountForSPLAccount: Lamports
 
     public init(
         wallets: [Wallet],
