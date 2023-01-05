@@ -23,8 +23,4 @@ Pod::Spec.new do |s|
   s.dependency 'FeeRelayerSwift'
 
   s.swift_version = '5.5'
-
-  s.pod_target_xcconfig = {
-    'SWIFT_OPTIMIZATION_LEVEL' => '-O'
-  }
 end

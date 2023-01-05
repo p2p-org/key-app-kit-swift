@@ -27,17 +27,16 @@ extension SendInputBusinessLogic {
             return state.copy(status: .error(reason: .missingFeeRelayer))
         }
         let amountLamports = state.amountInToken.toLamport(decimals: state.token.decimals)
-        var status: SendInputState.Status = .ready
 
         // Limit amount with logic for SPL and SOL tokens
         let strategy: ChainStrategy.Type = state.token.isNativeSOL ? NativeTokenStrategy.self : SPLTokenStrategy.self
         var state = await strategy.validateInput(state, service)
 
         if !SendInputBusinessLogic.checkIsReady(state) {
-            status = .error(reason: .requiredInitialize)
+            return state.copy(status: .error(reason: .requiredInitialize))
         }
 
-        return state.copy(status: status)
+        return state
     }
 
     fileprivate static func validateFee(_ state: SendInputState, _ service: SendInputServices) async -> SendInputState {
