@@ -22,33 +22,49 @@ public final class SendChooseFeeServiceImpl: SendChooseFeeService {
 
     public func getAvailableWalletsToPayFee(feeInSOL: FeeAmount) async throws -> [Wallet] {
         var filteredWallets = wallets.filter { ($0.lamports ?? 0) > 0 }
-        var feeWallets = [Wallet]()
-        for element in filteredWallets {
-            if element.token.address == PublicKey.wrappedSOLMint.base58EncodedString && (element.lamports ?? 0) >= feeInSOL.total {
-                feeWallets.append(element)
-                continue
-            }
-            if element.isNativeSOL, !isValidNative(wallet: element, feeInSOL: feeInSOL) {
-                continue
-            }
-            do {
-                let feeAmount = try await self.feeRelayer.feeCalculator.calculateFeeInPayingToken(
-                    orcaSwap: self.orcaSwap,
-                    feeInSOL: feeInSOL,
-                    payingFeeTokenMint: try PublicKey(string: element.token.address)
-                )
-                if (feeAmount?.total ?? 0) <= (element.lamports ?? 0) {
+
+        return try await withThrowingTaskGroup(of: Wallet?.self, body: { group in
+            var feeWallets = [Wallet]()
+
+            for element in filteredWallets {
+                if element.token.address == PublicKey.wrappedSOLMint.base58EncodedString && (element.lamports ?? 0) >= feeInSOL.total {
                     feeWallets.append(element)
+                    continue
+                }
+                if element.isNativeSOL, !isValidNative(wallet: element, feeInSOL: feeInSOL) {
+                    continue
+                }
+                group.addTask {
+                    do {
+                        let feeAmount = try await self.feeRelayer.feeCalculator.calculateFeeInPayingToken(
+                            orcaSwap: self.orcaSwap,
+                            feeInSOL: feeInSOL,
+                            payingFeeTokenMint: try PublicKey(string: element.token.address)
+                        )
+                        if (feeAmount?.total ?? 0) <= (element.lamports ?? 0) {
+                            return element
+                        } else {
+                            return nil
+                        }
+                    }
+                    catch let error {
+                        if (error as? FeeRelayerError) != FeeRelayerError.swapPoolsNotFound {
+                            throw error
+                        } else {
+                            return nil
+                        }
+                    }
                 }
             }
-            catch let error {
-                if (error as? FeeRelayerError) != FeeRelayerError.swapPoolsNotFound {
-                    throw error
+
+            for try await wallet in group {
+                if let wallet = wallet {
+                    feeWallets.append(wallet)
                 }
             }
-        }
-        
-        return feeWallets
+
+            return feeWallets
+        })
     }
 
     private func isValidNative(wallet: Wallet, feeInSOL: FeeAmount) -> Bool {
