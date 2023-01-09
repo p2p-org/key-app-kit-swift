@@ -46,6 +46,7 @@ public struct SellDataServiceTransaction: Hashable {
     public var eurRate: Double
     public var gbpRate: Double
     public var depositWallet: String
+    public var fauilureReason: String?
     
     public enum Status: String {
         case waitingForDeposit

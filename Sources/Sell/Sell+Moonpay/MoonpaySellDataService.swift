@@ -111,7 +111,8 @@ public final class MoonpaySellDataService: SellDataService {
                         usdRate: usdRate,
                         eurRate: eurRate,
                         gbpRate: gbpRate,
-                        depositWallet: depositWallet
+                        depositWallet: depositWallet,
+                        fauilureReason: detailed.failureReason
                     )
                 }
             }

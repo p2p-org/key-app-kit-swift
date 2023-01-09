@@ -84,7 +84,9 @@ public actor SellTransactionsRepositoryImpl: SellTransactionsRepository {
         var transactions = transactions.filter { !deletedTransactionIds.contains($0.id) }
         
         // remap all pending transaction
-        transactions = transactions.map { transaction in
+        transactions = transactions.filter({ transaction in
+            transaction.fauilureReason != "Cancelled"
+        }).map { transaction in
             guard transaction.status != .completed && transaction.status != .failed
             else {
                 return transaction
