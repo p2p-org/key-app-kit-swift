@@ -11,11 +11,13 @@ public final class SendChooseFeeServiceImpl: SendChooseFeeService {
     private let orcaSwap: OrcaSwapType
     private let feeRelayer: FeeRelayer
     private let wallets: [Wallet]
+    private let context: RelayContext?
 
-    public init(wallets: [Wallet], feeRelayer: FeeRelayer, orcaSwap: OrcaSwapType) {
+    public init(wallets: [Wallet], feeRelayer: FeeRelayer, orcaSwap: OrcaSwapType, context: RelayContext?) {
         self.wallets = wallets
         self.feeRelayer = feeRelayer
         self.orcaSwap = orcaSwap
+        self.context = context
     }
 
     public func getAvailableWalletsToPayFee(feeInSOL: FeeAmount) async throws -> [Wallet] {
@@ -24,6 +26,9 @@ public final class SendChooseFeeServiceImpl: SendChooseFeeService {
         for element in filteredWallets {
             if element.token.address == PublicKey.wrappedSOLMint.base58EncodedString && (element.lamports ?? 0) >= feeInSOL.total {
                 feeWallets.append(element)
+                continue
+            }
+            if element.isNativeSOL, !isValidNative(wallet: element, feeInSOL: feeInSOL) {
                 continue
             }
             do {
@@ -44,5 +49,11 @@ public final class SendChooseFeeServiceImpl: SendChooseFeeService {
         }
         
         return feeWallets
+    }
+
+    private func isValidNative(wallet: Wallet, feeInSOL: FeeAmount) -> Bool {
+        guard let context = context else { return false }
+        let leftAmount = (Int64(wallet.lamports ?? 0) - Int64(feeInSOL.total))
+        return leftAmount >= Int64(context.minimumRelayAccountBalance) || leftAmount == .zero
     }
 }

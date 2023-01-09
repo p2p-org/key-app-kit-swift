@@ -7,6 +7,7 @@
 
 import Foundation
 import SolanaSwift
+import FeeRelayerSwift
 
 extension SendInputBusinessLogic {
     fileprivate static func checkPayingInSameToken(
@@ -38,6 +39,9 @@ extension SendInputBusinessLogic {
         _ services: SendInputServices,
         _ payingWalletFee: SendInputState.PayingWalletFee
     ) -> Bool {
+        if payingWalletFee.wallet.isNativeSOL {
+            return isValidNative(walletFee: payingWalletFee, context: state.feeRelayerContext)
+        }
         if payingWalletFee.feeInToken.total > (payingWalletFee.wallet.lamports ?? 0) {
             return false
         }
@@ -87,5 +91,11 @@ extension SendInputBusinessLogic {
             tokenFee: walletForPayingFee.wallet.token,
             feeInToken: walletForPayingFee.feeInToken
         )
+    }
+
+    private static func isValidNative(walletFee: SendInputState.PayingWalletFee, context: RelayContext?) -> Bool {
+        guard let context = context else { return false }
+        let leftAmount = (Int64(walletFee.wallet.lamports ?? 0) - Int64(walletFee.feeInToken.total))
+        return leftAmount >= Int64(context.minimumRelayAccountBalance) || leftAmount == .zero
     }
 }
