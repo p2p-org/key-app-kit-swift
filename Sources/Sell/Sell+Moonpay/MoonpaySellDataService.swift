@@ -70,7 +70,8 @@ public final class MoonpaySellDataService: SellDataService {
             self.currency = currency
             self.fiat = fiat
             status = .ready
-        } catch {
+        } catch let error {
+            debugPrint(error)
             self.currency = nil
             self.fiat = nil
             status = .error(SellDataServiceError.couldNotLoadSellData)
@@ -87,33 +88,37 @@ public final class MoonpaySellDataService: SellDataService {
             
             for id in txs.map(\.id) {
                 group.addTask { [unowned self] in
-                    let detailed = try await self.provider.detailSellTransaction(id: id)
+                    do {
+                        let detailed = try await self.provider.detailSellTransaction(id: id)
                     
-                    let quoteCurrencyAmount = detailed.quoteCurrencyAmount ?? (priceProvider.getCurrentPrice(for: "SOL") ?? 0) * detailed.baseCurrencyAmount
-                    guard
-                        let usdRate = detailed.usdRate,
-                        let eurRate = detailed.eurRate,
-                        let gbpRate = detailed.gbpRate,
-                        let depositWallet = detailed.depositWallet?.walletAddress,
-                        let status = SellDataServiceTransaction.Status(rawValue: detailed.status.rawValue)
-                    else { return nil }
-                    
-                    let dateFormatter = ISO8601DateFormatter()
-                    dateFormatter.formatOptions =  [.withInternetDateTime, .withFractionalSeconds]
-                    let createdAt = dateFormatter.date(from: detailed.createdAt)
-                    
-                    return SellDataServiceTransaction(
-                        id: detailed.id,
-                        createdAt: createdAt,
-                        status: status,
-                        baseCurrencyAmount: detailed.baseCurrencyAmount,
-                        quoteCurrencyAmount: quoteCurrencyAmount,
-                        usdRate: usdRate,
-                        eurRate: eurRate,
-                        gbpRate: gbpRate,
-                        depositWallet: depositWallet,
-                        fauilureReason: detailed.failureReason
-                    )
+                        let quoteCurrencyAmount = detailed.quoteCurrencyAmount ?? (priceProvider.getCurrentPrice(for: "SOL") ?? 0) * detailed.baseCurrencyAmount
+                        guard
+                            let usdRate = detailed.usdRate,
+                            let eurRate = detailed.eurRate,
+                            let gbpRate = detailed.gbpRate,
+                            let depositWallet = detailed.depositWallet?.walletAddress,
+                            let status = SellDataServiceTransaction.Status(rawValue: detailed.status.rawValue)
+                        else { return nil }
+                        
+                        let dateFormatter = ISO8601DateFormatter()
+                        dateFormatter.formatOptions =  [.withInternetDateTime, .withFractionalSeconds]
+                        let createdAt = dateFormatter.date(from: detailed.createdAt)
+                        
+                        return SellDataServiceTransaction(
+                            id: detailed.id,
+                            createdAt: createdAt,
+                            status: status,
+                            baseCurrencyAmount: detailed.baseCurrencyAmount,
+                            quoteCurrencyAmount: quoteCurrencyAmount,
+                            usdRate: usdRate,
+                            eurRate: eurRate,
+                            gbpRate: gbpRate,
+                            depositWallet: depositWallet,
+                            fauilureReason: detailed.failureReason
+                        )
+                    } catch {
+                        return nil
+                    }
                 }
             }
             
