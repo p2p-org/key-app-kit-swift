@@ -59,6 +59,7 @@ public final class MoonpaySellDataService: SellDataService {
         
         // get currency
         do {
+            isAvailable = try await provider.isAvailable()
             let (currency, fiat, _) = try await(
                 provider.currencies().filter({ $0.code.uppercased() == "SOL" }).first,
                 provider.fiat(),
