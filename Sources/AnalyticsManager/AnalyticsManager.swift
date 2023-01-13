@@ -11,7 +11,7 @@ import Foundation
 public protocol AnalyticsManager {
     func log(event: AnalyticsEvent)
     func setIdentifier(_ identifier: AnalyticsIdentifier)
-    func setUserId(_ userId: String)
+    func setUserId(_ userId: String?)
 }
 
 public class AnalyticsManagerImpl: AnalyticsManager {
@@ -42,7 +42,7 @@ public class AnalyticsManagerImpl: AnalyticsManager {
         Amplitude.instance().identify(identify)
     }
 
-    public func setUserId(_ userId: String) {
+    public func setUserId(_ userId: String?) {
         Amplitude.instance().setUserId(userId)
     }
 }
