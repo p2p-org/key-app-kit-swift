@@ -38,7 +38,10 @@ extension Moonpay.Provider {
         let components = URLComponents(string: serverSideAPI.endpoint + "api/v3/sell_transactions/\(id)")!
         var urlRequest = URLRequest(url: components.url!)
         urlRequest.httpMethod = "DELETE"
-        let (_, _) = try await URLSession.shared.data(from: urlRequest)
+        let (_, response) = try await URLSession.shared.data(from: urlRequest)
+        guard let code = (response as? HTTPURLResponse)?.statusCode, (200...299).contains(code) else {
+            throw Moonpay.MoonpayProviderError.unknown
+        }
     }
 }
 
