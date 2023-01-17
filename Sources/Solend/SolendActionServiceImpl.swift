@@ -17,8 +17,8 @@ public class SolendActionServiceImpl: SolendActionService {
     private let solana: SolanaAPIClient
 
     private let feeRelayApi: FeeRelayerAPIClient
-    private let feeRelay: FeeRelayer
-    private let feeRelayContextManager: FeeRelayerContextManager
+    private let relayService: RelayService
+    private let relayContextManager: RelayContextManager
 
     private var owner: Account {
         get throws {
@@ -36,8 +36,8 @@ public class SolendActionServiceImpl: SolendActionService {
         solend: Solend,
         solana: SolanaAPIClient,
         feeRelayApi: FeeRelayerAPIClient,
-        feeRelay: FeeRelayer,
-        feeRelayContextManager: FeeRelayerContextManager
+        relayService: RelayService,
+        relayContextManager: RelayContextManager
     ) {
         self.rpcUrl = rpcUrl
         self.lendingMark = lendingMark
@@ -45,8 +45,8 @@ public class SolendActionServiceImpl: SolendActionService {
         self.solend = solend
         self.solana = solana
         self.feeRelayApi = feeRelayApi
-        self.feeRelay = feeRelay
-        self.feeRelayContextManager = feeRelayContextManager
+        self.relayService = relayService
+        self.relayContextManager = relayContextManager
     }
 
     private let currentActionSubject: CurrentValueSubject<SolendAction?, Never> = .init(nil)
@@ -69,13 +69,15 @@ public class SolendActionServiceImpl: SolendActionService {
     }
 
     public func depositFee(amount: UInt64, symbol: SolendSymbol) async throws -> SolanaSwift.FeeAmount {
-        let feeRelayContext = try await feeRelayContextManager.getCurrentContext()
-        let coveredByFeeRelay = feeRelayContext.usageStatus.currentUsage < feeRelayContext.usageStatus.maxUsage
+        // update and get current context
+        try await relayContextManager.update()
+        let context = relayContextManager.currentContext!
+        let coveredByFeeRelay = context.usageStatus.currentUsage < context.usageStatus.maxUsage
 
         let depositFee = try await solend.getDepositFee(
             rpcUrl: rpcUrl,
             owner: owner.publicKey.base58EncodedString,
-            feePayer: feeRelayContext.feePayerAddress.base58EncodedString,
+            feePayer: context.feePayerAddress.base58EncodedString,
             tokenAmount: amount,
             tokenSymbol: symbol
         )
@@ -87,13 +89,16 @@ public class SolendActionServiceImpl: SolendActionService {
     }
 
     public func withdrawFee(amount: UInt64, symbol: SolendSymbol) async throws -> SolanaSwift.FeeAmount {
-        let feeRelayContext = try await feeRelayContextManager.getCurrentContext()
-        let coveredByFeeRelay = feeRelayContext.usageStatus.currentUsage < feeRelayContext.usageStatus.maxUsage
+        // update and get current context
+        try await relayContextManager.update()
+        let context = relayContextManager.currentContext!
+    
+        let coveredByFeeRelay = context.usageStatus.currentUsage < context.usageStatus.maxUsage
 
         let withdrawFee = try await solend.getWithdrawFee(
             rpcUrl: rpcUrl,
             owner: owner.publicKey.base58EncodedString,
-            feePayer: feeRelayContext.feePayerAddress.base58EncodedString,
+            feePayer: context.feePayerAddress.base58EncodedString,
             tokenAmount: amount,
             tokenSymbol: symbol
         )
@@ -112,8 +117,10 @@ public class SolendActionServiceImpl: SolendActionService {
         do {
             try await check()
 
-            let feeRelayContext = try await feeRelayContextManager.getCurrentContext()
-            let feePayerAddress: PublicKey = feeRelayContext.feePayerAddress
+            // update and get current context
+            try await relayContextManager.update()
+            let context = relayContextManager.currentContext!
+            let feePayerAddress: PublicKey = context.feePayerAddress
 
             let transactionsRaw: [SolanaRawTransaction] = try await solend.createDepositTransaction(
                 solanaRpcUrl: rpcUrl,
@@ -125,7 +132,7 @@ public class SolendActionServiceImpl: SolendActionService {
                 lendingMarketAddress: lendingMark,
                 blockHash: try await solana.getRecentBlockhash(commitment: nil),
                 freeTransactionsCount: UInt32(
-                    feeRelayContext.usageStatus.maxUsage - feeRelayContext.usageStatus.currentUsage
+                    context.usageStatus.maxUsage - context.usageStatus.currentUsage
                 ),
                 needToUseRelay: true,
                 payInFeeToken: nil,
@@ -143,7 +150,6 @@ public class SolendActionServiceImpl: SolendActionService {
             let depositFee = try await depositFee(amount: amount, symbol: symbol)
             try await relay(
                 transactionsRaw: transactionsRaw,
-                feeRelayContext: feeRelayContext,
                 fee: depositFee,
                 feePayer: feePayer,
                 initialAction: initialAction
@@ -167,9 +173,11 @@ public class SolendActionServiceImpl: SolendActionService {
     ) async throws {
         do {
             try await check()
-
-            let feeRelayContext = try await feeRelayContextManager.getCurrentContext()
-            let feePayerAddress: PublicKey = feeRelayContext.feePayerAddress
+            
+            // update and get current context
+            try await relayContextManager.update()
+            let context = relayContextManager.currentContext!
+            let feePayerAddress: PublicKey = context.feePayerAddress
 
             let transactionsRaw: [SolanaRawTransaction] = try await solend.createWithdrawTransaction(
                 solanaRpcUrl: rpcUrl,
@@ -181,7 +189,7 @@ public class SolendActionServiceImpl: SolendActionService {
                 lendingMarketAddress: lendingMark,
                 blockHash: try await solana.getRecentBlockhash(commitment: nil),
                 freeTransactionsCount: UInt32(
-                    feeRelayContext.usageStatus.maxUsage - feeRelayContext.usageStatus.currentUsage
+                    context.usageStatus.maxUsage - context.usageStatus.currentUsage
                 ),
                 needToUseRelay: true,
                 payInFeeToken: nil,
@@ -199,7 +207,6 @@ public class SolendActionServiceImpl: SolendActionService {
             let withdrawFee = try await withdrawFee(amount: amount, symbol: symbol)
             try await relay(
                 transactionsRaw: transactionsRaw,
-                feeRelayContext: feeRelayContext,
                 fee: withdrawFee,
                 feePayer: feePayer,
                 initialAction: initialAction
@@ -218,7 +225,6 @@ public class SolendActionServiceImpl: SolendActionService {
 
     func relay(
         transactionsRaw: [SolanaRawTransaction],
-        feeRelayContext: FeeRelayerContext,
         fee: FeeAmount,
         feePayer: FeeRelayerSwift.TokenAccount?,
         initialAction: SolendAction
@@ -253,8 +259,7 @@ public class SolendActionServiceImpl: SolendActionService {
         }
 
         // Relay transaction
-        let transactionsIDs = try await feeRelay.topUpAndRelayTransaction(
-            feeRelayContext,
+        let transactionsIDs = try await relayService.topUpAndRelayTransaction(
             preparedTransactions,
             fee: feePayer,
             config: .init(
