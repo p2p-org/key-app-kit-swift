@@ -69,9 +69,7 @@ public class SolendActionServiceImpl: SolendActionService {
     }
 
     public func depositFee(amount: UInt64, symbol: SolendSymbol) async throws -> SolanaSwift.FeeAmount {
-        // update and get current context
-        try await relayContextManager.update()
-        let context = relayContextManager.currentContext!
+        guard let context = relayContextManager.currentContext else { throw RelayContextManagerError.invalidContext }
         let coveredByFeeRelay = context.usageStatus.currentUsage < context.usageStatus.maxUsage
 
         let depositFee = try await solend.getDepositFee(
@@ -89,9 +87,7 @@ public class SolendActionServiceImpl: SolendActionService {
     }
 
     public func withdrawFee(amount: UInt64, symbol: SolendSymbol) async throws -> SolanaSwift.FeeAmount {
-        // update and get current context
-        try await relayContextManager.update()
-        let context = relayContextManager.currentContext!
+        guard let context = relayContextManager.currentContext else { throw RelayContextManagerError.invalidContext }
     
         let coveredByFeeRelay = context.usageStatus.currentUsage < context.usageStatus.maxUsage
 
@@ -116,10 +112,9 @@ public class SolendActionServiceImpl: SolendActionService {
     ) async throws {
         do {
             try await check()
-
-            // update and get current context
-            try await relayContextManager.update()
-            let context = relayContextManager.currentContext!
+            
+            guard let context = relayContextManager.currentContext else { throw RelayContextManagerError.invalidContext }
+            
             let feePayerAddress: PublicKey = context.feePayerAddress
 
             let transactionsRaw: [SolanaRawTransaction] = try await solend.createDepositTransaction(
@@ -174,9 +169,8 @@ public class SolendActionServiceImpl: SolendActionService {
         do {
             try await check()
             
-            // update and get current context
-            try await relayContextManager.update()
-            let context = relayContextManager.currentContext!
+            guard let context = relayContextManager.currentContext else { throw RelayContextManagerError.invalidContext }
+            
             let feePayerAddress: PublicKey = context.feePayerAddress
 
             let transactionsRaw: [SolanaRawTransaction] = try await solend.createWithdrawTransaction(
