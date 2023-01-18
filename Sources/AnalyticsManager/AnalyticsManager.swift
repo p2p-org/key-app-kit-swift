@@ -11,6 +11,7 @@ import Foundation
 public protocol AnalyticsManager {
     func log(event: AnalyticsEvent)
     func setIdentifier(_ identifier: AnalyticsIdentifier)
+    func setUserId(_ userId: String?)
 }
 
 public class AnalyticsManagerImpl: AnalyticsManager {
@@ -19,8 +20,6 @@ public class AnalyticsManagerImpl: AnalyticsManager {
         Amplitude.instance().trackingSessionEvents = true
         // Initialize SDK
         Amplitude.instance().initializeApiKey(apiKey)
-        // FIXME: Set userId later
-//        Amplitude.instance().setUserId("userId")
     }
 
     public func log(event: AnalyticsEvent) {
@@ -41,5 +40,9 @@ public class AnalyticsManagerImpl: AnalyticsManager {
             let identify = AMPIdentify().set(identifier.name, value: value)
         else { return }
         Amplitude.instance().identify(identify)
+    }
+
+    public func setUserId(_ userId: String?) {
+        Amplitude.instance().setUserId(userId)
     }
 }
