@@ -54,7 +54,7 @@ public class SendHistoryService: ObservableObject {
     public func insert(_ newRecipient: Recipient) async throws {
         var newList = recipientsSubject.value
 
-        if let index = newList.firstIndex(where: { (recipient: Recipient) -> Bool in recipient == newRecipient }) {
+        if let index = newList.firstIndex(where: { (recipient: Recipient) -> Bool in recipient.id == newRecipient.id }) {
             newList.remove(at: index)
         }
 
