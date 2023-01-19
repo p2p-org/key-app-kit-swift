@@ -33,7 +33,7 @@
         "repositoryURL": "https://github.com/p2p-org/FeeRelayerSwift",
         "state": {
           "branch": "refactor/relay-service",
-          "revision": "cac0aae1cd26ae0545accce111f4aebfdab34f0b",
+          "revision": "ee91526a532623622b4888a809eb1dd4a7051627",
           "version": null
         }
       },
