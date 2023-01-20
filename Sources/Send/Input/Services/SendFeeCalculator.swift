@@ -77,7 +77,7 @@ public class SendFeeCalculatorImpl: SendFeeCalculator {
         if isFreeTransactionNotAvailableAndUserIsPayingWithSOL(context, payingTokenMint: payingTokenMint) {
             return expectedFee
         }
-
+        
         return try await feeRelayerCalculator.calculateNeededTopUpAmount(
             context,
             expectedFee: expectedFee,
