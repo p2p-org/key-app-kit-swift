@@ -25,13 +25,14 @@ struct NativeTokenStrategy: ChainStrategy {
                 // Return availability to send the absolute max amount for SOL token
                 status = .ready
             } else {
-                status = .error(reason: .inputTooHigh(state.maxAmountInputInSOLWithLeftAmount))
+                let limit = amountLamports < maxAmount ? state.maxAmountInputInSOLWithLeftAmount : state.maxAmountInputInToken
+                status = .error(reason: .inputTooHigh(limit))
             }
         }
 
         if state.recipientAdditionalInfo.walletAccount == nil {
             // Minimum amount to send to the account with no funds
-            if minAmount > maxAmountWithLeftAmount && amountLamports != maxAmount {
+            if minAmount > maxAmountWithLeftAmount && amountLamports < maxAmount {
                 // If minimum appears to be less than available maximum than return this error
                 status = .error(reason: .insufficientFunds)
             } else if amountLamports < minAmount {

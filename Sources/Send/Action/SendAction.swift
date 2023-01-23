@@ -8,23 +8,23 @@ public protocol SendActionService {
 
 public class SendActionServiceImpl: SendActionService {
 
-    private let contextManager: FeeRelayerContextManager
+    private let contextManager: RelayContextManager
     private let solanaAPIClient: SolanaAPIClient
     private let blockchainClient: BlockchainClient
     private let account: Account?
-    private let feeRelayer: FeeRelayer
+    private let relayService: RelayService
 
     public init(
-        contextManager: FeeRelayerContextManager,
+        contextManager: RelayContextManager,
         solanaAPIClient: SolanaAPIClient,
         blockchainClient: BlockchainClient,
-        feeRelayer: FeeRelayer,
+        relayService: RelayService,
         account: Account?
     ) {
         self.contextManager = contextManager
         self.solanaAPIClient = solanaAPIClient
         self.blockchainClient = blockchainClient
-        self.feeRelayer = feeRelayer
+        self.relayService = relayService
         self.account = account
     }
 
@@ -34,8 +34,6 @@ public class SendActionServiceImpl: SendActionService {
         amount: Double,
         feeWallet: Wallet
     ) async throws -> String {
-        try await contextManager.update()
-
         let amount = amount.toLamport(decimals: wallet.token.decimals)
         guard let sender = wallet.pubkey else { throw SendError.invalidSourceWallet }
 
@@ -44,7 +42,6 @@ public class SendActionServiceImpl: SendActionService {
         }
 
         return try await sendToSolanaBCViaRelayMethod(
-            try await contextManager.getCurrentContext(),
             from: wallet,
             receiver: receiver,
             amount: amount,
@@ -53,7 +50,6 @@ public class SendActionServiceImpl: SendActionService {
     }
 
     func sendToSolanaBCViaRelayMethod(
-        _ context: FeeRelayerContext,
         from wallet: Wallet,
         receiver: String,
         amount: Lamports,
@@ -64,7 +60,6 @@ public class SendActionServiceImpl: SendActionService {
         let payingFeeToken = try? getPayingFeeToken(feeWallet: feeWallet)
 
         var (preparedTransaction, useFeeRelayer) = try await prepareForSendingToSolanaNetworkViaRelayMethod(
-            context,
             from: wallet,
             receiver: receiver,
             amount: amount.convertToBalance(decimals: wallet.token.decimals),
@@ -73,8 +68,7 @@ public class SendActionServiceImpl: SendActionService {
         preparedTransaction.transaction.recentBlockhash = try await solanaAPIClient.getRecentBlockhash(commitment: nil)
 
         if useFeeRelayer {
-            return try await feeRelayer.topUpAndRelayTransaction(
-                context,
+            return try await relayService.topUpAndRelayTransaction(
                 preparedTransaction,
                 fee: payingFeeToken,
                 config: FeeRelayerConfiguration(
@@ -88,7 +82,6 @@ public class SendActionServiceImpl: SendActionService {
     }
 
     private func prepareForSendingToSolanaNetworkViaRelayMethod(
-        _ context: FeeRelayerContext,
         from wallet: Wallet,
         receiver: String,
         amount: Double,
@@ -100,6 +93,7 @@ public class SendActionServiceImpl: SendActionService {
         let amount = amount.toLamport(decimals: wallet.token.decimals)
         guard let sender = wallet.pubkey else { throw SendError.invalidSourceWallet }
         guard let account = account else { throw SolanaError.unauthorized }
+        guard let context = contextManager.currentContext else { throw RelayContextManagerError.invalidContext }
         // prepare fee payer
         let feePayer: PublicKey?
         let useFeeRelayer: Bool
@@ -143,7 +137,7 @@ public class SendActionServiceImpl: SendActionService {
     }
 
     private func isFreeTransactionNotAvailableAndUserIsPayingWithSOL(
-        _ context: FeeRelayerContext,
+        _ context: RelayContext,
         payingTokenMint: String?
     ) -> Bool {
         let expectedTransactionFee = context.lamportsPerSignature * 2
