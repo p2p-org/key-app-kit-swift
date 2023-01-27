@@ -91,7 +91,7 @@ let package = Package(
     ],
     dependencies: [
         .package(url: "https://github.com/p2p-org/solana-swift", branch: "main"),
-        .package(url: "https://github.com/p2p-org/FeeRelayerSwift", branch: "refactor/relay-service"),
+        .package(url: "https://github.com/p2p-org/FeeRelayerSwift", branch: "master"),
         .package(url: "https://github.com/amplitude/Amplitude-iOS", from: "8.3.0"),
         .package(url: "https://github.com/krzyzanowskim/CryptoSwift.git", .upToNextMajor(from: "1.6.0"))
     ],
