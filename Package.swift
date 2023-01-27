@@ -76,6 +76,18 @@ let package = Package(
             name: "History",
             targets: ["History"]
         ),
+        
+        // Sell
+        .library(
+            name: "Sell",
+            targets: ["Sell"]
+        ),
+        
+        // Moonpay
+        .library(
+            name: "Moonpay",
+            targets: ["Moonpay"]
+        ),
     ],
     dependencies: [
         .package(url: "https://github.com/p2p-org/solana-swift", branch: "main"),
@@ -227,17 +239,30 @@ let package = Package(
             ]
         ),
 
+        .testTarget(
+            name: "SendTest",
+            dependencies: ["Send"],
+            path: "Tests/UnitTests/SendTests"
+        ),
+        
+        // History
         .target(
             name: "History",
             dependencies: [
                 .product(name: "SolanaSwift", package: "solana-swift")
             ]
         ),
-
-        .testTarget(
-            name: "SendTest",
-            dependencies: ["Send"],
-            path: "Tests/UnitTests/SendTests"
+        
+        // Sell
+        .target(
+            name: "Sell",
+            dependencies: ["Moonpay"]
+        ),
+        
+        // Moonpay
+        .target(
+            name: "Moonpay",
+            dependencies: []
         ),
     ]
 )
