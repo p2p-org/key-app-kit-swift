@@ -253,7 +253,7 @@ public class SolendActionServiceImpl: SolendActionService {
         }
 
         // Relay transaction
-        let transactionsIDs = try await relayService.topUpAndRelayTransaction(
+        let transactionsIDs = try await relayService.topUpIfNeededAndSignRelayTransactions(
             preparedTransactions,
             fee: feePayer,
             config: .init(
