@@ -50,6 +50,18 @@ extension SendInputBusinessLogic {
         if state.feeInToken.total > (wallet.lamports ?? 0) {
             return state.copy(status: .error(reason: .insufficientAmountToCoverFee))
         }
+
+        if let context = state.feeRelayerContext, wallet.isNativeSOL {
+            // Separate logic for fee paid with SOL. Need to consider minimumRelayAccountBalance
+            let leftAmount = (Int64(wallet.lamports ?? 0) - Int64(state.feeInToken.total))
+            if leftAmount >= Int64(context.minimumRelayAccountBalance) || leftAmount == .zero {
+                return state
+            }
+            else {
+                return state.copy(status: .error(reason: .insufficientAmountToCoverFee))
+            }
+        }
+
         return state
     }
 
