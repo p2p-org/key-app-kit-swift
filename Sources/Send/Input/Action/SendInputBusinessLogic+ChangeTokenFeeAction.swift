@@ -37,7 +37,7 @@ extension SendInputBusinessLogic {
                 fee: fee,
                 tokenFee: feeToken,
                 feeInToken: feeInToken,
-                autoSelectionTokenFee: true
+                autoSelectionTokenFee: false
             )
 
             return state
