@@ -68,7 +68,7 @@ public class SendActionServiceImpl: SendActionService {
         preparedTransaction.transaction.recentBlockhash = try await solanaAPIClient.getRecentBlockhash(commitment: nil)
 
         if useFeeRelayer {
-            return try await relayService.topUpIfNeededAndSignRelayTransactions(
+            return try await relayService.topUpIfNeededAndRelayTransaction(
                 preparedTransaction,
                 fee: payingFeeToken,
                 config: FeeRelayerConfiguration(
