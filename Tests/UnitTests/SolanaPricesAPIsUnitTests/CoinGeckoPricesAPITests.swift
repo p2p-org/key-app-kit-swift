@@ -13,8 +13,8 @@ class CoinGeckoPricesAPITests: XCTestCase {
         let btc = Token(_tags: [], chainId: 0, address: "", symbol: "BTC", name: "Bitcoin", decimals: 18, logoURI: nil, extensions: btcTokenExtension)
         let etc = Token(_tags: [], chainId: 0, address: "", symbol: "ETH", name: "Bitcoin", decimals: 18, logoURI: nil, extensions: etcTokenExtension)
         let prices = try await api.getCurrentPrices(coins: [btc, etc], toFiat: "USD")
-        XCTAssertEqual(prices["ETH"]??.value, 1055.31)
-        XCTAssertEqual(prices["BTC"]??.value, 19725.28)
+        XCTAssertEqual(prices[.eth]??.value, 1055.31)
+        XCTAssertEqual(prices[.renBTC]??.value, 19725.28)
     }
     
     func testGetHistoricalPrices() async throws {
