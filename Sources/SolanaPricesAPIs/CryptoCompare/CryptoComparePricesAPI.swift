@@ -38,10 +38,8 @@ public class CryptoComparePricesAPI: SolanaPricesAPI {
             
             return Dictionary(
                 coins.map({ (token) -> (Token, CurrentPrice?) in
-                    return (
-                        token,
-                        dictonary[token.symbol]!
-                    )
+                    guard let price = dictonary[token.symbol] else { return (token, nil) }
+                    return (token, price)
                 }),
                 uniquingKeysWith: { first, _ in first }
             )
