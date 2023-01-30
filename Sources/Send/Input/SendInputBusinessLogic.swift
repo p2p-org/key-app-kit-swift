@@ -55,7 +55,7 @@ enum SendInputBusinessLogic {
             }
         case let .changeAmountInFiat(amount):
             newState = await executeAction(state, services, action: {
-                await sendInputChangeAmountInTokenAction(state: state, amount: amount, services: services)
+                await sendInputChangeAmountInFiat(state: state, amount: amount, services: services)
             }, chains: {
                 [
                     updateAmountChain,
