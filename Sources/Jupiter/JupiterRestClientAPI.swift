@@ -9,6 +9,12 @@ public class JupiterRestClientAPI: JupiterAPI {
     let host: String = "https://quote-api.jup.ag/v3"
 
     public init() {}
+    
+    public func getTokens() async throws -> [Token] {
+        let (data, _) = try await URLSession.shared.data(from: URL(string: "https://cache.jup.ag/tokens")!)
+        debugPrint("---data: ", String(data: data, encoding: .utf8))
+        return try JSONDecoder().decode([Token].self, from: data)
+    }
 
     public func quote(
         inputMint: String,
