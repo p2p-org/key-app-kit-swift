@@ -19,7 +19,7 @@ public protocol JupiterAPI {
         amount: String,
         swapMode: SwapMode?,
         slippageBps: Int?,
-        feeBps: Int,
+        feeBps: Int?,
         onlyDirectRoutes: Bool?,
         userPublicKey: String?,
         enforceSingleTx: Bool?
@@ -30,8 +30,10 @@ public protocol JupiterAPI {
         userPublicKey: String,
         wrapUnwrapSol: Bool,
         feeAccount: String?,
+        asLegacyTransaction: Bool?,
+        computeUnitPriceMicroLamports: Int?,
         destinationWallet: String?
-    ) async throws -> (setup: Transaction?, swap: Transaction?, cleanup: Transaction?)
+    ) async throws -> VersionedTransaction?
     
     func routeMap() async throws -> RouteMap
 }

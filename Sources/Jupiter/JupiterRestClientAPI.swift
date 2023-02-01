@@ -6,13 +6,14 @@ import Foundation
 import SolanaSwift
 
 public class JupiterRestClientAPI: JupiterAPI {
-    let host: String = "https://quote-api.jup.ag/v3"
+    private let host: String
 
-    public init() {}
+    public init(version: Version) {
+        host = "https://quote-api.jup.ag/" + version.rawValue
+    }
     
     public func getTokens() async throws -> [Token] {
         let (data, _) = try await URLSession.shared.data(from: URL(string: "https://cache.jup.ag/tokens")!)
-        debugPrint("---data: ", String(data: data, encoding: .utf8))
         return try JSONDecoder().decode([Token].self, from: data)
     }
 
@@ -22,7 +23,7 @@ public class JupiterRestClientAPI: JupiterAPI {
         amount: String,
         swapMode: SwapMode?,
         slippageBps: Int?,
-        feeBps: Int,
+        feeBps: Int?,
         onlyDirectRoutes: Bool?,
         userPublicKey: String?,
         enforceSingleTx: Bool?
@@ -34,7 +35,6 @@ public class JupiterRestClientAPI: JupiterAPI {
             .init(name: "inputMint", value: inputMint),
             .init(name: "outputMint", value: outputMint),
             .init(name: "amount", value: amount),
-            .init(name: "feeBps", value: String(feeBps)),
             .init(name: "userPublicKey", value: userPublicKey),
         ]
 
@@ -49,6 +49,9 @@ public class JupiterRestClientAPI: JupiterAPI {
         }
         if let enforceSingleTx = enforceSingleTx {
             queries.append(.init(name: "enforceSingleTx", value: String(enforceSingleTx)))
+        }
+        if let feeBps = feeBps {
+            queries.append(.init(name: "feeBps", value: String(feeBps)))
         }
         urlComponent.queryItems = queries
 
@@ -66,21 +69,22 @@ public class JupiterRestClientAPI: JupiterAPI {
         userPublicKey: String,
         wrapUnwrapSol: Bool,
         feeAccount: String?,
+        asLegacyTransaction: Bool?,
+        computeUnitPriceMicroLamports: Int?,
         destinationWallet: String?
-    ) async throws
-    -> (setup: Transaction?, swap: Transaction?, cleanup: Transaction?) {
+    ) async throws -> VersionedTransaction? {
         struct PostData: Codable {
             let route: Route
             let userPublicKey: String
             let wrapUnwrapSol: Bool
             let feeAccount: String?
+            let asLegacyTransaction: Bool?
+            let computeUnitPriceMicroLamports: Int?
             let destinationWallet: String?
         }
 
         struct ResponseData: Codable {
-            let setupTransaction: String?
             let swapTransaction: String?
-            let cleanupTransaction: String?
         }
 
         guard let url = URL(string: host + "/swap") else { throw JupiterError.invalidURL }
@@ -92,6 +96,8 @@ public class JupiterRestClientAPI: JupiterAPI {
             userPublicKey: userPublicKey,
             wrapUnwrapSol: wrapUnwrapSol,
             feeAccount: feeAccount,
+            asLegacyTransaction: asLegacyTransaction,
+            computeUnitPriceMicroLamports: computeUnitPriceMicroLamports,
             destinationWallet: destinationWallet
         ))
 
@@ -99,19 +105,11 @@ public class JupiterRestClientAPI: JupiterAPI {
         let (data, _) = try await URLSession.shared.data(for: request)
         print(String(data: data, encoding: .utf8))
         let result = try JSONDecoder().decode(ResponseData.self, from: data)
-
-        let setupTrx = result.setupTransaction != nil ? try Transaction
-            .from(data: Data(base64Encoded: result.setupTransaction!)!) : nil
-        let swapTrx = result.swapTransaction != nil ? try Transaction
-            .from(data: Data(base64Encoded: result.swapTransaction!)!) : nil
-        let cleanupTrx = result.cleanupTransaction != nil ? try Transaction
-            .from(data: Data(base64Encoded: result.cleanupTransaction!)!) : nil
-
-        return (
-            setup: setupTrx,
-            swap: swapTrx,
-            cleanup: cleanupTrx
-        )
+        let base64Data = Data(base64Encoded: result.swapTransaction ?? "", options: .ignoreUnknownCharacters)
+        
+        let swapTrx = (base64Data != nil) ? try? VersionedTransaction.deserialize(data: base64Data!) : nil
+        
+        return swapTrx
     }
 
     public func routeMap() async throws -> RouteMap {
@@ -134,5 +132,13 @@ public class JupiterRestClientAPI: JupiterAPI {
             mintKeys: mintKeys,
             indexesRouteMap: generatedIndexesRouteMap
         )
+    }
+}
+
+
+public extension JupiterRestClientAPI {
+    enum Version: String {
+        case v3
+        case v4
     }
 }

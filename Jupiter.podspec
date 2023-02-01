@@ -17,8 +17,4 @@ Pod::Spec.new do |s|
   s.source_files = 'Sources/Jupiter/**/*'
   s.dependency 'SolanaSwift'
   s.swift_version = '5.5'
-
-  s.pod_target_xcconfig = {
-    'SWIFT_OPTIMIZATION_LEVEL' => '-O'
-  }
 end
