@@ -9,8 +9,7 @@ import SolanaSwift
 extension SendInputBusinessLogic {
     static func initializeAction(
         state: SendInputState,
-        services: SendInputServices,
-        params: SendInputActionInitializeParams
+        services: SendInputServices
     ) async -> SendInputState {
         do {
             var recipientAdditionalInfo = SendInputState.RecipientAdditionalInfo.zero
@@ -50,7 +49,7 @@ extension SendInputBusinessLogic {
             let state = state.copy(
                 status: .ready,
                 recipientAdditionalInfo: recipientAdditionalInfo,
-                feeRelayerContext: try await params.feeRelayerContext()
+                feeRelayerContext: try await services.relayContextManager.getCurrentContextOrUpdate()
             )
 
             return state

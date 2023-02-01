@@ -6,30 +6,8 @@ import FeeRelayerSwift
 import Foundation
 import SolanaSwift
 
-public enum Amount: Equatable {
-    case fiat(value: Double, currency: String)
-    case token(lamport: UInt64, mint: String, decimals: Int)
-}
-
-public struct SendInputActionInitializeParams: Equatable {
-    let feeRelayerContext: () async throws -> FeeRelayerContext
-
-    public init(feeRelayerContext: @escaping () async throws -> FeeRelayerContext) {
-        self.feeRelayerContext = feeRelayerContext
-    }
-
-    public init(feeRelayerContext: FeeRelayerContext) {
-        self.feeRelayerContext = { feeRelayerContext }
-    }
-
-    public static func == (
-        _: SendInputActionInitializeParams,
-        _: SendInputActionInitializeParams
-    ) -> Bool { true }
-}
-
 public enum SendInputAction: Equatable {
-    case initialize(SendInputActionInitializeParams)
+    case initialize
 
     case update
 
@@ -43,11 +21,13 @@ public struct SendInputServices {
     let swapService: SwapService
     let feeService: SendFeeCalculator
     let solanaAPIClient: SolanaAPIClient
+    let relayContextManager: RelayContextManager
 
-    public init(swapService: SwapService, feeService: SendFeeCalculator, solanaAPIClient: SolanaAPIClient) {
+    public init(swapService: SwapService, feeService: SendFeeCalculator, solanaAPIClient: SolanaAPIClient, relayContextManager: RelayContextManager) {
         self.swapService = swapService
         self.feeService = feeService
         self.solanaAPIClient = solanaAPIClient
+        self.relayContextManager = relayContextManager
     }
 }
 
@@ -280,5 +260,11 @@ public extension SendInputState {
         userWalletEnvironments.wallets.first { (wallet: Wallet) -> Bool in
             wallet.token.address == tokenFee.address
         }
+    }
+}
+
+extension SendInputState {
+    var isNotInitialized: Bool {
+        recipientAdditionalInfo == .zero || feeRelayerContext == nil
     }
 }
