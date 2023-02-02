@@ -32,21 +32,18 @@ enum SendInputBusinessLogic {
         action: SendInputAction,
         services: SendInputServices
     ) async -> SendInputState {
+        var currentState = state
+        if currentState.isNotInitialized && action != .initialize {
+            currentState = await initialize(currentState, services)
+        }
         let newState: SendInputState
 
         switch action {
-        case let .initialize(params):
-            newState = await executeAction(state, services) {
-                await initializeAction(state: state, services: services, params: params)
-            } chains: {
-                [
-                    calculateWalletsForPayingFeeChain,
-                    autoSelectionTokenFee
-                ]
-            }
+        case let .initialize:
+            newState = await initialize(currentState, services)
         case let .changeAmountInToken(amount):
-            newState = await executeAction(state, services) {
-                await sendInputChangeAmountInTokenAction(state: state, amount: amount, services: services)
+            newState = await executeAction(currentState, services) {
+                await sendInputChangeAmountInTokenAction(state: currentState, amount: amount, services: services)
             } chains: {
                 [
                     updateAmountChain,
@@ -54,8 +51,8 @@ enum SendInputBusinessLogic {
                 ]
             }
         case let .changeAmountInFiat(amount):
-            newState = await executeAction(state, services, action: {
-                await sendInputChangeAmountInFiat(state: state, amount: amount, services: services)
+            newState = await executeAction(currentState, services, action: {
+                await sendInputChangeAmountInFiat(state: currentState, amount: amount, services: services)
             }, chains: {
                 [
                     updateAmountChain,
@@ -63,8 +60,8 @@ enum SendInputBusinessLogic {
                 ]
             })
         case let .changeUserToken(token):
-            newState = await executeAction(state, services) {
-                await changeTokenAction(state: state, token: token, services: services)
+            newState = await executeAction(currentState, services) {
+                await changeTokenAction(state: currentState, token: token, services: services)
             } chains: {
                 [
                     calculateWalletsForPayingFeeChain,
@@ -72,9 +69,9 @@ enum SendInputBusinessLogic {
                 ]
             }
         case let .changeFeeToken(feeToken):
-            newState = await changeFeeTokenAction(state: state, feeToken: feeToken, services: services)
+            newState = await changeFeeTokenAction(state: currentState, feeToken: feeToken, services: services)
         default:
-            return state
+            return currentState
         }
 
         return await validationChain(newState, services)
@@ -109,6 +106,20 @@ enum SendInputBusinessLogic {
             status = .error(reason: .unknown(error))
         }
         return state.copy(status: status)
+    }
+
+    private static func initialize(
+        _ state: SendInputState,
+        _ services: SendInputServices
+    ) async -> SendInputState {
+        return await executeAction(state, services, action: {
+            await initializeAction(state: state, services: services)
+        }, chains: {
+            [
+                calculateWalletsForPayingFeeChain,
+                autoSelectionTokenFee
+            ]
+        })
     }
 }
 

@@ -13,9 +13,9 @@ public protocol SendFeeCalculator: AnyObject {
 }
 
 public class SendFeeCalculatorImpl: SendFeeCalculator {
-    private let feeRelayerCalculator: FeeRelayerCalculator
+    private let feeRelayerCalculator: RelayFeeCalculator
 
-    public init(feeRelayerCalculator: FeeRelayerCalculator) { self.feeRelayerCalculator = feeRelayerCalculator }
+    public init(feeRelayerCalculator: RelayFeeCalculator) { self.feeRelayerCalculator = feeRelayerCalculator }
 
     // MARK: - Fees calculator
 
