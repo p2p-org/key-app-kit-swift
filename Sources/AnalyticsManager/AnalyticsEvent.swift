@@ -6,6 +6,6 @@ public protocol AnalyticsEvent {
     var eventName: String? { get }
     /// Params sent with event
     var params: [String: Any]? { get }
-    /// Array of excluded providers, event will not be sent to these providers when set
-    var excludedProviderIds: [any AnalyticsProviderId] { get }
+    /// Array of sending providers, even will be sent to only these defined providers
+    var providerIds: [AnalyticsProviderId] { get }
 }

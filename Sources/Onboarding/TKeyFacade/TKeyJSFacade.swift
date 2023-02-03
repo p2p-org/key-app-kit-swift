@@ -374,6 +374,11 @@ private extension TKeyJSFacade {
                 ]
             }
         }
+        
+        // FIXME: - Later
+        var providerIds: [AnalyticsProviderId] {
+            ["amplitude"]
+        }
     }
 }
 

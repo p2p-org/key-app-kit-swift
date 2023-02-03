@@ -20,8 +20,8 @@ public class AnalyticsManagerImpl: AnalyticsManager {
 
     public func log(event: AnalyticsEvent) {
         providers.forEach { provider in
-            // exclude sending to specific providers
-            guard !event.excludedProviderIds.contains(where: {$0.rawValue == provider.providerId.rawValue})
+            // fillter providers to send
+            guard event.providerIds.contains(provider.providerId)
             else { return }
             
             // log event to provider

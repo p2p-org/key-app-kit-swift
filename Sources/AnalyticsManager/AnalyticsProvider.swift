@@ -1,8 +1,8 @@
 import Foundation
 
-public protocol AnalyticsProviderId: RawRepresentable<String> {}
+public typealias AnalyticsProviderId = String
 
 public protocol AnalyticsProvider {
-    var providerId: any AnalyticsProviderId { get }
+    var providerId: AnalyticsProviderId { get }
     func logEvent(_ event: AnalyticsEvent)
 }
