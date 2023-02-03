@@ -5,7 +5,6 @@
 //  Created by Chung Tran on 11/06/2021.
 //
 
-import Amplitude
 import Foundation
 
 public protocol AnalyticsManager {

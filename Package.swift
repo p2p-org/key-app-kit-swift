@@ -92,13 +92,6 @@ let package = Package(
     dependencies: [
         .package(url: "https://github.com/p2p-org/solana-swift", branch: "main"),
         .package(url: "https://github.com/p2p-org/FeeRelayerSwift", branch: "master"),
-        .package(url: "https://github.com/amplitude/Amplitude-iOS", from: "8.3.0"),
-        .package(name: "AppFlyerFramework", url: "https://github.com/AppsFlyerSDK/AppsFlyerFramework", from: "6.9.1"),
-        .package(
-            name: "Firebase",
-            url: "https://github.com/firebase/firebase-ios-sdk.git",
-            .upToNextMajor(from: "10.4.0")
-        ),
         .package(url: "https://github.com/krzyzanowskim/CryptoSwift.git", .upToNextMajor(from: "1.6.0"))
     ],
     targets: [
@@ -147,11 +140,7 @@ let package = Package(
         // AnalyticsManager
         .target(
             name: "AnalyticsManager",
-            dependencies: [
-                .product(name: "Amplitude", package: "Amplitude-iOS"),
-                .product(name: "FirebaseAnalytics", package: "Firebase"),
-                .product(name: "AppsFlyerLib", package: "AppFlyerFramework")
-            ]
+            dependencies: []
         ),
         .testTarget(
             name: "AnalyticsManagerUnitTests",
