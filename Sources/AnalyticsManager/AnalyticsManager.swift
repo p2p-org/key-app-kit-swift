@@ -15,7 +15,7 @@ public protocol AnalyticsManager {
 public class AnalyticsManagerImpl: AnalyticsManager {
     private let providers: [AnalyticsProvider]
     
-    init(providers: [AnalyticsProvider]) {
+    public init(providers: [AnalyticsProvider]) {
         self.providers = providers
     }
 
