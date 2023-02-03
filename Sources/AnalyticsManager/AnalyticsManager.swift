@@ -10,39 +10,18 @@ import Foundation
 
 public protocol AnalyticsManager {
     func log(event: AnalyticsEvent)
-    func setIdentifier(_ identifier: AnalyticsIdentifier)
-    func setUserId(_ userId: String?)
 }
 
 public class AnalyticsManagerImpl: AnalyticsManager {
-    public init(apiKey: String) {
-        // Enable sending automatic session events
-        Amplitude.instance().trackingSessionEvents = true
-        // Initialize SDK
-        Amplitude.instance().initializeApiKey(apiKey)
+    private let providers: [AnalyticsProvider]
+    
+    init(providers: [AnalyticsProvider]) {
+        self.providers = providers
     }
 
     public func log(event: AnalyticsEvent) {
-        guard let eventName = event.eventName else { return }
-        // Amplitude
-        if let params = event.params {
-            debugPrint([eventName, params])
-            Amplitude.instance().logEvent(eventName, withEventProperties: params)
-        } else {
-            debugPrint([eventName])
-            Amplitude.instance().logEvent(eventName)
+        providers.forEach {
+            $0.logEvent(event)
         }
-    }
-    
-    public func setIdentifier(_ identifier: AnalyticsIdentifier) {
-        guard
-            let value = identifier.value as? NSObject,
-            let identify = AMPIdentify().set(identifier.name, value: value)
-        else { return }
-        Amplitude.instance().identify(identify)
-    }
-
-    public func setUserId(_ userId: String?) {
-        Amplitude.instance().setUserId(userId)
     }
 }
