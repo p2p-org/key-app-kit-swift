@@ -19,9 +19,9 @@ public class HistoryServiceImpl: HistoryService {
     public func transactions(secretKey: Data, pubKey: String, mint: String?, offset: Int, limit: Int = 100) async throws -> [HistoryTransaction] {
         var params = TransactionsRequestParams(
             pubKey: pubKey,
-            mint: mint,
+            limit: limit,
             offset: offset,
-            limit: limit
+            mint: mint
         )
         try params.signed(secretKey: secretKey)
         // Prepare
@@ -32,8 +32,9 @@ public class HistoryServiceImpl: HistoryService {
 
         // Request
         let responseData = try await networkManager.requestData(request: request)
-        let response = try JSONDecoder()
-            .decode(KeyAppKitCore.JSONRPCResponse<[HistoryTransaction], String>.self, from: responseData)
+        let decoder = try JSONDecoder()
+        decoder.keyDecodingStrategy = .convertFromSnakeCase
+        let response = try JSONDecoder().decode(KeyAppKitCore.JSONRPCResponse<[HistoryTransaction], String>.self, from: responseData)
 //        if let error = response.error {
 //            throw apiGatewayError(from: error)
 //        }
@@ -54,10 +55,10 @@ public class HistoryServiceImpl: HistoryService {
 
 extension HistoryServiceImpl {
     struct TransactionsRequestParams: Codable, Signature {
-        var pubKey: String
-        var mint: String?
-        var offset: Int
+        var pubKey: String?
         var limit: Int
+        var offset: Int
+        var mint: String?
         var signature: String?
 
         enum CodingKeys: String, CodingKey {
@@ -76,11 +77,12 @@ extension HistoryServiceImpl {
             try pubKey.serialize(to: &writer)
             try limit.serialize(to: &writer)
             try offset.serialize(to: &writer)
-            if let mint {
-                try mint.serialize(to: &writer)
-            } else {
-                try "So11111111111111111111111111111111111111112".serialize(to: &writer)
-            }
+//            if let mint {
+            try mint.serialize(to: &writer)
+//            } else {
+////                try 0.serialize(to: &writer)
+//                try "So11111111111111111111111111111111111111112".serialize(to: &writer)
+//            }
         }
     }
 }
