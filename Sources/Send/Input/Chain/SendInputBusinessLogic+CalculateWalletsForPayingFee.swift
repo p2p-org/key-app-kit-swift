@@ -118,15 +118,18 @@ extension SendInputBusinessLogic {
         _ feeRelayerContext: FeeRelayerContext,
         _ payingTokenMint: String
     ) async throws -> SendInputState.PayingWalletFee? {
+        let wallet = state.userWalletEnvironments.wallets.first(where: { $0.token.address == payingTokenMint })
+        let fee = try await services.feeService.getFees(
+            from: state.token,
+            recipient: state.recipient,
+            recipientAdditionalInfo: state.recipientAdditionalInfo,
+            payingTokenMint: payingTokenMint,
+            feeRelayerContext: feeRelayerContext
+        )
+
         if
-            let wallet = state.userWalletEnvironments.wallets.first(where: { $0.token.address == payingTokenMint }),
-            let fee = try await services.feeService.getFees(
-                from: state.token,
-                recipient: state.recipient,
-                recipientAdditionalInfo: state.recipientAdditionalInfo,
-                payingTokenMint: payingTokenMint,
-                feeRelayerContext: feeRelayerContext
-            ),
+            let wallet = wallet,
+            let fee = fee,
             let payingTokenMint = try? PublicKey(string: payingTokenMint),
             let feeInToken = try? await services.swapService.calculateFeeInPayingToken(
                 feeInSOL: fee,
@@ -134,8 +137,10 @@ extension SendInputBusinessLogic {
             )
         {
             return .init(wallet: wallet, fee: fee, feeInToken: feeInToken)
+        } else if let wallet = wallet, let fee = fee, fee == .zero {
+            return .init(wallet: wallet, fee: fee, feeInToken: .zero)
+        } else {
+            return nil
         }
-
-        return nil
     }
 }
