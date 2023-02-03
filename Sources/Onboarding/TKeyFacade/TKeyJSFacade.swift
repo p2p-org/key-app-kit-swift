@@ -108,7 +108,7 @@ public actor TKeyJSFacade: TKeyFacade {
         let startDate = Date()
         let method = "obtainTorusKey"
         
-        defer { logTorusAnalytics(startDate: startDate, methodName: method) }
+        defer { logTorusAnalyticsEvent(startDate: startDate, methodName: method) }
 
         do {
             var facadeConfig: [String: Any] = [
@@ -140,12 +140,12 @@ public actor TKeyJSFacade: TKeyFacade {
         }
     }
 
-    private func logTorusAnalytics(startDate: Date, methodName: String) {
+    private func logTorusAnalyticsEvent(startDate: Date, methodName: String) {
         let secondsDifference = Date().timeIntervalSince(startDate)
         let minutes = Int(secondsDifference / 60)
         let seconds = Int(secondsDifference) % 60
         
-        analyticsManager.log(event: TorusAnalytics.onboardingTorusRequest(
+        analyticsManager.log(event: TorusAnalyticsEvent.onboardingTorusRequest(
             methodName: methodName,
             minutes: minutes,
             seconds: seconds,
@@ -345,16 +345,35 @@ extension WKWebsiteDataStore {
     }
 }
 
-// MARK: - TorusAnalytics
+// MARK: - TorusAnalyticsEvent
 
 private extension TKeyJSFacade {
-    enum TorusAnalytics: AnalyticsEvent {
+    enum TorusAnalyticsEvent: AnalyticsEvent {
         case onboardingTorusRequest(
             methodName: String,
             minutes: Int,
             seconds: Int,
             milliseconds: Int
         )
+        
+        var eventName: String? {
+            switch self {
+            case .onboardingTorusRequest:
+                return "Onboarding_Torus_Request"
+            }
+        }
+        
+        var params: [String: Any]? {
+            switch self {
+            case let .onboardingTorusRequest(methodName, minutes, seconds, milliseconds):
+                return [
+                    "Method_Name": methodName,
+                    "Minutes": minutes,
+                    "Seconds": seconds,
+                    "Milliseconds": milliseconds
+                ]
+            }
+        }
     }
 }
 
