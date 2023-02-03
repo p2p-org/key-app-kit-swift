@@ -1,5 +1,5 @@
 import Foundation
 
-protocol AnalyticsProvider {
+public protocol AnalyticsProvider {
     func logEvent(_ event: AnalyticsEvent)
 }
