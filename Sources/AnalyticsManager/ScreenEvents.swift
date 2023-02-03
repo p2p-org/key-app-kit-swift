@@ -4,13 +4,6 @@
 
 import Foundation
 
-public protocol ScreenEvents: MirrorableEnum {
+public protocol ScreenEvents {
     var screenName: String? { get }
 }
-
-public extension ScreenEvents {
-    var screenName: String? {
-        mirror.label.snakeCased()
-    }
-}
-
