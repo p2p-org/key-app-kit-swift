@@ -23,6 +23,8 @@ Pod::Spec.new do |s|
     'SWIFT_OPTIMIZATION_LEVEL' => '-O'
   }
   
+  s.static_framework = true
+  
   s.dependency 'Amplitude', '~> 8.3.0'
   s.dependency 'Firebase/Analytics', '~> 10.4.0'
   s.dependency 'AppsFlyerFramework', '~> 6.9.2'
