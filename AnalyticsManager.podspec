@@ -25,5 +25,5 @@ Pod::Spec.new do |s|
   
   s.dependency 'Amplitude', '~> 8.3.0'
   s.dependency 'Firebase/Analytics', '~> 10.4.0'
-  s.dependency 'AppFlyerFramework', '~> 6.9.1'
+  s.dependency 'AppFlyerFramework'
 end
