@@ -356,7 +356,7 @@ private extension TKeyJSFacade {
             milliseconds: Int
         )
         
-        var eventName: String? {
+        var name: String? {
             switch self {
             case .onboardingTorusRequest:
                 return "Onboarding_Torus_Request"
