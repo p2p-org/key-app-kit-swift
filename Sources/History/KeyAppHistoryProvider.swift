@@ -3,11 +3,15 @@ import KeyAppKitCore
 import Onboarding
 import SolanaSwift
 
-public protocol HistoryService {
+public protocol KeyAppHistoryProvider {
     func transactions(secretKey: Data, pubKey: String, mint: String?, offset: Int, limit: Int) async throws -> [HistoryTransaction]
 }
 
-public class HistoryServiceImpl: HistoryService {
+public enum KeyAppHistoryProviderError: Error {
+    case any(code: Int, message: String)
+}
+
+public class KeyAppHistoryProviderImpl: KeyAppHistoryProvider {
     let uuid = UUID()
     private let endpoint: URL
     private let networkManager: Onboarding.NetworkManager = URLSession.shared
@@ -19,8 +23,8 @@ public class HistoryServiceImpl: HistoryService {
     public func transactions(secretKey: Data, pubKey: String, mint: String?, offset: Int, limit: Int = 100) async throws -> [HistoryTransaction] {
         var params = TransactionsRequestParams(
             pubKey: pubKey,
-            limit: limit,
-            offset: offset,
+            limit: UInt64(limit),
+            offset: UInt64(offset),
             mint: mint
         )
         try params.signed(secretKey: secretKey)
@@ -32,12 +36,16 @@ public class HistoryServiceImpl: HistoryService {
 
         // Request
         let responseData = try await networkManager.requestData(request: request)
+        
+        print(request.cURL())
+        print(String(data: responseData, encoding: .utf8))
+        
         let decoder = try JSONDecoder()
         decoder.keyDecodingStrategy = .convertFromSnakeCase
         let response = try JSONDecoder().decode(KeyAppKitCore.JSONRPCResponse<[HistoryTransaction], String>.self, from: responseData)
-//        if let error = response.error {
-//            throw apiGatewayError(from: error)
-//        }
+        if let error = response.error {
+            throw KeyAppHistoryProviderError.any(code: error.code, message: error.message)
+        }
         return response.result ?? []
     }
 
@@ -50,39 +58,39 @@ public class HistoryServiceImpl: HistoryService {
 
         return request
     }
-
 }
 
-extension HistoryServiceImpl {
-    struct TransactionsRequestParams: Codable, Signature {
-        var pubKey: String?
-        var limit: Int
-        var offset: Int
-        var mint: String?
-        var signature: String?
+internal struct TransactionsRequestParams: Codable {
+    var pubKey: String
+    var limit: UInt64
+    var offset: UInt64
+    var mint: String?
+    var signature: String?
 
-        enum CodingKeys: String, CodingKey {
-            case pubKey = "user_id"
-            case limit
-            case offset
-            case mint
-            case signature
-        }
+    enum CodingKeys: String, CodingKey {
+        case pubKey = "user_id"
+        case limit
+        case offset
+        case mint
+        case signature
+    }
+}
 
-        mutating func signed(secretKey: Data) throws {
-            self.signature = try signAsBase58(secretKey: secretKey)
-        }
+extension TransactionsRequestParams: Signature {
+    mutating func signed(secretKey: Data) throws {
+        signature = try signAsBase58(secretKey: secretKey)
+    }
 
-        func serialize(to writer: inout Data) throws {
-            try pubKey.serialize(to: &writer)
-            try limit.serialize(to: &writer)
-            try offset.serialize(to: &writer)
-//            if let mint {
+    func serialize(to writer: inout Data) throws {
+        try pubKey.serialize(to: &writer)
+        try offset.serialize(to: &writer)
+        try limit.serialize(to: &writer)
+        
+        if let mint {
+            try UInt8(1).serialize(to: &writer)
             try mint.serialize(to: &writer)
-//            } else {
-////                try 0.serialize(to: &writer)
-//                try "So11111111111111111111111111111111111111112".serialize(to: &writer)
-//            }
+        } else {
+            try UInt8(0).serialize(to: &writer)
         }
     }
 }
