@@ -9,20 +9,22 @@ public struct HistoryTransactionResponse: Codable {
 public struct HistoryTransaction: Identifiable, Codable {
     public var id: String { signature }
 
-    public var signature: String
-    public var date: Date
-    public var status: Status
-    public var fees: [Fee]
-    private var type: Kind
-    public var info: TransactionInfo?
+    public let signature: String
+    public let date: Date
+    public let status: Status
+    public let fees: [Fee]
+    private let type: Kind
+    public let info: TransactionInfo?
+    public let error: Error?
 
-    init(signature: String, date: Date, status: Status, fees: [Fee], type: Kind, info: TransactionInfo) {
+    init(signature: String, date: Date, status: Status, fees: [Fee], type: Kind, info: TransactionInfo, error: Error?) {
         self.signature = signature
         self.date = date
         self.status = status
         self.fees = fees
         self.type = type
         self.info = info
+        self.error = error
     }
 
     public init(from decoder: Decoder) throws {
@@ -36,16 +38,17 @@ public struct HistoryTransaction: Identifiable, Codable {
 
         self.status = try container.decode(HistoryTransaction.Status.self, forKey: .status)
         self.fees = (try? container.decode([Fee].self, forKey: .fees)) ?? []
-        
+        self.error = try container.decodeIfPresent(Error.self, forKey: .error)
+
         // Make compatible for old version
         guard let type: Kind = try? container.decode(HistoryTransaction.Kind.self, forKey: .type) else {
             self.type = .unknown
             self.info = nil
             return
         }
-        
+
         self.type = type
-        
+
         // Compatible mechanic
         do {
             switch type {
@@ -113,6 +116,12 @@ public extension HistoryTransaction {
         case failure
     }
 
+    struct Error: Codable {
+        public let code: UInt64
+        public let message: String
+        public let description: String?
+    }
+
     enum TransactionInfo: Codable {
         case send(Transfer)
         case receive(Transfer)
@@ -137,7 +146,7 @@ public extension HistoryTransaction {
         public let to: TokenAmount
         public let transitive: [TokenAmount]?
         public let swapPrograms: [NamedAccount]
-        
+
         enum CodingKeys: String, CodingKey {
             case from
             case to
@@ -192,7 +201,7 @@ public extension HistoryTransaction {
             self.decimals = try container.decode(UInt8.self, forKey: .decimals)
         }
     }
-    
+
     struct TokenAmount: Codable {
         public let token: Token
         public let amount: Amount
