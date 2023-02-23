@@ -36,18 +36,15 @@ public class KeyAppHistoryProviderImpl: KeyAppHistoryProvider {
 
         // Request
         let responseData = try await networkManager.requestData(request: request)
-        
-        print(request.cURL())
-        print(String(data: responseData, encoding: .utf8))
-        
+
         let decoder = try JSONDecoder()
         decoder.keyDecodingStrategy = .convertFromSnakeCase
-        let response = try JSONDecoder().decode(KeyAppKitCore.JSONRPCResponse<[HistoryTransaction], String>.self, from: responseData)
+        let response = try JSONDecoder().decode(KeyAppKitCore.JSONRPCResponse<HistoryTransactionResult, String>.self, from: responseData)
         if let error = response.error {
             throw KeyAppHistoryProviderError.any(code: error.code, message: error.message)
         }
-        
-        return response.result ?? []
+
+        return response.result?.items ?? []
     }
 
     private func createDefaultRequest(method: String = "POST") -> URLRequest {
@@ -86,7 +83,7 @@ extension TransactionsRequestParams: Signature {
         try pubKey.serialize(to: &writer)
         try offset.serialize(to: &writer)
         try limit.serialize(to: &writer)
-        
+
         if let mint {
             try UInt8(1).serialize(to: &writer)
             try mint.serialize(to: &writer)

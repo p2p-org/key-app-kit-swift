@@ -6,6 +6,10 @@ public struct HistoryTransactionResponse: Codable {
     public var blockTransactions: [HistoryTransaction]
 }
 
+public struct HistoryTransactionResult: Codable {
+    let items: [HistoryTransaction]
+}
+
 public struct HistoryTransaction: Identifiable, Codable {
     public var id: String { signature }
 
