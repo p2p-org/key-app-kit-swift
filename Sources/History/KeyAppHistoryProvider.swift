@@ -46,6 +46,7 @@ public class KeyAppHistoryProviderImpl: KeyAppHistoryProvider {
         if let error = response.error {
             throw KeyAppHistoryProviderError.any(code: error.code, message: error.message)
         }
+        
         return response.result ?? []
     }
 

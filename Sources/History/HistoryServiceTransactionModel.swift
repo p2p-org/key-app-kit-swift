@@ -113,11 +113,11 @@ public extension HistoryTransaction {
 
     enum Status: String, Codable {
         case success
-        case failure
+        case failed
     }
 
     struct Error: Codable {
-        public let code: UInt64
+        public let code: Int
         public let message: String
         public let description: String?
     }
