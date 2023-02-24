@@ -88,10 +88,15 @@ let package = Package(
             name: "Moonpay",
             targets: ["Moonpay"]
         ),
+        // Jupiter
+        .library(
+            name: "Jupiter",
+            targets: ["Jupiter"]
+        ),
     ],
     dependencies: [
-        .package(url: "https://github.com/p2p-org/solana-swift", branch: "main"),
-        .package(url: "https://github.com/p2p-org/FeeRelayerSwift", branch: "master"),
+        .package(url: "https://github.com/p2p-org/solana-swift", branch: "feature/versioned-transaction"),
+        .package(url: "https://github.com/p2p-org/FeeRelayerSwift", branch: "feature/versioned-transaction"),
         .package(url: "https://github.com/krzyzanowskim/CryptoSwift.git", .upToNextMajor(from: "1.6.0"))
     ],
     targets: [
