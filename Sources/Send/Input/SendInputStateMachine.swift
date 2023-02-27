@@ -6,11 +6,6 @@ import Combine
 import Foundation
 
 public actor SendInputStateMachine: StateMachine {
-    // Associated types
-    public typealias Action = SendInputAction
-    public typealias Services = SendInputServices
-    public typealias State = SendInputState
-
     // Container
     private nonisolated let stateSubject: CurrentValueSubject<SendInputState, Never>
 
