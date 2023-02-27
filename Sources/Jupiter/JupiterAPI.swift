@@ -33,7 +33,7 @@ public protocol JupiterAPI {
         asLegacyTransaction: Bool?,
         computeUnitPriceMicroLamports: Int?,
         destinationWallet: String?
-    ) async throws -> VersionedTransaction?
+    ) async throws -> String?
     
     func routeMap() async throws -> RouteMap
 }
