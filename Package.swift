@@ -253,6 +253,7 @@ let package = Package(
         .target(
             name: "History",
             dependencies: [
+                "Onboarding",
                 .product(name: "SolanaSwift", package: "solana-swift")
             ]
         ),
