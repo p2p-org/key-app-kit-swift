@@ -4,8 +4,7 @@ import FeeRelayerSwift
 import SolanaSwift
 
 public protocol SendActionService {
-    func send(from wallet: Wallet, receiver: String, amount: Double, feeWallet: Wallet) async throws -> String
-    func sendViaLink(seed: String, salt: String, passphrase: String, from wallet: Wallet, amount: Double) async throws -> String
+    func send(from wallet: Wallet, receiver: String, amount: Double, feeWallet: Wallet, ignoreTopUp: Bool) async throws -> String
 }
 
 public class SendActionServiceImpl: SendActionService {
@@ -34,7 +33,8 @@ public class SendActionServiceImpl: SendActionService {
         from wallet: Wallet,
         receiver: String,
         amount: Double,
-        feeWallet: Wallet
+        feeWallet: Wallet,
+        ignoreTopUp: Bool
     ) async throws -> String {
         let amount = amount.toLamport(decimals: wallet.token.decimals)
         guard let sender = wallet.pubkey else { throw SendError.invalidSourceWallet }
@@ -47,19 +47,8 @@ public class SendActionServiceImpl: SendActionService {
             from: wallet,
             receiver: receiver,
             amount: amount,
-            feeWallet: feeWallet
-        )
-    }
-    
-    public func sendViaLink(seed: String, salt: String, passphrase: String, from wallet: Wallet, amount: Double) async throws -> String {
-        // create KeyPair from seed
-        let keyPair = try await KeyPair(seed: seed, salt: salt, passphrase: passphrase, network: .mainnetBeta, derivablePath: .default)
-        return try await sendToSolanaBCViaRelayMethod(
-            from: wallet,
-            receiver: keyPair.publicKey.base58EncodedString,
-            amount: amount.toLamport(decimals: wallet.token.decimals),
-            feeWallet: nil,
-            ignoreTopUp: true
+            feeWallet: feeWallet,
+            ignoreTopUp: ignoreTopUp
         )
     }
 

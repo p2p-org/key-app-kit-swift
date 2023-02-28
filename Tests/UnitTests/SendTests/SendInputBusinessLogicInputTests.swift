@@ -18,11 +18,11 @@ class SendInputBusinessLogicInputTests: XCTestCase {
 
     let services: SendInputServices = .init(
         swapService: MockedSwapService(result: nil),
-        feeService: SendFeeCalculatorImpl(feeRelayerCalculator: DefaultFreeRelayerCalculator()),
+        feeService: SendFeeCalculatorImpl(feeRelayerCalculator: DefaultRelayFeeCalculator()),
         solanaAPIClient: MockedSolanaAPIClient()
     )
 
-    private func feeContext(currentUsage: Int = 0) -> FeeRelayerContext {
+    private func feeContext(currentUsage: Int = 0) -> RelayContext {
         .init(
             minimumTokenAccountBalance: 2_039_280,
             minimumRelayAccountBalance: 890_880,
@@ -52,7 +52,8 @@ class SendInputBusinessLogicInputTests: XCTestCase {
             token: .nativeSolana,
             feeToken: .nativeSolana,
             userWalletState: defaultUserWalletState,
-            feeRelayerContext: feeContext()
+            feeRelayerContext: feeContext(),
+            isSendViaLink: false
         )
 
         let nextState = await SendInputBusinessLogic.sendInputBusinessLogic(
@@ -80,7 +81,8 @@ class SendInputBusinessLogicInputTests: XCTestCase {
             token: .nativeSolana,
             feeToken: .nativeSolana,
             userWalletState: defaultUserWalletState,
-            feeRelayerContext: feeContext()
+            feeRelayerContext: feeContext(),
+            isSendViaLink: false
         )
 
         let nextState = await SendInputBusinessLogic.sendInputBusinessLogic(
@@ -108,7 +110,8 @@ class SendInputBusinessLogicInputTests: XCTestCase {
             token: .nativeSolana,
             feeToken: .nativeSolana,
             userWalletState: defaultUserWalletState,
-            feeRelayerContext: feeContext()
+            feeRelayerContext: feeContext(),
+            isSendViaLink: false
         )
 
         let nextState = await SendInputBusinessLogic.sendInputBusinessLogic(
@@ -119,7 +122,7 @@ class SendInputBusinessLogicInputTests: XCTestCase {
 
         XCTAssertEqual(nextState.amountInToken, 0.05)
         XCTAssertEqual(nextState.amountInFiat, 0.625)
-        XCTAssertEqual(nextState.status, .error(reason: .inputTooHigh))
+        XCTAssertEqual(nextState.status, .error(reason: .inputTooHigh(0.05)))
     }
 
     /// Change input in fiat
@@ -136,7 +139,8 @@ class SendInputBusinessLogicInputTests: XCTestCase {
             token: .nativeSolana,
             feeToken: .nativeSolana,
             userWalletState: defaultUserWalletState,
-            feeRelayerContext: feeContext()
+            feeRelayerContext: feeContext(),
+            isSendViaLink: false
         )
 
         let nextState = await SendInputBusinessLogic.sendInputBusinessLogic(
@@ -164,7 +168,8 @@ class SendInputBusinessLogicInputTests: XCTestCase {
             token: .nativeSolana,
             feeToken: .nativeSolana,
             userWalletState: defaultUserWalletState,
-            feeRelayerContext: feeContext()
+            feeRelayerContext: feeContext(),
+            isSendViaLink: false
         )
 
         let nextState = await SendInputBusinessLogic.sendInputBusinessLogic(
@@ -192,7 +197,8 @@ class SendInputBusinessLogicInputTests: XCTestCase {
             token: .nativeSolana,
             feeToken: .nativeSolana,
             userWalletState: defaultUserWalletState,
-        feeRelayerContext: feeContext()
+            feeRelayerContext: feeContext(),
+            isSendViaLink: false
         )
 
         let nextState = await SendInputBusinessLogic.sendInputBusinessLogic(
