@@ -12,13 +12,13 @@ public enum Amount: Equatable {
 }
 
 public struct SendInputActionInitializeParams: Equatable {
-    let feeRelayerContext: () async throws -> FeeRelayerContext
+    let feeRelayerContext: () async throws -> RelayContext
 
-    public init(feeRelayerContext: @escaping () async throws -> FeeRelayerContext) {
+    public init(feeRelayerContext: @escaping () async throws -> RelayContext) {
         self.feeRelayerContext = feeRelayerContext
     }
 
-    public init(feeRelayerContext: FeeRelayerContext) {
+    public init(feeRelayerContext: RelayContext) {
         self.feeRelayerContext = { feeRelayerContext }
     }
 
@@ -118,7 +118,7 @@ public struct SendInputState: Equatable {
     /// Fee relayer context
     ///
     /// Current state for free transactions
-    public let feeRelayerContext: FeeRelayerContext?
+    public let feeRelayerContext: RelayContext?
 
     public init(
         status: Status,
@@ -131,7 +131,7 @@ public struct SendInputState: Equatable {
         fee: FeeAmount,
         tokenFee: Token,
         feeInToken: FeeAmount,
-        feeRelayerContext: FeeRelayerContext?
+        feeRelayerContext: RelayContext?
     ) {
         self.status = status
         self.recipient = recipient
@@ -153,7 +153,7 @@ public struct SendInputState: Equatable {
         token: Token,
         feeToken: Token,
         userWalletState: UserWalletEnvironments,
-        feeRelayerContext: FeeRelayerContext? = nil
+        feeRelayerContext: RelayContext? = nil
     ) -> SendInputState {
         .init(
             status: status,
@@ -181,7 +181,7 @@ public struct SendInputState: Equatable {
         fee: FeeAmount? = nil,
         tokenFee: Token? = nil,
         feeInToken: FeeAmount? = nil,
-        feeRelayerContext: FeeRelayerContext? = nil
+        feeRelayerContext: RelayContext? = nil
     ) -> SendInputState {
         .init(
             status: status ?? self.status,
