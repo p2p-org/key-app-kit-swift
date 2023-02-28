@@ -16,6 +16,8 @@ Pod::Spec.new do |s|
 
   s.source_files = 'Sources/History/**/*'
   s.dependency 'SolanaSwift'
+  s.dependency 'Onboarding'
+  s.dependency 'KeyAppKitCore'
   s.swift_version = '5.5'
 
   s.pod_target_xcconfig = {
