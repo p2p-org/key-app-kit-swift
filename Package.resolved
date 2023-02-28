@@ -14,8 +14,8 @@
         "package": "FeeRelayerSwift",
         "repositoryURL": "https://github.com/p2p-org/FeeRelayerSwift",
         "state": {
-          "branch": "master",
-          "revision": "2ea7f8fe6d1dd37c966fe0f7638d65e0bca294ab",
+          "branch": "feature/send-via-link",
+          "revision": "2e3d66a1e3d58011e24ed6e70269d56b0edc18d8",
           "version": null
         }
       },
@@ -41,8 +41,8 @@
         "package": "SolanaSwift",
         "repositoryURL": "https://github.com/p2p-org/solana-swift",
         "state": {
-          "branch": "main",
-          "revision": "20f4546c93d069d10c19207cfba40a7f79e64c47",
+          "branch": "feature/send-via-link",
+          "revision": "6b05447a2c58170d2950025a064c7ff30ddca5af",
           "version": null
         }
       },

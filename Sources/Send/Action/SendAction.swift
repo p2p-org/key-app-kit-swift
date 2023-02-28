@@ -1,9 +1,11 @@
 import SolanaSwift
 import Foundation
 import FeeRelayerSwift
+import SolanaSwift
 
 public protocol SendActionService {
     func send(from wallet: Wallet, receiver: String, amount: Double, feeWallet: Wallet) async throws -> String
+    func sendViaLink(seed: String, salt: String, passphrase: String, from wallet: Wallet, amount: Double) async throws -> String
 }
 
 public class SendActionServiceImpl: SendActionService {
@@ -11,7 +13,7 @@ public class SendActionServiceImpl: SendActionService {
     private let contextManager: RelayContextManager
     private let solanaAPIClient: SolanaAPIClient
     private let blockchainClient: BlockchainClient
-    private let account: Account?
+    private let account: KeyPair?
     private let relayService: RelayService
 
     public init(
@@ -19,7 +21,7 @@ public class SendActionServiceImpl: SendActionService {
         solanaAPIClient: SolanaAPIClient,
         blockchainClient: BlockchainClient,
         relayService: RelayService,
-        account: Account?
+        account: KeyPair?
     ) {
         self.contextManager = contextManager
         self.solanaAPIClient = solanaAPIClient
@@ -48,12 +50,25 @@ public class SendActionServiceImpl: SendActionService {
             feeWallet: feeWallet
         )
     }
+    
+    public func sendViaLink(seed: String, salt: String, passphrase: String, from wallet: Wallet, amount: Double) async throws -> String {
+        // create KeyPair from seed
+        let keyPair = try await KeyPair(seed: seed, salt: salt, passphrase: passphrase, network: .mainnetBeta, derivablePath: .default)
+        return try await sendToSolanaBCViaRelayMethod(
+            from: wallet,
+            receiver: keyPair.publicKey.base58EncodedString,
+            amount: amount.toLamport(decimals: wallet.token.decimals),
+            feeWallet: nil,
+            ignoreTopUp: true
+        )
+    }
 
     func sendToSolanaBCViaRelayMethod(
         from wallet: Wallet,
         receiver: String,
         amount: Lamports,
-        feeWallet: Wallet?
+        feeWallet: Wallet?,
+        ignoreTopUp: Bool = false
     ) async throws -> String {
         let currency = wallet.token.address
 
@@ -68,6 +83,15 @@ public class SendActionServiceImpl: SendActionService {
         preparedTransaction.transaction.recentBlockhash = try await solanaAPIClient.getRecentBlockhash(commitment: nil)
 
         if useFeeRelayer {
+            if ignoreTopUp {
+                return try await relayService.relayTransaction(
+                    preparedTransaction,
+                    config: FeeRelayerConfiguration(
+                        operationType: .transfer,
+                        currency: currency
+                    ))
+            }
+            
             return try await relayService.topUpIfNeededAndRelayTransaction(
                 preparedTransaction,
                 fee: payingFeeToken,
