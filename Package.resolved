@@ -2,24 +2,6 @@
   "object": {
     "pins": [
       {
-        "package": "Amplitude",
-        "repositoryURL": "https://github.com/amplitude/Amplitude-iOS",
-        "state": {
-          "branch": null,
-          "revision": "483ec5c74b50f0d483013fc910fe890ec34e54d2",
-          "version": "8.14.0"
-        }
-      },
-      {
-        "package": "analytics-connector-ios",
-        "repositoryURL": "https://github.com/amplitude/analytics-connector-ios.git",
-        "state": {
-          "branch": null,
-          "revision": "d3d682a26ca6f4947ece2c2e627971bb41b940fa",
-          "version": "1.0.1"
-        }
-      },
-      {
         "package": "CryptoSwift",
         "repositoryURL": "https://github.com/krzyzanowskim/CryptoSwift.git",
         "state": {

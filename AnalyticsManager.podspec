@@ -22,6 +22,4 @@ Pod::Spec.new do |s|
   s.pod_target_xcconfig = {
     'SWIFT_OPTIMIZATION_LEVEL' => '-O'
   }
-  
-  s.dependency 'Amplitude', '~> 8.3.0'
 end
