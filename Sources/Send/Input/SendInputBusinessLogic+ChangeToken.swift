@@ -21,14 +21,19 @@ extension SendInputBusinessLogic {
 
         do {
             // Update fee in SOL and source token
-            let fee = try await services.feeService.getFees(
-                from: token,
-                recipient: state.recipient,
-                recipientAdditionalInfo: state.recipientAdditionalInfo,
-                payingTokenMint: state.tokenFee.address,
-                feeRelayerContext: feeRelayerContext
-            ) ?? .zero
-
+            let fee: FeeAmount
+            if state.isSendingViaLink {
+                fee = .zero
+            } else {
+                fee = try await services.feeService.getFees(
+                    from: token,
+                    recipient: state.recipient,
+                    recipientAdditionalInfo: state.recipientAdditionalInfo,
+                    payingTokenMint: state.tokenFee.address,
+                    feeRelayerContext: feeRelayerContext
+                ) ?? .zero
+            }
+            
             var state = state.copy(
                 token: token,
                 fee: fee
