@@ -53,7 +53,7 @@ class SendInputBusinessLogicInputTests: XCTestCase {
             feeToken: .nativeSolana,
             userWalletState: defaultUserWalletState,
             feeRelayerContext: feeContext(),
-            isSendViaLink: false
+            sendViaLinkSeed: nil
         )
 
         let nextState = await SendInputBusinessLogic.sendInputBusinessLogic(
@@ -82,7 +82,7 @@ class SendInputBusinessLogicInputTests: XCTestCase {
             feeToken: .nativeSolana,
             userWalletState: defaultUserWalletState,
             feeRelayerContext: feeContext(),
-            isSendViaLink: false
+            sendViaLinkSeed: nil
         )
 
         let nextState = await SendInputBusinessLogic.sendInputBusinessLogic(
@@ -111,7 +111,7 @@ class SendInputBusinessLogicInputTests: XCTestCase {
             feeToken: .nativeSolana,
             userWalletState: defaultUserWalletState,
             feeRelayerContext: feeContext(),
-            isSendViaLink: false
+            sendViaLinkSeed: nil
         )
 
         let nextState = await SendInputBusinessLogic.sendInputBusinessLogic(
@@ -140,7 +140,7 @@ class SendInputBusinessLogicInputTests: XCTestCase {
             feeToken: .nativeSolana,
             userWalletState: defaultUserWalletState,
             feeRelayerContext: feeContext(),
-            isSendViaLink: false
+            sendViaLinkSeed: nil
         )
 
         let nextState = await SendInputBusinessLogic.sendInputBusinessLogic(
@@ -169,7 +169,7 @@ class SendInputBusinessLogicInputTests: XCTestCase {
             feeToken: .nativeSolana,
             userWalletState: defaultUserWalletState,
             feeRelayerContext: feeContext(),
-            isSendViaLink: false
+            sendViaLinkSeed: nil
         )
 
         let nextState = await SendInputBusinessLogic.sendInputBusinessLogic(
@@ -198,7 +198,7 @@ class SendInputBusinessLogicInputTests: XCTestCase {
             feeToken: .nativeSolana,
             userWalletState: defaultUserWalletState,
             feeRelayerContext: feeContext(),
-            isSendViaLink: false
+            sendViaLinkSeed: nil
         )
 
         let nextState = await SendInputBusinessLogic.sendInputBusinessLogic(

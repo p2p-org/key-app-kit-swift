@@ -121,7 +121,10 @@ public struct SendInputState: Equatable {
     public let feeRelayerContext: RelayContext?
     
     /// Send via link
-    public let isSendViaLink: Bool
+    public let sendViaLinkSeed: String?
+    public var isSendingViaLink: Bool {
+        sendViaLinkSeed != nil
+    }
 
     public init(
         status: Status,
@@ -135,7 +138,7 @@ public struct SendInputState: Equatable {
         tokenFee: Token,
         feeInToken: FeeAmount,
         feeRelayerContext: RelayContext?,
-        isSendViaLink: Bool
+        sendViaLinkSeed: String?
     ) {
         self.status = status
         self.recipient = recipient
@@ -148,7 +151,7 @@ public struct SendInputState: Equatable {
         self.tokenFee = tokenFee
         self.feeInToken = feeInToken
         self.feeRelayerContext = feeRelayerContext
-        self.isSendViaLink = isSendViaLink
+        self.sendViaLinkSeed = sendViaLinkSeed
     }
 
     public static func zero(
@@ -159,7 +162,7 @@ public struct SendInputState: Equatable {
         feeToken: Token,
         userWalletState: UserWalletEnvironments,
         feeRelayerContext: RelayContext? = nil,
-        isSendViaLink: Bool
+        sendViaLinkSeed: String?
     ) -> SendInputState {
         .init(
             status: status,
@@ -173,7 +176,7 @@ public struct SendInputState: Equatable {
             tokenFee: feeToken,
             feeInToken: .zero,
             feeRelayerContext: feeRelayerContext,
-            isSendViaLink: isSendViaLink
+            sendViaLinkSeed: sendViaLinkSeed
         )
     }
 
@@ -189,7 +192,7 @@ public struct SendInputState: Equatable {
         tokenFee: Token? = nil,
         feeInToken: FeeAmount? = nil,
         feeRelayerContext: RelayContext? = nil,
-        isSendViaLink: Bool? = nil
+        sendViaLinkSeed: String?? = nil
     ) -> SendInputState {
         .init(
             status: status ?? self.status,
@@ -203,7 +206,7 @@ public struct SendInputState: Equatable {
             tokenFee: tokenFee ?? self.tokenFee,
             feeInToken: feeInToken ?? self.feeInToken,
             feeRelayerContext: feeRelayerContext ?? self.feeRelayerContext,
-            isSendViaLink: isSendViaLink ?? self.isSendViaLink
+            sendViaLinkSeed: sendViaLinkSeed ?? self.sendViaLinkSeed
         )
     }
 }
