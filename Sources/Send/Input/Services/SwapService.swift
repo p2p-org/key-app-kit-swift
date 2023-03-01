@@ -22,11 +22,11 @@ public struct MockedSwapService: SwapService {
 }
 
 public class SwapServiceImpl: SwapService {
-    private let feeRelayerCalculator: FeeRelayerCalculator
+    private let feeRelayerCalculator: RelayFeeCalculator
     private let orcaSwap: OrcaSwapType
 
     public init(
-        feeRelayerCalculator: FeeRelayerCalculator,
+        feeRelayerCalculator: RelayFeeCalculator,
         orcaSwap: OrcaSwapType
     ) {
         self.feeRelayerCalculator = feeRelayerCalculator
