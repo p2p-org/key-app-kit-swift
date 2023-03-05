@@ -10,7 +10,7 @@ public final class LongTermCache<Key: Hashable, Value> {
     private let entryLifetime: TimeInterval
     private let keyTracker = KeyTracker()
 
-    init(
+    public init(
         dateProvider: @escaping () -> Date = Date.init,
         entryLifetime: TimeInterval = 12 * 60 * 60,
         maximumEntryCount: Int = 50
