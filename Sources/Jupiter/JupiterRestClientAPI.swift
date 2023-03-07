@@ -112,27 +112,32 @@ public class JupiterRestClientAPI: JupiterAPI {
         let request = URLRequest(url: url)
         let (data, _) = try await URLSession.shared.data(for: request)
 
-        guard
-            let json = try JSONSerialization.jsonObject(with: data) as? [String: Any],
-            let mintKeys = json["mintKeys"] as? [String],
-            let indexedRouteMap = json["indexedRouteMap"] as? [String: [Int]],
-            mintKeys.first != "[object Map Iterator]"
-        else { throw JupiterError.invalidResponse }
+        // mapping in other task to avoid blocking current thread
+        return try await Task {
+            guard
+                let json = try JSONSerialization.jsonObject(with: data) as? [String: Any],
+                let mintKeys = json["mintKeys"] as? [String],
+                let indexedRouteMap = json["indexedRouteMap"] as? [String: [Int]],
+                mintKeys.first != "[object Map Iterator]"
+            else { throw JupiterError.invalidResponse }
 
-        var generatedIndexesRouteMap: [String: [String]] = [:]
-        for (key, value) in indexedRouteMap {
-            guard let key = Int(key), mintKeys.count > key else {
-                continue
+            try Task.checkCancellation()
+            var generatedIndexesRouteMap: [String: [String]] = [:]
+            for (key, value) in indexedRouteMap {
+                guard let key = Int(key), mintKeys.count > key else {
+                    continue
+                }
+                generatedIndexesRouteMap[mintKeys[key]] = value.compactMap {
+                    mintKeys[safe: $0]
+                }
             }
-            generatedIndexesRouteMap[mintKeys[key]] = value.compactMap {
-                mintKeys[safe: $0]
-            }
+
+            return .init(
+                mintKeys: mintKeys,
+                indexesRouteMap: generatedIndexesRouteMap
+            )
         }
-
-        return .init(
-            mintKeys: mintKeys,
-            indexesRouteMap: generatedIndexesRouteMap
-        )
+        .value
     }
 }
 
