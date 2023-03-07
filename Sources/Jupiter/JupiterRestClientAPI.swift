@@ -115,12 +115,18 @@ public class JupiterRestClientAPI: JupiterAPI {
         guard
             let json = try JSONSerialization.jsonObject(with: data) as? [String: Any],
             let mintKeys = json["mintKeys"] as? [String],
-            let indexedRouteMap = json["indexedRouteMap"] as? [String: [Int]]
+            let indexedRouteMap = json["indexedRouteMap"] as? [String: [Int]],
+            mintKeys.first != "[object Map Iterator]"
         else { throw JupiterError.invalidResponse }
 
         var generatedIndexesRouteMap: [String: [String]] = [:]
         for (key, value) in indexedRouteMap {
-            generatedIndexesRouteMap[mintKeys[Int(key)!]] = value.map { mintKeys[$0] }
+            guard let key = Int(key), mintKeys.count > key else {
+                continue
+            }
+            generatedIndexesRouteMap[mintKeys[key]] = value.compactMap {
+                mintKeys[safe: $0]
+            }
         }
 
         return .init(
