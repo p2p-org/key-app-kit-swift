@@ -9,12 +9,11 @@ public class JupiterRestClientAPI: JupiterAPI {
     private let host: String
 
     public init(version: Version) {
-//        host = "https://quote-api.jup.ag/" + version.rawValue
-        host = "https://swap.keyapp.org"
+        host = "https://quote-api.jup.ag/" + version.rawValue
     }
     
     public func getTokens() async throws -> [Token] {
-        let (data, _) = try await URLSession.shared.data(from: URL(string: "\(host)/tokens")!)
+        let (data, _) = try await URLSession.shared.data(from: URL(string: "https://cache.jup.ag/tokens")!)
         return try JSONDecoder().decode([Token].self, from: data)
     }
 
