@@ -39,7 +39,7 @@ public protocol JupiterAPI {
 }
 
 extension JupiterAPI {
-    func swap(
+    public func swap(
         route: Route,
         userPublicKey: String,
         wrapUnwrapSol: Bool,
