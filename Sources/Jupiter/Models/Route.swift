@@ -12,6 +12,8 @@ public struct Route: Codable, Equatable {
     public let amount: String
     public let slippageBps: Int
     public let otherAmountThreshold, swapMode: String
+    public let fees: Fees?
+    public let keyapp: KeyAppInfo?
 
     public init(
         inAmount: String,
@@ -21,7 +23,9 @@ public struct Route: Codable, Equatable {
         amount: String,
         slippageBps: Int,
         otherAmountThreshold: String,
-        swapMode: String
+        swapMode: String,
+        fees: Fees?,
+        keyapp: KeyAppInfo?
     ) {
         self.inAmount = inAmount
         self.outAmount = outAmount
@@ -31,6 +35,8 @@ public struct Route: Codable, Equatable {
         self.slippageBps = slippageBps
         self.otherAmountThreshold = otherAmountThreshold
         self.swapMode = swapMode
+        self.fees = fees
+        self.keyapp = keyapp
     }
 }
 
@@ -42,7 +48,7 @@ public struct MarketInfo: Codable, Equatable {
     public let notEnoughLiquidity: Bool
     public let inAmount, outAmount: String
     public let priceImpactPct: Double
-    public let lpFee, platformFee: Fee
+    public let lpFee, platformFee: PlatformFee
 
     public init(
         id: String,
@@ -53,8 +59,8 @@ public struct MarketInfo: Codable, Equatable {
         inAmount: String,
         outAmount: String,
         priceImpactPct: Double,
-        lpFee: Fee,
-        platformFee: Fee
+        lpFee: PlatformFee,
+        platformFee: PlatformFee
     ) {
         self.id = id
         self.label = label
@@ -70,9 +76,9 @@ public struct MarketInfo: Codable, Equatable {
 }
 
 
-// MARK: - Fee
+// MARK: - PlatformFee
 
-public struct Fee: Codable, Equatable {
+public struct PlatformFee: Codable, Equatable {
     public let amount: String
     public let mint: String
     public let pct: Double
@@ -82,4 +88,21 @@ public struct Fee: Codable, Equatable {
         self.mint = mint
         self.pct = pct
     }
+}
+
+// MARK: - Fees
+
+public struct Fees: Codable, Equatable {
+    public let signatureFee: UInt64
+    public let openOrdersDeposits: [UInt64]
+    public let ataDeposits: [UInt64]
+    public let totalFeeAndDeposits: UInt64
+    public let minimumSOLForTransaction: UInt64
+}
+
+// MARK: - KeyApp
+
+public struct KeyAppInfo: Codable, Equatable {
+    public let fee: String
+    public let _hash: String
 }

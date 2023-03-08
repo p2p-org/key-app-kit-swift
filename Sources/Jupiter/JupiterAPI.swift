@@ -37,3 +37,23 @@ public protocol JupiterAPI {
     
     func routeMap() async throws -> RouteMap
 }
+
+extension JupiterAPI {
+    func swap(
+        route: Route,
+        userPublicKey: String,
+        wrapUnwrapSol: Bool,
+        feeAccount: String?,
+        computeUnitPriceMicroLamports: Int?
+    ) async throws -> String? {
+        try await swap(
+            route: route,
+            userPublicKey: userPublicKey,
+            wrapUnwrapSol: wrapUnwrapSol,
+            feeAccount: feeAccount,
+            asLegacyTransaction: nil,
+            computeUnitPriceMicroLamports: computeUnitPriceMicroLamports,
+            destinationWallet: nil
+        )
+    }
+}
