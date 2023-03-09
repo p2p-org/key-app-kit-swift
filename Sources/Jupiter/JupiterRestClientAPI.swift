@@ -7,13 +7,15 @@ import SolanaSwift
 
 public class JupiterRestClientAPI: JupiterAPI {
     private let host: String
+    private let tokensHost: String?
 
-    public init(version: Version) {
-        host = "https://quote-api.jup.ag/" + version.rawValue
+    public init(host: String, tokensHost: String? = nil, version: Version) {
+        self.host = host + "/" + version.rawValue
+        self.tokensHost = tokensHost
     }
     
     public func getTokens() async throws -> [Token] {
-        let (data, _) = try await URLSession.shared.data(from: URL(string: "https://cache.jup.ag/tokens")!)
+        let (data, _) = try await URLSession.shared.data(from: URL(string: "\(tokensHost ?? host)/tokens")!)
         return try JSONDecoder().decode([Token].self, from: data)
     }
 
@@ -60,7 +62,7 @@ public class JupiterRestClientAPI: JupiterAPI {
 
         let (data, _) = try await URLSession.shared.data(for: request)
         print(request.cURL())
-        print(String(data: data, encoding: .utf8))
+        print(String(data: data, encoding: .utf8) ?? "")
         return try JSONDecoder().decode(Response<[Route]>.self, from: data)
     }
 
@@ -103,7 +105,7 @@ public class JupiterRestClientAPI: JupiterAPI {
 
         print(request.cURL())
         let (data, _) = try await URLSession.shared.data(for: request)
-        print(String(data: data, encoding: .utf8))
+        print(String(data: data, encoding: .utf8) ?? "")
         return try JSONDecoder().decode(ResponseData.self, from: data).swapTransaction
     }
 
