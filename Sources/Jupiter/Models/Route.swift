@@ -7,7 +7,7 @@ import Foundation
 // MARK: - Quote
 public struct Route: Codable, Equatable {
     public let inAmount, outAmount: String
-    public let priceImpactPct: Double
+    public let priceImpactPct: Decimal
     public let marketInfos: [MarketInfo]
     public let amount: String
     public let slippageBps: Int
@@ -18,7 +18,7 @@ public struct Route: Codable, Equatable {
     public init(
         inAmount: String,
         outAmount: String,
-        priceImpactPct: Double,
+        priceImpactPct: Decimal,
         marketInfos: [MarketInfo],
         amount: String,
         slippageBps: Int,
@@ -47,7 +47,7 @@ public struct MarketInfo: Codable, Equatable {
     public let inputMint, outputMint: String
     public let notEnoughLiquidity: Bool
     public let inAmount, outAmount: String
-    public let priceImpactPct: Double
+    public let priceImpactPct: Decimal
     public let lpFee, platformFee: PlatformFee
 
     public init(
@@ -58,7 +58,7 @@ public struct MarketInfo: Codable, Equatable {
         notEnoughLiquidity: Bool,
         inAmount: String,
         outAmount: String,
-        priceImpactPct: Double,
+        priceImpactPct: Decimal,
         lpFee: PlatformFee,
         platformFee: PlatformFee
     ) {
@@ -81,9 +81,9 @@ public struct MarketInfo: Codable, Equatable {
 public struct PlatformFee: Codable, Equatable {
     public let amount: String
     public let mint: String
-    public let pct: Double
+    public let pct: Decimal
 
-    public init(amount: String, mint: String, pct: Double) {
+    public init(amount: String, mint: String, pct: Decimal) {
         self.amount = amount
         self.mint = mint
         self.pct = pct
