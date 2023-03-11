@@ -110,36 +110,34 @@ public class JupiterRestClientAPI: JupiterAPI {
     }
 
     public func routeMap() async throws -> RouteMap {
+        // download json
         guard let url = URL(string: host + "/indexed-route-map") else { throw JupiterError.invalidURL }
         let request = URLRequest(url: url)
         let (data, _) = try await URLSession.shared.data(for: request)
 
-        // mapping in other task to avoid blocking current thread
-        return try await Task {
-            guard
-                let json = try JSONSerialization.jsonObject(with: data) as? [String: Any],
-                let mintKeys = json["mintKeys"] as? [String],
-                let indexedRouteMap = json["indexedRouteMap"] as? [String: [Int]],
-                mintKeys.first != "[object Map Iterator]"
-            else { throw JupiterError.invalidResponse }
+        // map route
+        guard
+            let json = try JSONSerialization.jsonObject(with: data) as? [String: Any],
+            let mintKeys = json["mintKeys"] as? [String],
+            let indexedRouteMap = json["indexedRouteMap"] as? [String: [Int]],
+            mintKeys.first != "[object Map Iterator]"
+        else { throw JupiterError.invalidResponse }
 
-            try Task.checkCancellation()
-            var generatedIndexesRouteMap: [String: [String]] = [:]
-            for (key, value) in indexedRouteMap {
-                guard let key = Int(key), mintKeys.count > key else {
-                    continue
-                }
-                generatedIndexesRouteMap[mintKeys[key]] = value.compactMap {
-                    mintKeys[safe: $0]
-                }
+        try Task.checkCancellation()
+        var generatedIndexesRouteMap: [String: [String]] = [:]
+        for (key, value) in indexedRouteMap {
+            guard let key = Int(key), mintKeys.count > key else {
+                continue
             }
-
-            return .init(
-                mintKeys: mintKeys,
-                indexesRouteMap: generatedIndexesRouteMap
-            )
+            generatedIndexesRouteMap[mintKeys[key]] = value.compactMap {
+                mintKeys[safe: $0]
+            }
         }
-        .value
+
+        return .init(
+            mintKeys: mintKeys,
+            indexesRouteMap: generatedIndexesRouteMap
+        )
     }
 }
 
