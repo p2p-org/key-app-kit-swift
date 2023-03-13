@@ -42,7 +42,7 @@
         "repositoryURL": "https://github.com/p2p-org/solana-swift",
         "state": {
           "branch": "feature/send-via-link",
-          "revision": "6b05447a2c58170d2950025a064c7ff30ddca5af",
+          "revision": "17f62d901f1fa054d132cc6d6f7e56f8b2277f35",
           "version": null
         }
       },

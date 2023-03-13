@@ -4,7 +4,14 @@ import FeeRelayerSwift
 import SolanaSwift
 
 public protocol SendActionService {
-    func send(from wallet: Wallet, receiver: String, amount: Double, feeWallet: Wallet, ignoreTopUp: Bool) async throws -> String
+    func send(
+        from wallet: Wallet,
+        receiver: String,
+        amount: Double,
+        feeWallet: Wallet,
+        ignoreTopUp: Bool,
+        memo: String?
+    ) async throws -> String
 }
 
 public class SendActionServiceImpl: SendActionService {
@@ -34,7 +41,8 @@ public class SendActionServiceImpl: SendActionService {
         receiver: String,
         amount: Double,
         feeWallet: Wallet,
-        ignoreTopUp: Bool
+        ignoreTopUp: Bool,
+        memo: String?
     ) async throws -> String {
         let amount = amount.toLamport(decimals: wallet.token.decimals)
         guard let sender = wallet.pubkey else { throw SendError.invalidSourceWallet }
@@ -48,7 +56,8 @@ public class SendActionServiceImpl: SendActionService {
             receiver: receiver,
             amount: amount,
             feeWallet: feeWallet,
-            ignoreTopUp: ignoreTopUp
+            ignoreTopUp: ignoreTopUp,
+            memo: memo
         )
     }
 
@@ -57,7 +66,8 @@ public class SendActionServiceImpl: SendActionService {
         receiver: String,
         amount: Lamports,
         feeWallet: Wallet?,
-        ignoreTopUp: Bool = false
+        ignoreTopUp: Bool = false,
+        memo: String?
     ) async throws -> String {
         let currency = wallet.token.address
 
@@ -67,7 +77,8 @@ public class SendActionServiceImpl: SendActionService {
             from: wallet,
             receiver: receiver,
             amount: amount.convertToBalance(decimals: wallet.token.decimals),
-            payingFeeToken: payingFeeToken
+            payingFeeToken: payingFeeToken,
+            memo: memo
         )
         preparedTransaction.transaction.recentBlockhash = try await solanaAPIClient.getRecentBlockhash(commitment: nil)
 
@@ -101,7 +112,8 @@ public class SendActionServiceImpl: SendActionService {
         payingFeeToken: FeeRelayerSwift.TokenAccount?,
         recentBlockhash: String? = nil,
         lamportsPerSignature _: Lamports? = nil,
-        minRentExemption: Lamports? = nil
+        minRentExemption: Lamports? = nil,
+        memo: String?
     ) async throws -> (preparedTransaction: PreparedTransaction, useFeeRelayer: Bool) {
         let amount = amount.toLamport(decimals: wallet.token.decimals)
         guard let sender = wallet.pubkey else { throw SendError.invalidSourceWallet }
@@ -144,7 +156,15 @@ public class SendActionServiceImpl: SendActionService {
                 minRentExemption: minRentExemption
             ).preparedTransaction
         }
-
+        
+        // add memo
+        if let memo {
+            preparedTransaction.transaction.instructions.append(
+                try MemoProgram.createMemoInstruction(memo: memo)
+            )
+        }
+        
+        // send transaction
         preparedTransaction.transaction.recentBlockhash = recentBlockhash
         return (preparedTransaction: preparedTransaction, useFeeRelayer: useFeeRelayer)
     }
