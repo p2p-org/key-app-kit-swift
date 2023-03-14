@@ -59,9 +59,8 @@ public class JupiterRestClientAPI: JupiterAPI {
 
         guard let url = urlComponent.url else { throw JupiterError.invalidURL }
         let request = URLRequest(url: url)
-
-        let (data, _) = try await URLSession.shared.data(for: request)
         print(request.cURL())
+        let (data, _) = try await URLSession.shared.data(for: request)
         print(String(data: data, encoding: .utf8) ?? "")
         return try JSONDecoder().decode(Response<[Route]>.self, from: data)
     }
