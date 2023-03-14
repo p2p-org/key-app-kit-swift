@@ -104,5 +104,6 @@ public struct Fees: Codable, Equatable {
 
 public struct KeyAppInfo: Codable, Equatable {
     public let fee: String
+    public let refundableFee: String
     public let _hash: String
 }
