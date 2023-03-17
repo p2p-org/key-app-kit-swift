@@ -1,14 +1,14 @@
 import Jupiter
 import SolanaSwift
 
-struct JupiterSwapRouteCalculationResult {
+public struct JupiterSwapRouteCalculationResult {
     let routes: [Route]
     let selectedRoute: Route?
 }
 
 extension JupiterSwapBusinessLogic {
-    static func calculateRoute(
-        preferredRoute: Route?,
+    public static func calculateRoute(
+        preferredRouteId: String?,
         amountFrom: Double?,
         fromTokenMint: String,
         fromTokenDecimals: Decimals,
@@ -50,7 +50,7 @@ extension JupiterSwapBusinessLogic {
         
         // if pre chosen route is stil available, choose it
         let route = data.data.first(
-            where: {$0.id == preferredRoute?.id})
+            where: {$0.id == preferredRouteId})
         ?? data.data.first // if not choose the first (the best) one
         
         return .init(routes: routes, selectedRoute: route)

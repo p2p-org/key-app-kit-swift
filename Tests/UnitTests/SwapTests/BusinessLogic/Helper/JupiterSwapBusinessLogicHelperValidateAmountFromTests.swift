@@ -2,7 +2,7 @@ import XCTest
 @testable import Swap
 import SolanaSwift
 
-class JupiterSwapBusinessLogicHelperTests: XCTestCase {
+class JupiterSwapBusinessLogicHelperValidateAmountFromTests: XCTestCase {
     // MARK: - Other tokens
     
     // Test case where all parameters are valid
