@@ -286,7 +286,7 @@ let package = Package(
         // Swap
         .target(
             name: "Swap",
-            dependencies: ["Jupiter"]
+            dependencies: ["Jupiter", "SolanaPricesAPIs"]
         ),
         
         .testTarget(
