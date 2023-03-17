@@ -2,8 +2,8 @@ import Jupiter
 import SolanaSwift
 
 public struct JupiterSwapRouteCalculationResult {
-    let routes: [Route]
-    let selectedRoute: Route?
+    public let routes: [Route]
+    public let selectedRoute: Route?
 }
 
 extension JupiterSwapBusinessLogic {
