@@ -426,6 +426,20 @@
                ReferencedContainer = "container:">
             </BuildableReference>
          </BuildActionEntry>
+         <BuildActionEntry
+            buildForTesting = "YES"
+            buildForRunning = "YES"
+            buildForProfiling = "YES"
+            buildForArchiving = "YES"
+            buildForAnalyzing = "YES">
+            <BuildableReference
+               BuildableIdentifier = "primary"
+               BlueprintIdentifier = "Swap"
+               BuildableName = "Swap"
+               BlueprintName = "Swap"
+               ReferencedContainer = "container:">
+            </BuildableReference>
+         </BuildActionEntry>
       </BuildActionEntries>
    </BuildAction>
    <TestAction
@@ -531,6 +545,16 @@
                BlueprintIdentifier = "TransactionParserUnitTests"
                BuildableName = "TransactionParserUnitTests"
                BlueprintName = "TransactionParserUnitTests"
+               ReferencedContainer = "container:">
+            </BuildableReference>
+         </TestableReference>
+         <TestableReference
+            skipped = "NO">
+            <BuildableReference
+               BuildableIdentifier = "primary"
+               BlueprintIdentifier = "SwapTests"
+               BuildableName = "SwapTests"
+               BlueprintName = "SwapTests"
                ReferencedContainer = "container:">
             </BuildableReference>
          </TestableReference>

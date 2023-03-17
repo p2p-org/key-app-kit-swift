@@ -93,6 +93,11 @@ let package = Package(
             name: "Jupiter",
             targets: ["Jupiter"]
         ),
+        // Swap
+        .library(
+            name: "Swap",
+            targets: ["Swap"]
+        )
     ],
     dependencies: [
         .package(url: "https://github.com/p2p-org/solana-swift", branch: "feature/versioned-transaction"),
@@ -270,11 +275,24 @@ let package = Package(
             dependencies: []
         ),
 
+        // Jupiter
         .target(
             name: "Jupiter",
             dependencies: [
                 .product(name: "SolanaSwift", package: "solana-swift"),
             ]
+        ),
+        
+        // Swap
+        .target(
+            name: "Swap",
+            dependencies: ["Jupiter"]
+        ),
+        
+        .testTarget(
+            name: "SwapTests",
+            dependencies: ["Swap"],
+            path: "Tests/UnitTests/SwapTests"
         ),
     ]
 )
