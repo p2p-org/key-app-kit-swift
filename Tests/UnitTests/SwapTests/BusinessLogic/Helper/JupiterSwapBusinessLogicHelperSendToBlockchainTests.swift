@@ -10,6 +10,7 @@ import SolanaSwift
 import Jupiter
 import Swap
 import Combine
+import Task_retrying
 
 final class JupiterSwapBusinessLogicHelperSendToBlockchainTests: XCTestCase {
     private var mockJupiterAPI: MockJupiterAPI!
@@ -34,6 +35,7 @@ final class JupiterSwapBusinessLogicHelperSendToBlockchainTests: XCTestCase {
         mockSolanaAPIClient = nil
     }
     
+    /// Test sending a transaction to the blockchain successfully.
     func testSendToBlockchainSuccess() async throws {
         // when
         let transactionId = try await JupiterSwapBusinessLogicHelper.sendToBlockchain(
@@ -48,6 +50,36 @@ final class JupiterSwapBusinessLogicHelperSendToBlockchainTests: XCTestCase {
         XCTAssertEqual(transactionId, mockedSwapTransactionId)
     }
     
+    /// Test sending a transaction to the blockchain with a retryable error, then throw when error is not retryable.
+    func testSendToBlockchainThrowsNonRetriableError() async throws {
+        // given
+        mockJupiterAPI = MockJupiterAPI()
+        mockSolanaAPIClient = .init(
+            mockedResults: [
+                .failure(APIClientError.blockhashNotFound),
+                .failure(APIClientError.invalidAPIURL) // non-retriable error
+            ]
+        )
+        
+        // when
+        var error: Error?
+        do {
+            let _ = try await JupiterSwapBusinessLogicHelper.sendToBlockchain(
+                account: account,
+                swapTransaction: mockedSwapTransactionId,
+                route: route,
+                jupiterClient: mockJupiterAPI,
+                solanaAPIClient: mockSolanaAPIClient
+            )
+        } catch let testError {
+            error = testError
+        }
+        
+        // then
+        XCTAssertEqual(APIClientError.invalidAPIURL, error as? APIClientError)
+    }
+    
+    /// Test sending a transaction to the blockchain with a retryable error, then succeeding on retry.
     func testSendToBlockchainBlockhashNotFoundThenSuccess() async throws {
         // given
         mockJupiterAPI = MockJupiterAPI()
@@ -74,6 +106,71 @@ final class JupiterSwapBusinessLogicHelperSendToBlockchainTests: XCTestCase {
         // then
         XCTAssertEqual(transactionId, mockedSwapTransactionId)
     }
+    
+    /// Test sending a transaction to the blockchain with 6 retryable errors, then failing due to exceededMaxRetryCount.
+    func testSendToBlockchainRetryableErrorExceededMaxRetryCount() async throws {
+        // given
+        mockSolanaAPIClient = .init(
+            mockedResults: [
+                .failure(APIClientError.blockhashNotFound),
+                .failure(APIClientError.blockhashNotFound),
+                .failure(APIClientError.blockhashNotFound),
+                .failure(APIClientError.blockhashNotFound),
+                .failure(APIClientError.blockhashNotFound),
+                .failure(APIClientError.blockhashNotFound),
+                .success(mockedSwapTransactionId)
+            ]
+        )
+        
+        // when
+        var error: Error?
+        do {
+            let _ = try await JupiterSwapBusinessLogicHelper.sendToBlockchain(
+                account: account,
+                swapTransaction: mockedSwapTransactionId,
+                route: route,
+                jupiterClient: mockJupiterAPI,
+                solanaAPIClient: mockSolanaAPIClient
+            )
+        } catch let testError {
+            error = testError
+        }
+        
+        // then
+        XCTAssertEqual(TaskRetryingError.exceededMaxRetryCount, error as? TaskRetryingError)
+    }
+    
+    /// Test sending a transaction to the blockchain with 3 retryable errors, then failing due to timedout.
+    func testSendToBlockchainRetryableErrors() async throws {
+        // given
+        mockSolanaAPIClient = .init(
+            mockedResults: [
+                .failure(APIClientError.blockhashNotFound),
+                .failure(APIClientError.blockhashNotFound),
+                .failure(APIClientError.blockhashNotFound),
+                .success(MockSolanaAPIClient.delayingFlagPrefix + "2_000_000_000"), // 2 secs
+                .success(mockedSwapTransactionId)
+            ]
+        )
+        
+        // when
+        var error: Error?
+        do {
+            let _ = try await JupiterSwapBusinessLogicHelper.sendToBlockchain(
+                account: account,
+                swapTransaction: mockedSwapTransactionId,
+                route: route,
+                jupiterClient: mockJupiterAPI,
+                solanaAPIClient: mockSolanaAPIClient,
+                timeOutInSeconds: 1
+            )
+        } catch let testError {
+            error = testError
+        }
+        
+        // then
+        XCTAssertEqual(TaskRetryingError.timedOut, error as? TaskRetryingError)
+    }
 }
 
 // MARK: - Helpers
@@ -97,6 +194,7 @@ private class MockJupiterAPI: MockJupiterAPIBase {
 }
 
 private class MockSolanaAPIClient: MockSolanaAPIClientBase {
+    static let delayingFlagPrefix = "delayingFlag"
     var mockedResults: [Result<String, Error>]
     var attempt = -1
     
@@ -113,6 +211,9 @@ private class MockSolanaAPIClient: MockSolanaAPIClientBase {
         attempt += 1
         switch mockedResults[attempt] {
         case .success(let transactionId):
+            if transactionId.starts(with: Self.delayingFlagPrefix) {
+                try await Task.sleep(nanoseconds: UInt64(transactionId.replacingOccurrences(of: Self.delayingFlagPrefix, with: ""))!)
+            }
             print("mocked send transaction success: \(transactionId)")
             return transactionId
         case .failure(let failure):

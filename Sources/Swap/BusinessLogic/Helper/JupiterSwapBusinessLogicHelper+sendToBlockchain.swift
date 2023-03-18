@@ -9,14 +9,15 @@ extension JupiterSwapBusinessLogicHelper {
         swapTransaction: String?,
         route: Route,
         jupiterClient: JupiterAPI,
-        solanaAPIClient: SolanaAPIClient
+        solanaAPIClient: SolanaAPIClient,
+        timeOutInSeconds: Int = 60
     ) async throws -> String {
         // retry
         try await Task.retrying(
             where: { $0.isRetryable },
             maxRetryCount: 5,
             retryDelay: 0.5, // 0.5 secs
-            timeoutInSeconds: 60, // wait for 60s if no success then throw .timedOut error
+            timeoutInSeconds: timeOutInSeconds, // wait for 60s if no success then throw .timedOut error
             operation: { numberOfRetried in
                 // if there is transaction, send it
                 if numberOfRetried == 0, let swapTransaction {
