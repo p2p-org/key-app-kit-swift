@@ -86,9 +86,9 @@ final class JupiterSwapBusinessLogicHelperSendToBlockchainTests: XCTestCase {
         mockSolanaAPIClient = .init(
             mockedResults: [
                 .failure(APIClientError.blockhashNotFound),
+                .failure(APIClientError.invalidTimestamp),
                 .failure(APIClientError.blockhashNotFound),
-                .failure(APIClientError.blockhashNotFound),
-                .failure(APIClientError.blockhashNotFound),
+                .failure(APIClientError.invalidTimestamp),
                 .failure(APIClientError.blockhashNotFound),
                 .success(mockedSwapTransactionId)
             ]
@@ -113,10 +113,10 @@ final class JupiterSwapBusinessLogicHelperSendToBlockchainTests: XCTestCase {
         mockSolanaAPIClient = .init(
             mockedResults: [
                 .failure(APIClientError.blockhashNotFound),
+                .failure(APIClientError.invalidTimestamp),
                 .failure(APIClientError.blockhashNotFound),
-                .failure(APIClientError.blockhashNotFound),
-                .failure(APIClientError.blockhashNotFound),
-                .failure(APIClientError.blockhashNotFound),
+                .failure(APIClientError.invalidTimestamp),
+                .failure(JupiterError.invalidResponse),
                 .failure(APIClientError.blockhashNotFound),
                 .success(mockedSwapTransactionId)
             ]
@@ -229,6 +229,16 @@ private extension APIClientError {
             ResponseError(
                 code: nil,
                 message: "Transaction simulation failed: Blockhash not found",
+                data: nil
+            )
+        )
+    }
+    
+    static var invalidTimestamp: Self {
+        .responseError(
+            ResponseError(
+                code: nil,
+                message: "<dummy>custom program error: 0x1786",
                 data: nil
             )
         )
