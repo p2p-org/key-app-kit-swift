@@ -2,6 +2,9 @@ import Foundation
 import SolanaSwift
 
 public enum JupiterSwapError: Swift.Error, Equatable {
+    // Auto choose token
+    case noNativeWalletFound
+    
     case amountFromIsZero
     case fromAndToTokenAreEqual
 
