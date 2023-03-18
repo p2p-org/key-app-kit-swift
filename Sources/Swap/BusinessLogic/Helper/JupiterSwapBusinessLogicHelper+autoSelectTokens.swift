@@ -49,10 +49,12 @@ extension JupiterSwapBusinessLogicHelper {
         }
         
         // If user do not have any SOL or usdc
-        let fromToken = swapTokens.max {
-            // TODO: - Amount in current fiat
-            ($0.userWallet?.amount ?? 0) > ($1.userWallet?.amount ?? 0)
-        }
+        let fromToken = swapTokens
+            .filter { !$0.token.isNativeSOL }
+            .max {
+                // TODO: - Amount in current fiat
+                ($0.userWallet?.amount ?? 0) > ($1.userWallet?.amount ?? 0)
+            }
         
         return .init(
             fromToken: fromToken ?? .init(token: .usdc, userWallet: nil),
