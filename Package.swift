@@ -88,6 +88,11 @@ let package = Package(
             name: "Moonpay",
             targets: ["Moonpay"]
         ),
+        // Jupiter
+        .library(
+            name: "Jupiter",
+            targets: ["Jupiter"]
+        ),
     ],
     dependencies: [
         .package(url: "https://github.com/p2p-org/solana-swift", branch: "feature/send-via-link"),
@@ -263,6 +268,13 @@ let package = Package(
         .target(
             name: "Moonpay",
             dependencies: []
+        ),
+
+        .target(
+            name: "Jupiter",
+            dependencies: [
+                .product(name: "SolanaSwift", package: "solana-swift"),
+            ]
         ),
     ]
 )

@@ -15,7 +15,7 @@
         "repositoryURL": "https://github.com/p2p-org/FeeRelayerSwift",
         "state": {
           "branch": "feature/send-via-link",
-          "revision": "2e3d66a1e3d58011e24ed6e70269d56b0edc18d8",
+          "revision": "adad3c446988f96886916334b1329721ba9b48c8",
           "version": null
         }
       },
@@ -42,7 +42,7 @@
         "repositoryURL": "https://github.com/p2p-org/solana-swift",
         "state": {
           "branch": "feature/send-via-link",
-          "revision": "17f62d901f1fa054d132cc6d6f7e56f8b2277f35",
+          "revision": "8026a6bd55e777637c649a09cc226a8ea79e6a4a",
           "version": null
         }
       },
@@ -51,8 +51,8 @@
         "repositoryURL": "https://github.com/apple/swift-docc-plugin",
         "state": {
           "branch": null,
-          "revision": "10bc670db657d11bdd561e07de30a9041311b2b1",
-          "version": "1.1.0"
+          "revision": "9b1258905c21fc1b97bf03d1b4ca12c4ec4e5fda",
+          "version": "1.2.0"
         }
       },
       {
@@ -69,8 +69,8 @@
         "repositoryURL": "https://github.com/bigearsenal/task-retrying-swift.git",
         "state": {
           "branch": null,
-          "revision": "645eaaf207a6f39ab4b469558d916ae23df199b5",
-          "version": "1.0.3"
+          "revision": "1249b3524378423c848cef39fb220041e00a08ec",
+          "version": "1.0.4"
         }
       },
       {
