@@ -15,6 +15,6 @@ Pod::Spec.new do |s|
   s.ios.deployment_target = '13.0'
 
   s.source_files = 'Sources/Jupiter/**/*'
-  s.dependency 'SolanaSwift'
+  s.dependency 'SolanaSwift', '~> 3'
   s.swift_version = '5.5'
 end

@@ -16,7 +16,7 @@ Pod::Spec.new do |s|
 
   s.source_files = 'Sources/Send/**/*'
   s.dependency 'NameService'
-  s.dependency 'SolanaSwift'
+  s.dependency 'SolanaSwift', '~> 3'
   s.dependency 'SolanaPricesAPIs'
   s.dependency 'History'
   s.dependency 'TransactionParser'

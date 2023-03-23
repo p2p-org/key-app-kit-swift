@@ -24,6 +24,6 @@ Pod::Spec.new do |s|
   }
   s.dependency "KeyAppKitLogger"
   s.dependency "KeyAppKitCore"
-  s.dependency "SolanaSwift"
+  s.dependency 'SolanaSwift', '~> 3'
 
 end

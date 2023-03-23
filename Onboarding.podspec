@@ -20,7 +20,7 @@ Pod::Spec.new do |s|
   s.swift_version = '5.5'
   s.resources = "Sources/Onboarding/Resource/**/*"
   s.dependency 'JSBridge'
-  s.dependency 'SolanaSwift', '~> 2'
+  s.dependency 'SolanaSwift', '~> 3'
   s.dependency 'CryptoSwift', '~> 1.6.0'
   s.dependency "KeyAppKitCore"
   s.dependency "AnalyticsManager"
