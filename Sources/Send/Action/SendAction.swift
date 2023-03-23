@@ -10,7 +10,8 @@ public protocol SendActionService {
         amount: Double,
         feeWallet: Wallet,
         ignoreTopUp: Bool,
-        memo: String?
+        memo: String?,
+        operationType: StatsInfo.OperationType
     ) async throws -> String
 }
 
@@ -42,7 +43,8 @@ public class SendActionServiceImpl: SendActionService {
         amount: Double,
         feeWallet: Wallet,
         ignoreTopUp: Bool,
-        memo: String?
+        memo: String?,
+        operationType: StatsInfo.OperationType
     ) async throws -> String {
         let amount = amount.toLamport(decimals: wallet.token.decimals)
         guard let sender = wallet.pubkey else { throw SendError.invalidSourceWallet }
@@ -57,7 +59,8 @@ public class SendActionServiceImpl: SendActionService {
             amount: amount,
             feeWallet: feeWallet,
             ignoreTopUp: ignoreTopUp,
-            memo: memo
+            memo: memo,
+            operationType: operationType
         )
     }
 
@@ -67,7 +70,8 @@ public class SendActionServiceImpl: SendActionService {
         amount: Lamports,
         feeWallet: Wallet?,
         ignoreTopUp: Bool = false,
-        memo: String?
+        memo: String?,
+        operationType: StatsInfo.OperationType
     ) async throws -> String {
         let currency = wallet.token.address
 
@@ -87,7 +91,7 @@ public class SendActionServiceImpl: SendActionService {
                 return try await relayService.relayTransaction(
                     preparedTransaction,
                     config: FeeRelayerConfiguration(
-                        operationType: .transfer,
+                        operationType: operationType,
                         currency: currency
                     ))
             }
@@ -96,7 +100,7 @@ public class SendActionServiceImpl: SendActionService {
                 preparedTransaction,
                 fee: payingFeeToken,
                 config: FeeRelayerConfiguration(
-                    operationType: .transfer,
+                    operationType: operationType,
                     currency: currency
                 )
             )
