@@ -8,7 +8,7 @@ public protocol SendActionService {
         from wallet: Wallet,
         receiver: String,
         amount: Double,
-        feeWallet: Wallet,
+        feeWallet: Wallet?,
         ignoreTopUp: Bool,
         memo: String?,
         operationType: StatsInfo.OperationType
@@ -41,13 +41,18 @@ public class SendActionServiceImpl: SendActionService {
         from wallet: Wallet,
         receiver: String,
         amount: Double,
-        feeWallet: Wallet,
+        feeWallet: Wallet?,
         ignoreTopUp: Bool,
         memo: String?,
         operationType: StatsInfo.OperationType
     ) async throws -> String {
         let amount = amount.toLamport(decimals: wallet.token.decimals)
         guard let sender = wallet.pubkey else { throw SendError.invalidSourceWallet }
+        
+        // assert payingFeeWallet
+        if !ignoreTopUp && feeWallet == nil {
+            throw SendError.invalidPayingFeeWallet
+        }
 
         if receiver == sender {
             throw SendError.sendToYourself
