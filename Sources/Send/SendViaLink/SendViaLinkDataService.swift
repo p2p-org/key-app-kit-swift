@@ -57,7 +57,7 @@ public final class SendViaLinkDataServiceImpl: SendViaLinkDataService {
     
     // MARK: - Initializer
 
-    init(
+    public init(
         salt: String,
         passphrase: String,
         network: Network,
