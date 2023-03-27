@@ -92,23 +92,51 @@ public class SendActionServiceImpl: SendActionService {
         preparedTransaction.transaction.recentBlockhash = try await solanaAPIClient.getRecentBlockhash(commitment: nil)
 
         if useFeeRelayer {
+            let feePayerSignature: String
+            
             if ignoreTopUp {
-                return try await relayService.relayTransaction(
+                feePayerSignature = try await relayService.signRelayTransaction(
                     preparedTransaction,
                     config: FeeRelayerConfiguration(
                         operationType: operationType,
+                        currency: currency,
+                        autoPayback: false
+                    )
+                )
+            } else {
+                feePayerSignature = try await relayService.topUpIfNeededAndSignRelayTransactions(
+                    preparedTransaction,
+                    fee: payingFeeToken,
+                    config: FeeRelayerConfiguration(
+                        operationType: operationType,
                         currency: currency
-                    ))
+                    )
+                )
             }
             
-            return try await relayService.topUpIfNeededAndRelayTransaction(
-                preparedTransaction,
-                fee: payingFeeToken,
-                config: FeeRelayerConfiguration(
-                    operationType: operationType,
-                    currency: currency
+            // get feePayerPubkey and user account
+            guard let feePayerPubKey = contextManager.currentContext?.feePayerAddress,
+                  let account
+            else {
+                throw SolanaError.unauthorized
+            }
+            
+            // sign transaction by user
+            try preparedTransaction.transaction.sign(signers: [account])
+            
+            // add feePayer's signature
+            try preparedTransaction.transaction.addSignature(
+                .init(
+                    signature: Data(Base58.decode(feePayerSignature)),
+                    publicKey: feePayerPubKey
                 )
             )
+            
+            // serialize transaction
+            let serializedTransaction = try preparedTransaction.transaction.serialize().base64EncodedString()
+            
+            // send to solanaBlockchain
+            return try await solanaAPIClient.sendTransaction(transaction: serializedTransaction, configs: RequestConfiguration(encoding: "base64")!)
         } else {
             return try await blockchainClient.sendTransaction(preparedTransaction: preparedTransaction)
         }
