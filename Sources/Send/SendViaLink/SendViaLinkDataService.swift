@@ -7,6 +7,12 @@ public struct ClaimableTokenInfo {
     public let mintAddress: String
 }
 
+/// Error type for SendViaLinkDataService
+public enum SendViaLinkDataServiceError: Error {
+    case invalidSeed
+    case lastTransactionNotFound
+}
+
 /// Service that provide needed data for SendViaLink
 public protocol SendViaLinkDataService {
     /// Create new URL
@@ -59,6 +65,7 @@ public final class SendViaLinkDataServiceImpl: SendViaLinkDataService {
     private let network: Network
     private let derivablePath: DerivablePath
     private let host: String
+    private let solanaAPIClient: SolanaAPIClient
     
     // MARK: - Initializer
 
@@ -67,13 +74,15 @@ public final class SendViaLinkDataServiceImpl: SendViaLinkDataService {
         passphrase: String,
         network: Network,
         derivablePath: DerivablePath,
-        host: String
+        host: String,
+        solanaAPIClient: SolanaAPIClient
     ) {
         self.salt = salt
         self.passphrase = passphrase
         self.network = network
         self.derivablePath = derivablePath
         self.host = host
+        self.solanaAPIClient = solanaAPIClient
     }
     
     // MARK: - Methods
@@ -152,21 +161,76 @@ public final class SendViaLinkDataServiceImpl: SendViaLinkDataService {
         url: URL
     ) async throws -> ClaimableTokenInfo? {
         // Generate keypair from seed
-        let keypair = try await generateKeyPair(url: url)
+        guard let keypair = try await generateKeyPair(url: url)
+        else {
+            throw SendViaLinkDataServiceError.invalidSeed
+        }
         
         // Get last transaction and parse to define the amount and token's mint address if possible
+        do {
+            let claimableTokenInfo = try await getClaimableTokenInfoFromHistory(
+                pubkey: keypair.publicKey.base58EncodedString
+            )
+            return claimableTokenInfo
+        }
         
         // If history is'nt available, check
-        // 1. getBalance > 0 for claiming native SOL
-        // 2. getTokensAccountByOwner's first > 0 for claiming SPL Token
-        
-        // return the ClaimableTokenInfo
-        fatalError("Implementing")
+        catch SendViaLinkDataServiceError.lastTransactionNotFound {
+            let claimableTokenInfo = try await getClaimableTokenInfoFromBalance(
+                pubkey: keypair.publicKey.base58EncodedString
+            )
+            return claimableTokenInfo
+        }
     }
     
     // MARK: - Helpers
 
-    public func isSeedValid(seed: String) -> Bool {
+    private func isSeedValid(seed: String) -> Bool {
         seed.count == seedLength && seed.allSatisfy({ supportedCharacters.contains($0) })
+    }
+    
+    // MARK: - Get ClaimableToken from history
+
+    private func getClaimableTokenInfoFromHistory(
+        pubkey: String
+    ) async throws -> ClaimableTokenInfo {
+        // get signatures
+        let signature = try await solanaAPIClient.getSignaturesForAddress(
+            address: pubkey,
+            configs: RequestConfiguration(commitment: "recent")
+        )
+            .first?
+            .signature
+        
+        guard let signature else {
+            throw SendViaLinkDataServiceError.lastTransactionNotFound
+        }
+        
+        // get last transaction
+        let lastTransaction = try await solanaAPIClient.getTransaction(
+            signature: signature,
+            commitment: "recent"
+        )
+        
+        guard let lastTransaction else {
+            throw SendViaLinkDataServiceError.lastTransactionNotFound
+        }
+        
+        // parse transaction
+        return try parseSendViaLinkTransaction(transactionInfo: lastTransaction)
+    }
+    
+    private func parseSendViaLinkTransaction(
+        transactionInfo: TransactionInfo
+    ) throws -> ClaimableTokenInfo {
+        fatalError()
+    }
+    
+    // MARK: - Get ClaimableToken from balance
+
+    private func getClaimableTokenInfoFromBalance(
+        pubkey: String
+    ) async throws -> ClaimableTokenInfo {
+        fatalError()
     }
 }
