@@ -13,6 +13,7 @@ public struct ClaimableTokenInfo {
 public enum SendViaLinkDataServiceError: Error {
     case invalidSeed
     case lastTransactionNotFound
+    case claimableAssetNotFound
 }
 
 /// Service that provide needed data for SendViaLink
@@ -282,6 +283,45 @@ public final class SendViaLinkDataServiceImpl: SendViaLinkDataService {
     private func getClaimableTokenInfoFromBalance(
         pubkey: String
     ) async throws -> ClaimableTokenInfo {
-        fatalError()
+        // 1. Get balance
+        let solBalance = try await solanaAPIClient.getBalance(account: pubkey, commitment: "recent")
+        if solBalance > 0 {
+            return ClaimableTokenInfo(
+                lamports: solBalance,
+                mintAddress: Token.nativeSolana.address,
+                decimals: Token.nativeSolana.decimals,
+                account: pubkey
+            )
+        }
+        
+        // 2. Get token accounts by owner
+        let tokenAccounts = try await solanaAPIClient.getTokenAccountsByOwner(
+            pubkey: pubkey,
+            params: .init(
+                mint: nil,
+                programId: TokenProgram.id.base58EncodedString
+            ),
+            configs: .init(encoding: "base64")
+        )
+        guard let tokenAccount = tokenAccounts.first(where: { $0.account.lamports > 0 })
+        else {
+            throw SendViaLinkDataServiceError.claimableAssetNotFound
+        }
+        
+        let tokenAccountBalance = try await solanaAPIClient.getTokenAccountBalance(
+            pubkey: tokenAccount.pubkey,
+            commitment: "recent"
+        )
+        
+        guard let decimals = tokenAccountBalance.decimals else {
+            throw SendViaLinkDataServiceError.claimableAssetNotFound
+        }
+            
+        return ClaimableTokenInfo(
+            lamports: tokenAccount.account.lamports,
+            mintAddress: tokenAccount.account.data.mint.base58EncodedString,
+            decimals: decimals,
+            account: tokenAccount.pubkey
+        )
     }
 }
