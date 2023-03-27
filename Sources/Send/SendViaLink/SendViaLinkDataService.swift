@@ -9,23 +9,30 @@ public struct ClaimableTokenInfo {
 
 /// Service that provide needed data for SendViaLink
 public protocol SendViaLinkDataService {
-    /// Create seed for generating link
-    /// - Returns: seed to be added to link
-    func createSeed() -> String
+    /// Create new URL
+    /// - Returns: URL to be sent
+    func createURL() -> URL?
     
-    /// Generate Solana `KeyPair` from given seed.
-    /// - Parameter seed: seed
+    /// Get seed from current link
+    /// - Parameter link: link to get seed
+    /// - Returns: seed
+    func getSeedFromURL(
+        _ url: URL
+    ) -> String?
+    
+    /// Generate Solana `KeyPair` from given URL.
+    /// - Parameter url: claimable url
     /// - Returns: KeyPair for temporary account
     func generateKeyPair(
-        seed: String
-    ) async throws -> KeyPair
+        url: URL
+    ) async throws -> KeyPair?
     
     /// Get info of claimable token
-    /// - Parameter seed: given seed
+    /// - Parameter url: given url
     /// - Returns: ClaimableToken's info
     func getClaimableTokenInfo(
-        seed: String
-    ) async throws -> ClaimableTokenInfo
+        url: URL
+    ) async throws -> ClaimableTokenInfo?
 }
 
 /// Default implementation for `SendViaLinkDataService`
@@ -35,6 +42,8 @@ public final class SendViaLinkDataServiceImpl: SendViaLinkDataService {
 
     /// Supported character for generating seed
     private let supportedCharacters = #"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789_~-"#
+    private let scheme = "https"
+    private let seedLength = 16
     
     // MARK: - Properties
 
@@ -42,6 +51,7 @@ public final class SendViaLinkDataServiceImpl: SendViaLinkDataService {
     private let passphrase: String
     private let network: Network
     private let derivablePath: DerivablePath
+    private let host: String
     
     // MARK: - Initializer
 
@@ -49,29 +59,64 @@ public final class SendViaLinkDataServiceImpl: SendViaLinkDataService {
         salt: String,
         passphrase: String,
         network: Network,
-        derivablePath: DerivablePath
+        derivablePath: DerivablePath,
+        host: String
     ) {
         self.salt = salt
         self.passphrase = passphrase
         self.network = network
         self.derivablePath = derivablePath
+        self.host = host
     }
     
     // MARK: - Methods
 
-    /// Create seed for generating link
-    /// - Returns: seed to be added to link
-    public func createSeed() -> String {
-        String((0..<16).map{ _ in supportedCharacters.randomElement()! })
+    /// Create new URL
+    /// - Returns: URL to be sent
+    public func createURL() -> URL? {
+        let seed = String((0..<seedLength).map{ _ in supportedCharacters.randomElement()! })
+        var urlComponent = URLComponents()
+        urlComponent.scheme = scheme
+        urlComponent.host = host
+        urlComponent.path = "/\(seed)"
+        return urlComponent.url
     }
     
-    /// Generate Solana `KeyPair` from given seed.
-    /// - Parameter seed: seed
+    /// Get seed from current link
+    /// - Parameter link: link to get seed
+    /// - Returns: seed
+    public func getSeedFromURL(
+        _ url: URL
+    ) -> String? {
+        guard let components = URLComponents(url: url, resolvingAgainstBaseURL: true),
+              components.scheme == scheme,
+              components.host == host
+        else {
+            return nil
+        }
+        
+        // get seed
+        let seed = String(components.path.dropFirst()) // drop "/"
+        
+        // assert if seed is valid
+        guard seed.count == seedLength,
+              seed.allSatisfy({ supportedCharacters.contains($0) })
+        else { return nil }
+        
+        // return the seed
+        return seed
+    }
+    
+    /// Generate Solana `KeyPair` from given URL.
+    /// - Parameter url: claimable url
     /// - Returns: KeyPair for temporary account
     public func generateKeyPair(
-        seed: String
-    ) async throws -> KeyPair {
-        try await KeyPair(
+        url: URL
+    ) async throws -> KeyPair? {
+        guard let seed = getSeedFromURL(url) else {
+            return nil
+        }
+        return try await KeyPair(
             seed: seed,
             salt: salt,
             passphrase: passphrase,
@@ -81,13 +126,13 @@ public final class SendViaLinkDataServiceImpl: SendViaLinkDataService {
     }
     
     /// Get info of claimable token
-    /// - Parameter seed: given seed
+    /// - Parameter url: given url
     /// - Returns: ClaimableToken's info
     public func getClaimableTokenInfo(
-        seed: String
-    ) async throws -> ClaimableTokenInfo {
+        url: URL
+    ) async throws -> ClaimableTokenInfo? {
         // Generate keypair from seed
-        let keypair = try await generateKeyPair(seed: seed)
+        let keypair = try await generateKeyPair(url: url)
         
         // Get last transaction and parse to define the amount and token's mint address if possible
         
