@@ -43,7 +43,7 @@ public final class SendViaLinkDataServiceImpl: SendViaLinkDataService {
     // MARK: - Constants
 
     /// Supported character for generating seed
-    private let supportedCharacters = #"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789_~-"#
+    private let supportedCharacters = #"!$'()*+,-.0123456789@ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz~"#
     private let scheme = "https"
     private let seedLength = 16
     
