@@ -11,8 +11,13 @@ public struct ClaimableTokenInfo {
 public protocol SendViaLinkDataService {
     /// Create new URL
     /// - Returns: URL to be sent
-    func createURL(
-        givenSeed: String?
+    func createURL() -> URL
+    
+    /// Restore URL from givenSeed
+    /// - Parameter givenSeed: the seed given by user
+    /// - Returns: URL to be sent
+    func restoreURL(
+        givenSeed: String
     ) -> URL?
     
     /// Get seed from current link
@@ -75,16 +80,21 @@ public final class SendViaLinkDataServiceImpl: SendViaLinkDataService {
 
     /// Create new URL
     /// - Returns: URL to be sent
-    public func createURL(
-        givenSeed: String?
+    public func createURL() -> URL {
+        let newSeed = String((0..<seedLength).map{ _ in supportedCharacters.randomElement()! })
+        return restoreURL(givenSeed: newSeed)!
+    }
+    
+    /// Restore URL from givenSeed
+    /// - Parameter givenSeed: the seed given by user
+    /// - Returns: URL to be sent
+    public func restoreURL(
+        givenSeed seed: String
     ) -> URL? {
         // validate givenSeed
-        if let givenSeed, !isSeedValid(seed: givenSeed) {
+        if !isSeedValid(seed: seed) {
             return nil
         }
-        
-        // restore or create new seed
-        let seed = givenSeed ?? String((0..<seedLength).map{ _ in supportedCharacters.randomElement()! })
         
         // generate url
         var urlComponent = URLComponents()
