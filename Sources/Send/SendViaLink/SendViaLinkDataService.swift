@@ -7,6 +7,7 @@ public struct ClaimableTokenInfo {
     public let mintAddress: String
     public let decimals: Decimals
     public let account: String
+    public let keypair: KeyPair
 }
 
 /// Error type for SendViaLinkDataService
@@ -50,6 +51,15 @@ public protocol SendViaLinkDataService {
     func getClaimableTokenInfo(
         url: URL
     ) async throws -> ClaimableTokenInfo?
+    
+    /// Claim token
+    /// - Parameter token: token to be claimed
+    /// - Returns: Serialized transaction
+    func claim(
+        token: ClaimableTokenInfo,
+        receiver: PublicKey,
+        feePayer: PublicKey
+    ) async throws -> PreparedTransaction
 }
 
 /// Default implementation for `SendViaLinkDataService`
@@ -173,7 +183,7 @@ public final class SendViaLinkDataServiceImpl: SendViaLinkDataService {
         // Get last transaction and parse to define the amount and token's mint address if possible
         do {
             let claimableTokenInfo = try await getClaimableTokenInfoFromHistory(
-                pubkey: keypair.publicKey.base58EncodedString
+                keypair: keypair
             )
             return claimableTokenInfo
         }
@@ -181,9 +191,41 @@ public final class SendViaLinkDataServiceImpl: SendViaLinkDataService {
         // If history is'nt available, check
         catch SendViaLinkDataServiceError.lastTransactionNotFound {
             let claimableTokenInfo = try await getClaimableTokenInfoFromBalance(
-                pubkey: keypair.publicKey.base58EncodedString
+                keypair: keypair
             )
             return claimableTokenInfo
+        }
+    }
+    
+    /// Claim token
+    /// - Parameter token: token to be claimed
+    /// - Returns: Serialized transaction
+    public func claim(
+        token: ClaimableTokenInfo,
+        receiver: PublicKey,
+        feePayer: PublicKey
+    ) async throws -> PreparedTransaction {
+        // native sol
+        if token.mintAddress == Token.nativeSolana.address {
+            return try await claimNativeSOLToken(
+                keypair: token.keypair,
+                receiver: receiver,
+                lamports: token.lamports,
+                feePayer: feePayer
+            )
+        }
+        
+        // spl token
+        else {
+            return try await claimSPLToken(
+                keypair: token.keypair,
+                receiver: receiver,
+                mintAddress: token.mintAddress,
+                decimals: token.decimals,
+                fromTokenAccount: token.account,
+                lamports: token.lamports,
+                feePayer: feePayer
+            )
         }
     }
     
@@ -196,8 +238,10 @@ public final class SendViaLinkDataServiceImpl: SendViaLinkDataService {
     // MARK: - Get ClaimableToken from history
 
     private func getClaimableTokenInfoFromHistory(
-        pubkey: String
+        keypair: KeyPair
     ) async throws -> ClaimableTokenInfo {
+        let pubkey = keypair.publicKey.base58EncodedString
+        
         // get signatures
         let signature = try await solanaAPIClient.getSignaturesForAddress(
             address: pubkey,
@@ -221,11 +265,15 @@ public final class SendViaLinkDataServiceImpl: SendViaLinkDataService {
         }
         
         // parse transaction
-        return try parseSendViaLinkTransaction(transactionInfo: lastTransaction)
+        return try parseSendViaLinkTransaction(
+            transactionInfo: lastTransaction,
+            keypair: keypair
+        )
     }
     
     private func parseSendViaLinkTransaction(
-        transactionInfo: TransactionInfo
+        transactionInfo: TransactionInfo,
+        keypair: KeyPair
     ) throws -> ClaimableTokenInfo {
         var instructions = transactionInfo.instructionsData()
         
@@ -255,7 +303,8 @@ public final class SendViaLinkDataServiceImpl: SendViaLinkDataService {
                 lamports: lamports,
                 mintAddress: Token.nativeSolana.address,
                 decimals: Token.nativeSolana.decimals,
-                account: account
+                account: account,
+                keypair: keypair
             )
         }
         
@@ -272,7 +321,8 @@ public final class SendViaLinkDataServiceImpl: SendViaLinkDataService {
                 lamports: lamports,
                 mintAddress: mint,
                 decimals: decimals,
-                account: account
+                account: account,
+                keypair: keypair
             )
         }
         
@@ -282,22 +332,27 @@ public final class SendViaLinkDataServiceImpl: SendViaLinkDataService {
     // MARK: - Get ClaimableToken from balance
 
     private func getClaimableTokenInfoFromBalance(
-        pubkey: String
+        keypair: KeyPair
     ) async throws -> ClaimableTokenInfo {
         // 1. Get balance
-        let solBalance = try await solanaAPIClient.getBalance(account: pubkey, commitment: "recent")
+        let solBalance = try await solanaAPIClient.getBalance(
+            account: keypair.publicKey.base58EncodedString,
+            commitment: "recent"
+        )
+        
         if solBalance > 0 {
             return ClaimableTokenInfo(
                 lamports: solBalance,
                 mintAddress: Token.nativeSolana.address,
                 decimals: Token.nativeSolana.decimals,
-                account: pubkey
+                account: keypair.publicKey.base58EncodedString,
+                keypair: keypair
             )
         }
         
         // 2. Get token accounts by owner
         let tokenAccounts = try await solanaAPIClient.getTokenAccountsByOwner(
-            pubkey: pubkey,
+            pubkey: keypair.publicKey.base58EncodedString,
             params: .init(
                 mint: nil,
                 programId: TokenProgram.id.base58EncodedString
@@ -322,7 +377,57 @@ public final class SendViaLinkDataServiceImpl: SendViaLinkDataService {
             lamports: tokenAccount.account.lamports,
             mintAddress: tokenAccount.account.data.mint.base58EncodedString,
             decimals: decimals,
-            account: tokenAccount.pubkey
+            account: tokenAccount.pubkey,
+            keypair: keypair
         )
+    }
+    
+    // MARK: - Claiming
+
+    private func claimNativeSOLToken(
+        keypair: KeyPair,
+        receiver: PublicKey,
+        lamports: Lamports,
+        feePayer: PublicKey?
+    ) async throws -> PreparedTransaction {
+        // get blockchain client
+        let blockchainClient = BlockchainClient(apiClient: solanaAPIClient)
+        
+        // prepair sending native sol
+        let preparedTransaction = try await blockchainClient.prepareSendingNativeSOL(
+            from: keypair,
+            to: receiver.base58EncodedString,
+            amount: lamports,
+            feePayer: feePayer
+        )
+        
+        // return prepared transaction
+        return preparedTransaction
+    }
+    
+    private func claimSPLToken(
+        keypair: KeyPair,
+        receiver: PublicKey,
+        mintAddress: String,
+        decimals: Decimals,
+        fromTokenAccount: String,
+        lamports: Lamports,
+        feePayer: PublicKey?
+    ) async throws -> PreparedTransaction {
+        // get blockchain client
+        let blockchainClient = BlockchainClient(apiClient: solanaAPIClient)
+        
+        // prepare sending spl token
+        let preparedTransaction = try await blockchainClient.prepareSendingSPLTokens(
+            account: keypair,
+            mintAddress: mintAddress,
+            decimals: decimals,
+            from: fromTokenAccount,
+            to: receiver.base58EncodedString,
+            amount: lamports,
+            feePayer: feePayer
+        )
+        
+        return preparedTransaction.preparedTransaction
     }
 }
