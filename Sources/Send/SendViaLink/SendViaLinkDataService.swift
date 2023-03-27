@@ -11,6 +11,7 @@ public struct ClaimableTokenInfo {
 
 /// Error type for SendViaLinkDataService
 public enum SendViaLinkDataServiceError: Error {
+    case invalidURL
     case invalidSeed
     case lastTransactionNotFound
     case claimableAssetNotFound
@@ -27,14 +28,14 @@ public protocol SendViaLinkDataService {
     /// - Returns: URL to be sent
     func restoreURL(
         givenSeed: String
-    ) -> URL?
+    ) throws -> URL
     
     /// Get seed from current link
     /// - Parameter link: link to get seed
     /// - Returns: seed
     func getSeedFromURL(
         _ url: URL
-    ) -> String?
+    ) throws -> String
     
     /// Generate Solana `KeyPair` from given URL.
     /// - Parameter url: claimable url
@@ -94,7 +95,7 @@ public final class SendViaLinkDataServiceImpl: SendViaLinkDataService {
     /// - Returns: URL to be sent
     public func createURL() -> URL {
         let newSeed = String((0..<seedLength).map{ _ in supportedCharacters.randomElement()! })
-        return restoreURL(givenSeed: newSeed)!
+        return try! restoreURL(givenSeed: newSeed)
     }
     
     /// Restore URL from givenSeed
@@ -102,10 +103,10 @@ public final class SendViaLinkDataServiceImpl: SendViaLinkDataService {
     /// - Returns: URL to be sent
     public func restoreURL(
         givenSeed seed: String
-    ) -> URL? {
+    ) throws -> URL {
         // validate givenSeed
         if !isSeedValid(seed: seed) {
-            return nil
+            throw SendViaLinkDataServiceError.invalidSeed
         }
         
         // generate url
@@ -113,7 +114,10 @@ public final class SendViaLinkDataServiceImpl: SendViaLinkDataService {
         urlComponent.scheme = scheme
         urlComponent.host = host
         urlComponent.path = "/\(seed)"
-        return urlComponent.url
+        guard let url = urlComponent.url else {
+            throw SendViaLinkDataServiceError.invalidSeed
+        }
+        return url
     }
     
     /// Get seed from current link
@@ -121,19 +125,21 @@ public final class SendViaLinkDataServiceImpl: SendViaLinkDataService {
     /// - Returns: seed
     public func getSeedFromURL(
         _ url: URL
-    ) -> String? {
+    ) throws -> String {
         guard let components = URLComponents(url: url, resolvingAgainstBaseURL: true),
               components.scheme == scheme,
               components.host == host
         else {
-            return nil
+            throw SendViaLinkDataServiceError.invalidURL
         }
         
         // get seed
         let seed = String(components.path.dropFirst()) // drop "/"
         
         // assert if seed is valid
-        guard isSeedValid(seed: seed) else { return nil }
+        guard isSeedValid(seed: seed) else {
+            throw SendViaLinkDataServiceError.invalidSeed
+        }
         
         // return the seed
         return seed
@@ -145,9 +151,7 @@ public final class SendViaLinkDataServiceImpl: SendViaLinkDataService {
     public func generateKeyPair(
         url: URL
     ) async throws -> KeyPair? {
-        guard let seed = getSeedFromURL(url) else {
-            return nil
-        }
+        let seed = try getSeedFromURL(url)
         return try await KeyPair(
             seed: seed,
             salt: salt,
