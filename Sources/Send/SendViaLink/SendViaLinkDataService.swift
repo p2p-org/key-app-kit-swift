@@ -5,6 +5,7 @@ import SolanaSwift
 public struct ClaimableTokenInfo {
     public let lamports: Lamports
     public let mintAddress: String
+    public let decimals: Decimals
 }
 
 /// Error type for SendViaLinkDataService
@@ -223,7 +224,52 @@ public final class SendViaLinkDataServiceImpl: SendViaLinkDataService {
     private func parseSendViaLinkTransaction(
         transactionInfo: TransactionInfo
     ) throws -> ClaimableTokenInfo {
-        fatalError()
+        var instructions = transactionInfo.instructionsData()
+        
+        // Assert intructionsCount to be greater than 2
+        guard instructions.count >= 2, instructions.count <= 3 else {
+            throw SendViaLinkDataServiceError.lastTransactionNotFound
+        }
+        
+        // Check memo instruction
+        let memoInstruction = instructions.removeLast()
+        guard memoInstruction.instruction.programId == MemoProgram.id.base58EncodedString
+            // TODO: - Check memo data
+        else {
+            throw SendViaLinkDataServiceError.lastTransactionNotFound
+        }
+        
+        // get last transfer instruction
+        let instruction = instructions.last!
+        
+        // Native SOL
+        if instruction.instruction.programId == SystemProgram.id.base58EncodedString,
+           instruction.innerInstruction?.index == 2, // SystemProgram.Index.transfer
+           let lamports = instruction.instruction.parsed?.info.lamports
+        {
+            return ClaimableTokenInfo(
+                lamports: lamports,
+                mintAddress: Token.nativeSolana.address,
+                decimals: Token.nativeSolana.decimals
+            )
+        }
+        
+        // SPL token
+        else if instruction.instruction.programId == TokenProgram.id.base58EncodedString,
+                instruction.innerInstruction?.index == 2, // SystemProgram.Index.transfer
+                let tokenAmount = instruction.instruction.parsed?.info.tokenAmount?.amount,
+                let lamports = Lamports(tokenAmount),
+                let mint = instruction.instruction.parsed?.info.mint,
+                let decimals = instruction.instruction.parsed?.info.tokenAmount?.decimals
+        {
+            return ClaimableTokenInfo(
+                lamports: lamports,
+                mintAddress: mint,
+                decimals: decimals
+            )
+        }
+        
+        throw SendViaLinkDataServiceError.lastTransactionNotFound
     }
     
     // MARK: - Get ClaimableToken from balance
