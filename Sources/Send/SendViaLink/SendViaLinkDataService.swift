@@ -11,7 +11,9 @@ public struct ClaimableTokenInfo {
 public protocol SendViaLinkDataService {
     /// Create new URL
     /// - Returns: URL to be sent
-    func createURL() -> URL?
+    func createURL(
+        givenSeed: String?
+    ) -> URL?
     
     /// Get seed from current link
     /// - Parameter link: link to get seed
@@ -73,8 +75,18 @@ public final class SendViaLinkDataServiceImpl: SendViaLinkDataService {
 
     /// Create new URL
     /// - Returns: URL to be sent
-    public func createURL() -> URL? {
-        let seed = String((0..<seedLength).map{ _ in supportedCharacters.randomElement()! })
+    public func createURL(
+        givenSeed: String?
+    ) -> URL? {
+        // validate givenSeed
+        if let givenSeed, !isSeedValid(seed: givenSeed) {
+            return nil
+        }
+        
+        // restore or create new seed
+        let seed = givenSeed ?? String((0..<seedLength).map{ _ in supportedCharacters.randomElement()! })
+        
+        // generate url
         var urlComponent = URLComponents()
         urlComponent.scheme = scheme
         urlComponent.host = host
@@ -99,9 +111,7 @@ public final class SendViaLinkDataServiceImpl: SendViaLinkDataService {
         let seed = String(components.path.dropFirst()) // drop "/"
         
         // assert if seed is valid
-        guard seed.count == seedLength,
-              seed.allSatisfy({ supportedCharacters.contains($0) })
-        else { return nil }
+        guard isSeedValid(seed: seed) else { return nil }
         
         // return the seed
         return seed
@@ -142,5 +152,11 @@ public final class SendViaLinkDataServiceImpl: SendViaLinkDataService {
         
         // return the ClaimableTokenInfo
         fatalError("Implementing")
+    }
+    
+    // MARK: - Helpers
+
+    public func isSeedValid(seed: String) -> Bool {
+        seed.count == seedLength && seed.allSatisfy({ supportedCharacters.contains($0) })
     }
 }
