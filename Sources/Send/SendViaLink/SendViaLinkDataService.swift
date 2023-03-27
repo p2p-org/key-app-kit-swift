@@ -42,7 +42,7 @@ public protocol SendViaLinkDataService {
     /// - Returns: KeyPair for temporary account
     func generateKeyPair(
         url: URL
-    ) async throws -> KeyPair?
+    ) async throws -> KeyPair
     
     /// Get info of claimable token
     /// - Parameter url: given url
@@ -150,7 +150,7 @@ public final class SendViaLinkDataServiceImpl: SendViaLinkDataService {
     /// - Returns: KeyPair for temporary account
     public func generateKeyPair(
         url: URL
-    ) async throws -> KeyPair? {
+    ) async throws -> KeyPair {
         let seed = try getSeedFromURL(url)
         return try await KeyPair(
             seed: seed,
@@ -168,10 +168,7 @@ public final class SendViaLinkDataServiceImpl: SendViaLinkDataService {
         url: URL
     ) async throws -> ClaimableTokenInfo? {
         // Generate keypair from seed
-        guard let keypair = try await generateKeyPair(url: url)
-        else {
-            throw SendViaLinkDataServiceError.invalidSeed
-        }
+        let keypair = try await generateKeyPair(url: url)
         
         // Get last transaction and parse to define the amount and token's mint address if possible
         do {
