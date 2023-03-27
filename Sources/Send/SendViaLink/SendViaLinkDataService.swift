@@ -6,6 +6,7 @@ public struct ClaimableTokenInfo {
     public let lamports: Lamports
     public let mintAddress: String
     public let decimals: Decimals
+    public let account: String
 }
 
 /// Error type for SendViaLinkDataService
@@ -245,12 +246,14 @@ public final class SendViaLinkDataServiceImpl: SendViaLinkDataService {
         // Native SOL
         if instruction.instruction.programId == SystemProgram.id.base58EncodedString,
            instruction.innerInstruction?.index == 2, // SystemProgram.Index.transfer
-           let lamports = instruction.instruction.parsed?.info.lamports
+           let lamports = instruction.instruction.parsed?.info.lamports,
+           let account = instruction.instruction.parsed?.info.destination
         {
             return ClaimableTokenInfo(
                 lamports: lamports,
                 mintAddress: Token.nativeSolana.address,
-                decimals: Token.nativeSolana.decimals
+                decimals: Token.nativeSolana.decimals,
+                account: account
             )
         }
         
@@ -260,12 +263,14 @@ public final class SendViaLinkDataServiceImpl: SendViaLinkDataService {
                 let tokenAmount = instruction.instruction.parsed?.info.tokenAmount?.amount,
                 let lamports = Lamports(tokenAmount),
                 let mint = instruction.instruction.parsed?.info.mint,
-                let decimals = instruction.instruction.parsed?.info.tokenAmount?.decimals
+                let decimals = instruction.instruction.parsed?.info.tokenAmount?.decimals,
+                let account = instruction.instruction.parsed?.info.destination
         {
             return ClaimableTokenInfo(
                 lamports: lamports,
                 mintAddress: mint,
-                decimals: decimals
+                decimals: decimals,
+                account: account
             )
         }
         
