@@ -50,7 +50,7 @@ public protocol SendViaLinkDataService {
     /// - Returns: ClaimableToken's info
     func getClaimableTokenInfo(
         url: URL
-    ) async throws -> ClaimableTokenInfo?
+    ) async throws -> ClaimableTokenInfo
     
     /// Claim token
     /// - Parameter token: token to be claimed
@@ -176,7 +176,7 @@ public final class SendViaLinkDataServiceImpl: SendViaLinkDataService {
     /// - Returns: ClaimableToken's info
     public func getClaimableTokenInfo(
         url: URL
-    ) async throws -> ClaimableTokenInfo? {
+    ) async throws -> ClaimableTokenInfo {
         // Generate keypair from seed
         let keypair = try await generateKeyPair(url: url)
         
