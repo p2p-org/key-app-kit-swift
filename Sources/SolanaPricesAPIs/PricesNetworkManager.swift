@@ -13,8 +13,8 @@ public struct DefaultPricesNetworkManager: PricesNetworkManager {
         } else {
             let config = URLSessionConfiguration.default
 
-            config.timeoutIntervalForRequest = 10
-            config.timeoutIntervalForResource = 10
+            config.timeoutIntervalForRequest = 5
+            config.timeoutIntervalForResource = 5
 
             self.urlSession = .init(configuration: config)
         }
