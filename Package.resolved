@@ -6,16 +6,16 @@
         "repositoryURL": "https://github.com/krzyzanowskim/CryptoSwift.git",
         "state": {
           "branch": null,
-          "revision": "19b3c3ceed117c5cc883517c4e658548315ba70b",
-          "version": "1.6.0"
+          "revision": "95c18f1c1bc44d5547728621ed680850368f7a45",
+          "version": "1.7.0"
         }
       },
       {
         "package": "FeeRelayerSwift",
         "repositoryURL": "https://github.com/p2p-org/FeeRelayerSwift",
         "state": {
-          "branch": "master",
-          "revision": "5504937ac88f5648443af3857b001794f85ecbf8",
+          "branch": "feature/send-via-link",
+          "revision": "d33302d8ebc3e4e7db1fc2e2f1f57e1e954bf028",
           "version": null
         }
       },
@@ -41,8 +41,8 @@
         "package": "SolanaSwift",
         "repositoryURL": "https://github.com/p2p-org/solana-swift",
         "state": {
-          "branch": "main",
-          "revision": "c8bead282faabbd68cfb90e2bae0da461c2f7635",
+          "branch": "feature/send-via-link",
+          "revision": "259361a0ffee001d84cc125219c57cc9165e40e2",
           "version": null
         }
       },
@@ -51,8 +51,8 @@
         "repositoryURL": "https://github.com/apple/swift-docc-plugin",
         "state": {
           "branch": null,
-          "revision": "10bc670db657d11bdd561e07de30a9041311b2b1",
-          "version": "1.1.0"
+          "revision": "9b1258905c21fc1b97bf03d1b4ca12c4ec4e5fda",
+          "version": "1.2.0"
         }
       },
       {
