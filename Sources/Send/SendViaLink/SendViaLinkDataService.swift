@@ -368,12 +368,14 @@ public final class SendViaLinkDataServiceImpl: SendViaLinkDataService {
             commitment: "recent"
         )
         
-        guard let decimals = tokenAccountBalance.decimals else {
+        guard let decimals = tokenAccountBalance.decimals,
+              let amount = UInt64(tokenAccountBalance.amount)
+        else {
             throw SendViaLinkDataServiceError.claimableAssetNotFound
         }
             
         return ClaimableTokenInfo(
-            lamports: tokenAccount.account.lamports,
+            lamports: amount,
             mintAddress: tokenAccount.account.data.mint.base58EncodedString,
             decimals: decimals,
             account: tokenAccount.pubkey,
