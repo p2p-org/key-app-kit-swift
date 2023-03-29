@@ -185,7 +185,7 @@ public final class SendViaLinkDataServiceImpl: SendViaLinkDataService {
         }
         
         // If history is'nt available, check
-        catch SendViaLinkDataServiceError.lastTransactionNotFound {
+        catch let error where !error.isNetworkConnectionError {
             let claimableTokenInfo = try await getClaimableTokenInfoFromBalance(
                 keypair: keypair
             )
@@ -274,7 +274,7 @@ public final class SendViaLinkDataServiceImpl: SendViaLinkDataService {
         transactionInfo: TransactionInfo,
         keypair: KeyPair
     ) throws -> ClaimableTokenInfo {
-        var instructions = transactionInfo.instructionsData()
+        var instructions = transactionInfo.transaction.message.instructions
         
         // Assert intructionsCount to be greater than 2
         guard instructions.count >= 2, instructions.count <= 3 else {
@@ -283,7 +283,7 @@ public final class SendViaLinkDataServiceImpl: SendViaLinkDataService {
         
         // Check memo instruction
         let memoInstruction = instructions.removeLast()
-        guard memoInstruction.instruction.programId == MemoProgram.id.base58EncodedString
+        guard memoInstruction.programId == MemoProgram.id.base58EncodedString
             // TODO: - Check memo data
         else {
             throw SendViaLinkDataServiceError.lastTransactionNotFound
@@ -293,10 +293,10 @@ public final class SendViaLinkDataServiceImpl: SendViaLinkDataService {
         let instruction = instructions.last!
         
         // Native SOL
-        if instruction.instruction.programId == SystemProgram.id.base58EncodedString,
-           instruction.innerInstruction?.index == 2, // SystemProgram.Index.transfer
-           let lamports = instruction.instruction.parsed?.info.lamports,
-           let account = instruction.instruction.parsed?.info.destination
+        if instruction.programId == SystemProgram.id.base58EncodedString,
+           instruction.parsed?.type == "transfer", // SystemProgram.Index.transfer
+           let lamports = instruction.parsed?.info.lamports,
+           let account = instruction.parsed?.info.destination
         {
             return ClaimableTokenInfo(
                 lamports: lamports,
@@ -308,13 +308,13 @@ public final class SendViaLinkDataServiceImpl: SendViaLinkDataService {
         }
         
         // SPL token
-        else if instruction.instruction.programId == TokenProgram.id.base58EncodedString,
-                instruction.innerInstruction?.index == 2, // SystemProgram.Index.transfer
-                let tokenAmount = instruction.instruction.parsed?.info.tokenAmount?.amount,
+        else if instruction.programId == TokenProgram.id.base58EncodedString,
+                instruction.parsed?.type == "transfer" || instruction.parsed?.type == "transferChecked",
+                let tokenAmount = instruction.parsed?.info.tokenAmount?.amount,
                 let lamports = Lamports(tokenAmount),
-                let mint = instruction.instruction.parsed?.info.mint,
-                let decimals = instruction.instruction.parsed?.info.tokenAmount?.decimals,
-                let account = instruction.instruction.parsed?.info.destination
+                let mint = instruction.parsed?.info.mint,
+                let decimals = instruction.parsed?.info.tokenAmount?.decimals,
+                let account = instruction.parsed?.info.destination
         {
             return ClaimableTokenInfo(
                 lamports: lamports,
@@ -334,12 +334,12 @@ public final class SendViaLinkDataServiceImpl: SendViaLinkDataService {
         keypair: KeyPair
     ) async throws -> ClaimableTokenInfo {
         // 1. Get balance
-        let solBalance = try await solanaAPIClient.getBalance(
+        let solBalance = try? await solanaAPIClient.getBalance(
             account: keypair.publicKey.base58EncodedString,
             commitment: "recent"
         )
         
-        if solBalance > 0 {
+        if let solBalance, solBalance > 0 {
             return ClaimableTokenInfo(
                 lamports: solBalance,
                 mintAddress: Token.nativeSolana.address,
@@ -428,5 +428,19 @@ public final class SendViaLinkDataServiceImpl: SendViaLinkDataService {
         )
         
         return preparedTransaction.preparedTransaction
+    }
+}
+
+// MARK: - Helpers
+
+private extension NSError {
+    var isNetworkConnectionError: Bool {
+        self.code == NSURLErrorNetworkConnectionLost || self.code == NSURLErrorNotConnectedToInternet || self.code == NSURLErrorDataNotAllowed
+    }
+}
+
+private extension Error {
+    var isNetworkConnectionError: Bool {
+        (self as NSError).isNetworkConnectionError
     }
 }

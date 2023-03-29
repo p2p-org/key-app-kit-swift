@@ -10,8 +10,12 @@ class SendViaLinkDataServiceImplTests: XCTestCase {
     let salt = "testSalt"
     let passphrase = "testPassphrase"
     
+    private var solanaAPIClient: MockSolanaAPIClient!
+    
     override func setUp() {
         super.setUp()
+        
+        solanaAPIClient = MockSolanaAPIClient()
         
         // Initialize the service with your desired parameters
         service = SendViaLinkDataServiceImpl(
@@ -20,7 +24,7 @@ class SendViaLinkDataServiceImplTests: XCTestCase {
             network: .mainnetBeta,
             derivablePath: .default,
             host: host,
-            solanaAPIClient: MockSolanaAPIClient()
+            solanaAPIClient: solanaAPIClient
         )
     }
     
@@ -101,7 +105,7 @@ class SendViaLinkDataServiceImplTests: XCTestCase {
         }
     }
     
-    // MARK: - generate KeyPair
+    // MARK: - Generate KeyPair
 
     func testGenerateKeyPair_WithValidURL_ShouldReturnSuccess() async throws {
         let keyPair = try await service.generateKeyPair(url: validHostWithSeed(validSeed))
@@ -139,6 +143,32 @@ class SendViaLinkDataServiceImplTests: XCTestCase {
         }
     }
     
+    // MARK: - Get claimable spl token
+
+    func testGetClaimableSPLTokenInfo_WithValidLastTransaction_ShouldReturnSuccess() async throws {
+        solanaAPIClient.getSignaturesForAddressResponse = validGetSignaturesForAddressResponse
+        solanaAPIClient.getTransactionResponse = validGetTransactionResponse
+        
+        let claimableTokenInfo = try await service.getClaimableTokenInfo(url: validHostWithSeed(validSeed))
+        XCTAssertEqual(claimableTokenInfo.lamports, 1000)
+        XCTAssertEqual(claimableTokenInfo.mintAddress, "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v")
+        XCTAssertEqual(claimableTokenInfo.decimals, 6)
+        XCTAssertEqual(claimableTokenInfo.account, "H51DXRt3ubThhdhNeDMScfkbC5X4AWzYfHaZS3JKEfPh")
+    }
+    
+    func testGetClaimableSPLTokenInfo_WithInValidLastTransaction_ButValidAccountBalance_ShouldReturnSuccess() async throws {
+        solanaAPIClient.getSignaturesForAddressResponse = "" // invalid
+        solanaAPIClient.getTransactionResponse = "" // invalid
+        solanaAPIClient.getBalanceResponse = "" // invalid
+        
+        
+        let claimableTokenInfo = try await service.getClaimableTokenInfo(url: validHostWithSeed(validSeed))
+        XCTAssertEqual(claimableTokenInfo.lamports, 1000)
+        XCTAssertEqual(claimableTokenInfo.mintAddress, "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v")
+        XCTAssertEqual(claimableTokenInfo.decimals, 6)
+        XCTAssertEqual(claimableTokenInfo.account, "H51DXRt3ubThhdhNeDMScfkbC5X4AWzYfHaZS3JKEfPh")
+    }
+    
     
     // MARK: - Helper
     
@@ -164,6 +194,37 @@ class SendViaLinkDataServiceImplTests: XCTestCase {
 }
 
 // MARK: - MockSolanaAPIClient
+
 private class MockSolanaAPIClient: MockSolanaAPIClientBase {
+    var getSignaturesForAddressResponse: String!
+    var getTransactionResponse: String!
+    var getBalanceResponse: String!
     
+    override func getBalance(account: String, commitment: Commitment?) async throws -> UInt64 {
+        try decode(Rpc<UInt64>.self, from: getBalanceResponse).value
+    }
+    
+    override func getSignaturesForAddress(address: String, configs: RequestConfiguration?) async throws -> [SignatureInfo] {
+        try decode([SignatureInfo].self, from: getSignaturesForAddressResponse)
+    }
+    
+    override func getTransaction(signature: String, commitment: Commitment?) async throws -> TransactionInfo? {
+        try decode(TransactionInfo.self, from: getTransactionResponse)
+    }
+    
+    private func decode<T: Decodable>(_ elementType: T.Type, from string: String) throws -> T {
+        try JSONDecoder().decode(AnyResponse<T>.self, from: string.data(using: .utf8)!).result!
+    }
+}
+
+private func validGetBalanceResponse(balance: UInt64) -> String {
+    #"{"jsonrpc":"2.0","result":{"context":{"apiVersion":"1.14.16","slot":185436657},"value":\#(balance)},"id":1}"#
+}
+
+private var validGetSignaturesForAddressResponse: String {
+    #"{"jsonrpc":"2.0","result":[{"blockTime":1679899845,"confirmationStatus":"finalized","err":null,"memo":"[8] transfer","signature":"2S2rTZjaqzxYRw9mnqzwtyqitKtSsnE8GVqLn1KrD5R2YpXZnU4GdjppsgfSAbrzJfaqadfi8CtrqEBy588WVQ3E","slot":184930610}],"id":1}"#
+}
+
+private var validGetTransactionResponse: String {
+    #"{"jsonrpc":"2.0","result":{"blockTime":1679899845,"meta":{"err":null,"fee":10000,"innerInstructions":[{"index":0,"instructions":[{"parsed":{"info":{"extensionTypes":["immutableOwner"],"mint":"EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v"},"type":"getAccountDataSize"},"program":"spl-token","programId":"TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"},{"parsed":{"info":{"lamports":2039280,"newAccount":"H51DXRt3ubThhdhNeDMScfkbC5X4AWzYfHaZS3JKEfPh","owner":"TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA","source":"FG4Y3yX4AAchp1HvNZ7LfzFTewF2f6nDoMDCohTFrdpT","space":165},"type":"createAccount"},"program":"system","programId":"11111111111111111111111111111111"},{"parsed":{"info":{"account":"H51DXRt3ubThhdhNeDMScfkbC5X4AWzYfHaZS3JKEfPh"},"type":"initializeImmutableOwner"},"program":"spl-token","programId":"TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"},{"parsed":{"info":{"account":"H51DXRt3ubThhdhNeDMScfkbC5X4AWzYfHaZS3JKEfPh","mint":"EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v","owner":"3i476kTBBTy7pBGx4CXwJpJ6phuwLQgcwLTdHhU3c7ui"},"type":"initializeAccount3"},"program":"spl-token","programId":"TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"}]}],"logMessages":["Program ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL invoke [1]","Program log: Create","Program TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA invoke [2]","Program log: Instruction: GetAccountDataSize","Program TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA consumed 1622 of 594408 compute units","Program return: TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA pQAAAAAAAAA=","Program TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA success","Program 11111111111111111111111111111111 invoke [2]","Program 11111111111111111111111111111111 success","Program log: Initialize the associated token account","Program TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA invoke [2]","Program log: Instruction: InitializeImmutableOwner","Program log: Please upgrade to SPL Token 2022 for immutable owner support","Program TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA consumed 1405 of 587918 compute units","Program TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA success","Program TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA invoke [2]","Program log: Instruction: InitializeAccount3","Program TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA consumed 4241 of 584034 compute units","Program TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA success","Program ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL consumed 20545 of 600000 compute units","Program ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL success","Program TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA invoke [1]","Program log: Instruction: TransferChecked","Program TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA consumed 6200 of 579455 compute units","Program TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA success","Program MemoSq4gqABAXKb96qnH8TysNcWxMyWCqXgDLGmfcHr invoke [1]","Program log: Memo (len 8): \"transfer\"","Program MemoSq4gqABAXKb96qnH8TysNcWxMyWCqXgDLGmfcHr consumed 4273 of 573255 compute units","Program MemoSq4gqABAXKb96qnH8TysNcWxMyWCqXgDLGmfcHr success"],"postBalances":[4441042119,1463843,2039280,2039280,0,182698617139,1,934087680,1009200,731913600,521498880],"postTokenBalances":[{"accountIndex":2,"mint":"EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v","owner":"3i476kTBBTy7pBGx4CXwJpJ6phuwLQgcwLTdHhU3c7ui","programId":"TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA","uiTokenAmount":{"amount":"1000","decimals":6,"uiAmount":0.001,"uiAmountString":"0.001"}},{"accountIndex":3,"mint":"EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v","owner":"8fusVwhgo4oS1fGpZKeRaXrJXQk9auKnAgcj9A97wR3t","programId":"TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA","uiTokenAmount":{"amount":"4847","decimals":6,"uiAmount":0.004847,"uiAmountString":"0.004847"}}],"preBalances":[4443091399,1463843,0,2039280,0,182698617139,1,934087680,1009200,731913600,521498880],"preTokenBalances":[{"accountIndex":3,"mint":"EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v","owner":"8fusVwhgo4oS1fGpZKeRaXrJXQk9auKnAgcj9A97wR3t","programId":"TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA","uiTokenAmount":{"amount":"5847","decimals":6,"uiAmount":0.005847,"uiAmountString":"0.005847"}}],"rewards":[],"status":{"Ok":null}},"slot":184930610,"transaction":{"message":{"accountKeys":[{"pubkey":"FG4Y3yX4AAchp1HvNZ7LfzFTewF2f6nDoMDCohTFrdpT","signer":true,"source":"transaction","writable":true},{"pubkey":"8fusVwhgo4oS1fGpZKeRaXrJXQk9auKnAgcj9A97wR3t","signer":true,"source":"transaction","writable":false},{"pubkey":"H51DXRt3ubThhdhNeDMScfkbC5X4AWzYfHaZS3JKEfPh","signer":false,"source":"transaction","writable":true},{"pubkey":"9rB2Poc468mPpY9WMUmaqEPsvJah8SpPB8bKqAjjXp5H","signer":false,"source":"transaction","writable":true},{"pubkey":"3i476kTBBTy7pBGx4CXwJpJ6phuwLQgcwLTdHhU3c7ui","signer":false,"source":"transaction","writable":false},{"pubkey":"EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v","signer":false,"source":"transaction","writable":false},{"pubkey":"11111111111111111111111111111111","signer":false,"source":"transaction","writable":false},{"pubkey":"TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA","signer":false,"source":"transaction","writable":false},{"pubkey":"SysvarRent111111111111111111111111111111111","signer":false,"source":"transaction","writable":false},{"pubkey":"ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL","signer":false,"source":"transaction","writable":false},{"pubkey":"MemoSq4gqABAXKb96qnH8TysNcWxMyWCqXgDLGmfcHr","signer":false,"source":"transaction","writable":false}],"addressTableLookups":null,"instructions":[{"parsed":{"info":{"account":"H51DXRt3ubThhdhNeDMScfkbC5X4AWzYfHaZS3JKEfPh","mint":"EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v","source":"FG4Y3yX4AAchp1HvNZ7LfzFTewF2f6nDoMDCohTFrdpT","systemProgram":"11111111111111111111111111111111","tokenProgram":"TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA","wallet":"3i476kTBBTy7pBGx4CXwJpJ6phuwLQgcwLTdHhU3c7ui"},"type":"create"},"program":"spl-associated-token-account","programId":"ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL"},{"parsed":{"info":{"authority":"8fusVwhgo4oS1fGpZKeRaXrJXQk9auKnAgcj9A97wR3t","destination":"H51DXRt3ubThhdhNeDMScfkbC5X4AWzYfHaZS3JKEfPh","mint":"EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v","source":"9rB2Poc468mPpY9WMUmaqEPsvJah8SpPB8bKqAjjXp5H","tokenAmount":{"amount":"1000","decimals":6,"uiAmount":0.001,"uiAmountString":"0.001"}},"type":"transferChecked"},"program":"spl-token","programId":"TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"},{"parsed":"transfer","program":"spl-memo","programId":"MemoSq4gqABAXKb96qnH8TysNcWxMyWCqXgDLGmfcHr"}],"recentBlockhash":"ERKtoPEssoWULPiUVGNLGMkR75EKkhN2VGbNgcQRGtXo"},"signatures":["2S2rTZjaqzxYRw9mnqzwtyqitKtSsnE8GVqLn1KrD5R2YpXZnU4GdjppsgfSAbrzJfaqadfi8CtrqEBy588WVQ3E","5kSm7znZGoZEy4u5q6H3JYDzxk1Bd6eoPsqacBfDwbWdSW3MHWxXgHNudxGu8kCFyQm8hTRufh7soNR56LxwzfSS"]}},"id":1}"#
 }
