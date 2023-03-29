@@ -115,9 +115,7 @@ public final class SendViaLinkDataServiceImpl: SendViaLinkDataService {
         givenSeed seed: String
     ) throws -> URL {
         // validate givenSeed
-        if !isSeedValid(seed: seed) {
-            throw SendViaLinkDataServiceError.invalidSeed
-        }
+        try checkSeedValidation(seed: seed)
         
         // generate url
         var urlComponent = URLComponents()
@@ -147,9 +145,7 @@ public final class SendViaLinkDataServiceImpl: SendViaLinkDataService {
         let seed = String(components.path.dropFirst()) // drop "/"
         
         // assert if seed is valid
-        guard isSeedValid(seed: seed) else {
-            throw SendViaLinkDataServiceError.invalidSeed
-        }
+        try checkSeedValidation(seed: seed)
         
         // return the seed
         return seed
@@ -229,10 +225,13 @@ public final class SendViaLinkDataServiceImpl: SendViaLinkDataService {
         }
     }
     
-    // MARK: - Helpers
+    // MARK: - Seed validation
 
-    private func isSeedValid(seed: String) -> Bool {
-        seed.count == seedLength && seed.allSatisfy({ supportedCharacters.contains($0) })
+    func checkSeedValidation(seed: String) throws {
+        if seed.count == seedLength && seed.allSatisfy({ supportedCharacters.contains($0) }) {
+            return
+        }
+        throw SendViaLinkDataServiceError.invalidSeed
     }
     
     // MARK: - Get ClaimableToken from history

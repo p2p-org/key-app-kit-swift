@@ -36,7 +36,11 @@ class SendInputBusinessLogicTokenTests: XCTestCase {
                 maxUsage: 100,
                 currentUsage: currentUsage,
                 maxAmount: 1_000_000,
-                amountUsed: 0
+                amountUsed: 0,
+                maxTokenAccountCreationAmount: 10000000,
+                maxTokenAccountCreationCount: 30,
+                //                tokenAccountCreationAmountUsed: 0,
+                tokenAccountCreationCountUsed: 0
             )
         )
     }
@@ -68,7 +72,8 @@ class SendInputBusinessLogicTokenTests: XCTestCase {
             ),
             token: .nativeSolana,
             feeToken: .nativeSolana,
-            userWalletState: defaultUserWalletState
+            userWalletState: defaultUserWalletState,
+            sendViaLinkSeed: nil
         )
 
         let nextState = await SendInputBusinessLogic.sendInputBusinessLogic(
@@ -116,7 +121,8 @@ class SendInputBusinessLogicTokenTests: XCTestCase {
             token: .nativeSolana,
             feeToken: .nativeSolana,
             userWalletState: defaultUserWalletState,
-            feeRelayerContext: feeContext()
+            feeRelayerContext: feeContext(),
+            sendViaLinkSeed: nil
         )
 
         var nextState = await SendInputBusinessLogic.sendInputBusinessLogic(
@@ -200,7 +206,8 @@ class SendInputBusinessLogicTokenTests: XCTestCase {
             ),
             token: .nativeSolana,
             feeToken: .nativeSolana,
-            userWalletState: defaultUserWalletState
+            userWalletState: defaultUserWalletState,
+            sendViaLinkSeed: nil
         )
 
         var nextState = await SendInputBusinessLogic.sendInputBusinessLogic(
