@@ -36,8 +36,7 @@ class SendViaLinkDataServiceImplTests: XCTestCase {
     // MARK: - Seed validation
 
     func testCheckSeedValidation_ShouldReturnSuccess() {
-        let seed = "Abcde1234!$()*+,"
-        XCTAssertNoThrow(try service.checkSeedValidation(seed: seed))
+        XCTAssertNoThrow(try service.checkSeedValidation(seed: validSeed))
     }
     
     func testCheckSeedValidation_ShouldReturnFailure() {

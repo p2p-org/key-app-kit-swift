@@ -68,7 +68,7 @@ public final class SendViaLinkDataServiceImpl: SendViaLinkDataService {
     // MARK: - Constants
 
     /// Supported character for generating seed
-    private let supportedCharacters = #"!$'()*+,-.0123456789@ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz~"#
+    private let supportedCharacters = #"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789_~-"#
     private let scheme = "https"
     private let seedLength = 16
     
@@ -296,7 +296,8 @@ public final class SendViaLinkDataServiceImpl: SendViaLinkDataService {
         if instruction.programId == SystemProgram.id.base58EncodedString,
            instruction.parsed?.type == "transfer", // SystemProgram.Index.transfer
            let lamports = instruction.parsed?.info.lamports,
-           let account = instruction.parsed?.info.destination
+           let account = instruction.parsed?.info.destination,
+           lamports > 0
         {
             return ClaimableTokenInfo(
                 lamports: lamports,
@@ -314,7 +315,8 @@ public final class SendViaLinkDataServiceImpl: SendViaLinkDataService {
                 let lamports = Lamports(tokenAmount),
                 let mint = instruction.parsed?.info.mint,
                 let decimals = instruction.parsed?.info.tokenAmount?.decimals,
-                let account = instruction.parsed?.info.destination
+                let account = instruction.parsed?.info.destination,
+                lamports > 0
         {
             return ClaimableTokenInfo(
                 lamports: lamports,
