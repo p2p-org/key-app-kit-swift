@@ -244,7 +244,7 @@ public final class SendViaLinkDataServiceImpl: SendViaLinkDataService {
         // get signatures
         let signature = try await solanaAPIClient.getSignaturesForAddress(
             address: pubkey,
-            configs: RequestConfiguration(commitment: "recent")
+            configs: RequestConfiguration(commitment: "confirmed")
         )
             .first?
             .signature
@@ -256,7 +256,7 @@ public final class SendViaLinkDataServiceImpl: SendViaLinkDataService {
         // get last transaction
         let lastTransaction = try await solanaAPIClient.getTransaction(
             signature: signature,
-            commitment: "recent"
+            commitment: "confirmed"
         )
         
         guard let lastTransaction else {
