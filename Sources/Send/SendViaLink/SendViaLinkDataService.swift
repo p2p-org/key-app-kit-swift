@@ -325,12 +325,12 @@ public final class SendViaLinkDataServiceImpl: SendViaLinkDataService {
         keypair: KeyPair
     ) async throws -> ClaimableTokenInfo {
         // 1. Get balance
-        let solBalance = try? await solanaAPIClient.getBalance(
+        let solBalance = try await solanaAPIClient.getBalance(
             account: keypair.publicKey.base58EncodedString,
             commitment: "recent"
         )
         
-        if let solBalance, solBalance > 0 {
+        if solBalance > 0 {
             return ClaimableTokenInfo(
                 lamports: solBalance,
                 mintAddress: Token.nativeSolana.address,
