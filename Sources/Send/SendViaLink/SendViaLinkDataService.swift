@@ -79,7 +79,7 @@ public final class SendViaLinkDataServiceImpl: SendViaLinkDataService {
     private let network: Network
     private let derivablePath: DerivablePath
     private let host: String
-    private let memo: String
+    private let memoPrefix: String
     private let solanaAPIClient: SolanaAPIClient
     
     // MARK: - Initializer
@@ -90,7 +90,7 @@ public final class SendViaLinkDataServiceImpl: SendViaLinkDataService {
         network: Network,
         derivablePath: DerivablePath,
         host: String,
-        memo: String,
+        memoPrefix: String,
         solanaAPIClient: SolanaAPIClient
     ) {
         self.salt = salt
@@ -98,7 +98,7 @@ public final class SendViaLinkDataServiceImpl: SendViaLinkDataService {
         self.network = network
         self.derivablePath = derivablePath
         self.host = host
-        self.memo = memo
+        self.memoPrefix = memoPrefix
         self.solanaAPIClient = solanaAPIClient
     }
     
@@ -193,13 +193,17 @@ public final class SendViaLinkDataServiceImpl: SendViaLinkDataService {
         receiver: PublicKey,
         feePayer: PublicKey
     ) async throws -> PreparedTransaction {
+        // form memo
+        let memo = memoPrefix + "-claim"
+        
         // native sol
         if token.mintAddress == Token.nativeSolana.address {
             return try await claimNativeSOLToken(
                 keypair: token.keypair,
                 receiver: receiver,
                 lamports: token.lamports,
-                feePayer: feePayer
+                feePayer: feePayer,
+                memo: memo
             )
         }
         
@@ -214,7 +218,8 @@ public final class SendViaLinkDataServiceImpl: SendViaLinkDataService {
                 fromTokenAccount: token.account,
                 lamports: token.lamports,
                 feePayer: feePayer,
-                minRentExemption: mre
+                minRentExemption: mre,
+                memo: memo
             )
         }
     }
@@ -385,7 +390,8 @@ public final class SendViaLinkDataServiceImpl: SendViaLinkDataService {
         keypair: KeyPair,
         receiver: PublicKey,
         lamports: Lamports,
-        feePayer: PublicKey
+        feePayer: PublicKey,
+        memo: String
     ) async throws -> PreparedTransaction {
         // form instructions
         var instructions = [TransactionInstruction]()
@@ -423,7 +429,8 @@ public final class SendViaLinkDataServiceImpl: SendViaLinkDataService {
         fromTokenAccount: String,
         lamports: Lamports,
         feePayer: PublicKey,
-        minRentExemption: Lamports
+        minRentExemption: Lamports,
+        memo: String
     ) async throws -> PreparedTransaction {
         // convert String to PublicKey
         let mintAddress = try PublicKey(string: mintAddress)
@@ -483,7 +490,7 @@ public final class SendViaLinkDataServiceImpl: SendViaLinkDataService {
         // memo
         instructions.append(
             try MemoProgram.createMemoInstruction(
-                memo: memo + "-claim"
+                memo: memo
             )
         )
         
