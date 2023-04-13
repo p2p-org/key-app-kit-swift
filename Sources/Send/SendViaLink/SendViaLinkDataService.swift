@@ -483,7 +483,7 @@ public final class SendViaLinkDataServiceImpl: SendViaLinkDataService {
         // memo
         instructions.append(
             try MemoProgram.createMemoInstruction(
-                memo: memo
+                memo: memo + "-claim"
             )
         )
         
