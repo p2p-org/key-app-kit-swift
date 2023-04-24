@@ -426,6 +426,34 @@
                ReferencedContainer = "container:">
             </BuildableReference>
          </BuildActionEntry>
+         <BuildActionEntry
+            buildForTesting = "YES"
+            buildForRunning = "YES"
+            buildForProfiling = "YES"
+            buildForArchiving = "YES"
+            buildForAnalyzing = "YES">
+            <BuildableReference
+               BuildableIdentifier = "primary"
+               BlueprintIdentifier = "KeyAppBusiness"
+               BuildableName = "KeyAppBusiness"
+               BlueprintName = "KeyAppBusiness"
+               ReferencedContainer = "container:">
+            </BuildableReference>
+         </BuildActionEntry>
+         <BuildActionEntry
+            buildForTesting = "YES"
+            buildForRunning = "YES"
+            buildForProfiling = "YES"
+            buildForArchiving = "YES"
+            buildForAnalyzing = "YES">
+            <BuildableReference
+               BuildableIdentifier = "primary"
+               BlueprintIdentifier = "Wormhole"
+               BuildableName = "Wormhole"
+               BlueprintName = "Wormhole"
+               ReferencedContainer = "container:">
+            </BuildableReference>
+         </BuildActionEntry>
       </BuildActionEntries>
    </BuildAction>
    <TestAction
@@ -531,6 +559,36 @@
                BlueprintIdentifier = "TransactionParserUnitTests"
                BuildableName = "TransactionParserUnitTests"
                BlueprintName = "TransactionParserUnitTests"
+               ReferencedContainer = "container:">
+            </BuildableReference>
+         </TestableReference>
+         <TestableReference
+            skipped = "NO">
+            <BuildableReference
+               BuildableIdentifier = "primary"
+               BlueprintIdentifier = "KeyAppBusinessTests"
+               BuildableName = "KeyAppBusinessTests"
+               BlueprintName = "KeyAppBusinessTests"
+               ReferencedContainer = "container:">
+            </BuildableReference>
+         </TestableReference>
+         <TestableReference
+            skipped = "NO">
+            <BuildableReference
+               BuildableIdentifier = "primary"
+               BlueprintIdentifier = "KeyAppKitCoreTests"
+               BuildableName = "KeyAppKitCoreTests"
+               BlueprintName = "KeyAppKitCoreTests"
+               ReferencedContainer = "container:">
+            </BuildableReference>
+         </TestableReference>
+         <TestableReference
+            skipped = "NO">
+            <BuildableReference
+               BuildableIdentifier = "primary"
+               BlueprintIdentifier = "WormholeTests"
+               BuildableName = "WormholeTests"
+               BlueprintName = "WormholeTests"
                ReferencedContainer = "container:">
             </BuildableReference>
          </TestableReference>
