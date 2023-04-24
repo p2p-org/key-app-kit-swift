@@ -5,6 +5,7 @@
 import Foundation
 import NameService
 import SolanaSwift
+import Wormhole
 
 public class RecipientSearchServiceImpl: RecipientSearchService {
     let nameService: NameService
@@ -19,20 +20,35 @@ public class RecipientSearchServiceImpl: RecipientSearchService {
 
     public func search(
         input: String,
-        env: UserWalletEnvironments,
+        config: RecipientSearchConfig,
         preChosenToken: Token?
     ) async -> RecipientSearchResult {
-        // assertion
+        // Assertion
         guard !input.isEmpty else {
             return .ok([])
         }
 
-        // search by solana address
-        if !input.contains(" "), let address = try? PublicKey(string: input), !address.bytes.isEmpty {
-            return await searchBySolanaAddress(address, env: env, preChosenToken: preChosenToken)
+        // Validate ethereum address.
+        if config.ethereumSearch, EthereumAddressValidation.validate(input) {
+            // Check self-sending
+            if config.ethereumAccount == input.lowercased() {
+                return .selfSendingError(
+                    recipient: .init(address: input, category: .ethereumAddress, attributes: [])
+                )
+            }
+
+            // Ok
+            return .ok([
+                .init(address: input, category: .ethereumAddress, attributes: []),
+            ])
         }
 
-        // search by name
-        return await searchByName(input, env: env)
+        // Search by solana address
+        if !input.contains(" "), let address = try? PublicKey(string: input), !address.bytes.isEmpty {
+            return await searchBySolanaAddress(address, config: config, preChosenToken: preChosenToken)
+        }
+
+        // Search by name
+        return await searchByName(input, config: config)
     }
 }
