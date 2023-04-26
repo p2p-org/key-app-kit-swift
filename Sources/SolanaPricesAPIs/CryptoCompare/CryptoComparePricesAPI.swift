@@ -21,7 +21,7 @@ public class CryptoComparePricesAPI: SolanaPricesAPI {
     }
     
     // MARK: - Methods
-    public func getCurrentPrices(coins: [Token], toFiat fiat: String) async throws -> [String: CurrentPrice?] {
+    public func getCurrentPrices(coins: [Token], toFiat fiat: String) async throws -> [Token: CurrentPrice?] {
         let chunk = coins.chunked(into: 30)
         return await withTaskGroup(of: [String: CurrentPrice?].self) { group in
             for part in chunk {
@@ -35,7 +35,14 @@ public class CryptoComparePricesAPI: SolanaPricesAPI {
             }
             let tupleArray: [(String, CurrentPrice?)] = dictArray.flatMap { $0 }
             let dictonary = Dictionary(tupleArray, uniquingKeysWith: { first, _ in first })
-            return dictonary
+            
+            return Dictionary(
+                coins.map({ (token) -> (Token, CurrentPrice?) in
+                    guard let price = dictonary[token.symbol] else { return (token, nil) }
+                    return (token, price)
+                }),
+                uniquingKeysWith: { first, _ in first }
+            )
         }
         
     }

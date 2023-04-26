@@ -27,6 +27,7 @@ class RecipientSearchServiceImplTest: XCTestCase {
                 token: .usdt
             ),
         ],
+        ethereumAccount: nil,
         exchangeRate: [:],
         tokens: [.nativeSolana, .usdc, .usdt]
     )
@@ -116,7 +117,7 @@ class RecipientSearchServiceImplTest: XCTestCase {
             .init(
                 address: "9sdwzJWooFrjNGVX6GkkWUG9GyeBnhgJYqh27AsPqwbM",
                 category: .solanaAddress,
-                attributes: []
+                attributes: [.funds]
             ),
         ]))
     }
@@ -291,6 +292,7 @@ class RecipientSearchServiceImplTest: XCTestCase {
                     token: .usdt
                 ),
             ],
+            ethereumAccount: nil,
             exchangeRate: [:],
             tokens: [.nativeSolana, .usdc, .usdt]
         )
@@ -369,6 +371,7 @@ class RecipientSearchServiceImplTest: XCTestCase {
                     token: .usdt
                 ),
             ],
+            ethereumAccount: nil,
             exchangeRate: [:],
             tokens: [.nativeSolana, .usdc, .usdt]
         )
@@ -419,7 +422,7 @@ class RecipientSearchServiceImplTest: XCTestCase {
                 .init(
                     address: "CCtYXZHmeJXxR9U1QLMGYxRuPx5HRP5g3QaXNA4UWqFU",
                     category: .solanaAddress,
-                    attributes: [.pda]
+                    attributes: [.pda, .funds]
                 ),
             ])
         )

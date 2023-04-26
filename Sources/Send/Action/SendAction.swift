@@ -1,30 +1,39 @@
 import SolanaSwift
 import Foundation
 import FeeRelayerSwift
+import SolanaSwift
 
 public protocol SendActionService {
-    func send(from wallet: Wallet, receiver: String, amount: Double, feeWallet: Wallet) async throws -> String
+    func send(
+        from wallet: Wallet,
+        receiver: String,
+        amount: Double,
+        feeWallet: Wallet?,
+        ignoreTopUp: Bool,
+        memo: String?,
+        operationType: StatsInfo.OperationType
+    ) async throws -> String
 }
 
 public class SendActionServiceImpl: SendActionService {
 
-    private let contextManager: FeeRelayerContextManager
+    private let contextManager: RelayContextManager
     private let solanaAPIClient: SolanaAPIClient
     private let blockchainClient: BlockchainClient
-    private let account: Account?
-    private let feeRelayer: FeeRelayer
+    private let account: KeyPair?
+    private let relayService: RelayService
 
     public init(
-        contextManager: FeeRelayerContextManager,
+        contextManager: RelayContextManager,
         solanaAPIClient: SolanaAPIClient,
         blockchainClient: BlockchainClient,
-        feeRelayer: FeeRelayer,
-        account: Account?
+        relayService: RelayService,
+        account: KeyPair?
     ) {
         self.contextManager = contextManager
         self.solanaAPIClient = solanaAPIClient
         self.blockchainClient = blockchainClient
-        self.feeRelayer = feeRelayer
+        self.relayService = relayService
         self.account = account
     }
 
@@ -32,74 +41,123 @@ public class SendActionServiceImpl: SendActionService {
         from wallet: Wallet,
         receiver: String,
         amount: Double,
-        feeWallet: Wallet
+        feeWallet: Wallet?,
+        ignoreTopUp: Bool,
+        memo: String?,
+        operationType: StatsInfo.OperationType
     ) async throws -> String {
-        try await contextManager.update()
-
         let amount = amount.toLamport(decimals: wallet.token.decimals)
         guard let sender = wallet.pubkey else { throw SendError.invalidSourceWallet }
+        
+        // assert payingFeeWallet
+        if !ignoreTopUp && feeWallet == nil {
+            throw SendError.invalidPayingFeeWallet
+        }
 
         if receiver == sender {
             throw SendError.sendToYourself
         }
 
         return try await sendToSolanaBCViaRelayMethod(
-            try await contextManager.getCurrentContext(),
             from: wallet,
             receiver: receiver,
             amount: amount,
-            feeWallet: feeWallet
+            feeWallet: feeWallet,
+            ignoreTopUp: ignoreTopUp,
+            memo: memo,
+            operationType: operationType
         )
     }
 
     func sendToSolanaBCViaRelayMethod(
-        _ context: FeeRelayerContext,
         from wallet: Wallet,
         receiver: String,
         amount: Lamports,
-        feeWallet: Wallet?
+        feeWallet: Wallet?,
+        ignoreTopUp: Bool = false,
+        memo: String?,
+        operationType: StatsInfo.OperationType
     ) async throws -> String {
         let currency = wallet.token.address
 
         let payingFeeToken = try? getPayingFeeToken(feeWallet: feeWallet)
 
         var (preparedTransaction, useFeeRelayer) = try await prepareForSendingToSolanaNetworkViaRelayMethod(
-            context,
             from: wallet,
             receiver: receiver,
             amount: amount.convertToBalance(decimals: wallet.token.decimals),
-            payingFeeToken: payingFeeToken
+            payingFeeToken: payingFeeToken,
+            memo: memo
         )
         preparedTransaction.transaction.recentBlockhash = try await solanaAPIClient.getRecentBlockhash(commitment: nil)
 
         if useFeeRelayer {
-            return try await feeRelayer.topUpAndRelayTransaction(
-                context,
-                preparedTransaction,
-                fee: payingFeeToken,
-                config: FeeRelayerConfiguration(
-                    operationType: .transfer,
-                    currency: currency
+            let feePayerSignature: String
+            
+            if ignoreTopUp {
+                feePayerSignature = try await relayService.signRelayTransaction(
+                    preparedTransaction,
+                    config: FeeRelayerConfiguration(
+                        operationType: operationType,
+                        currency: currency,
+                        autoPayback: false
+                    )
                 )
-            )
+                
+                // get feePayerPubkey and user account
+                guard let feePayerPubKey = contextManager.currentContext?.feePayerAddress,
+                      let account
+                else {
+                    throw SolanaError.unauthorized
+                }
+                
+                // sign transaction by user
+                try preparedTransaction.transaction.sign(signers: [account])
+                
+                // add feePayer's signature
+                try preparedTransaction.transaction.addSignature(
+                    .init(
+                        signature: Data(Base58.decode(feePayerSignature)),
+                        publicKey: feePayerPubKey
+                    )
+                )
+                
+                // serialize transaction
+                let serializedTransaction = try preparedTransaction.transaction.serialize().base64EncodedString()
+                
+                // send to solanaBlockchain
+                return try await solanaAPIClient.sendTransaction(transaction: serializedTransaction, configs: RequestConfiguration(encoding: "base64")!)
+                
+            } else {
+                // FIXME: - SignRelayTransaction return different transaction, fall back to relay_transaction
+                return try await relayService.topUpIfNeededAndRelayTransaction(
+                    preparedTransaction,
+                    fee: payingFeeToken,
+                    config: FeeRelayerConfiguration(
+                        operationType: .transfer,
+                        currency: currency
+                    )
+                )
+            }
         } else {
             return try await blockchainClient.sendTransaction(preparedTransaction: preparedTransaction)
         }
     }
 
     private func prepareForSendingToSolanaNetworkViaRelayMethod(
-        _ context: FeeRelayerContext,
         from wallet: Wallet,
         receiver: String,
         amount: Double,
         payingFeeToken: FeeRelayerSwift.TokenAccount?,
         recentBlockhash: String? = nil,
         lamportsPerSignature _: Lamports? = nil,
-        minRentExemption: Lamports? = nil
+        minRentExemption: Lamports? = nil,
+        memo: String?
     ) async throws -> (preparedTransaction: PreparedTransaction, useFeeRelayer: Bool) {
         let amount = amount.toLamport(decimals: wallet.token.decimals)
         guard let sender = wallet.pubkey else { throw SendError.invalidSourceWallet }
         guard let account = account else { throw SolanaError.unauthorized }
+        guard let context = contextManager.currentContext else { throw RelayContextManagerError.invalidContext }
         // prepare fee payer
         let feePayer: PublicKey?
         let useFeeRelayer: Bool
@@ -137,13 +195,21 @@ public class SendActionServiceImpl: SendActionService {
                 minRentExemption: minRentExemption
             ).preparedTransaction
         }
-
+        
+        // add memo
+        if let memo {
+            preparedTransaction.transaction.instructions.append(
+                try MemoProgram.createMemoInstruction(memo: memo)
+            )
+        }
+        
+        // send transaction
         preparedTransaction.transaction.recentBlockhash = recentBlockhash
         return (preparedTransaction: preparedTransaction, useFeeRelayer: useFeeRelayer)
     }
 
     private func isFreeTransactionNotAvailableAndUserIsPayingWithSOL(
-        _ context: FeeRelayerContext,
+        _ context: RelayContext,
         payingTokenMint: String?
     ) -> Bool {
         let expectedTransactionFee = context.lamportsPerSignature * 2
