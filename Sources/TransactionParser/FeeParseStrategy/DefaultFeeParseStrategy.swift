@@ -69,19 +69,25 @@ public class DefaultFeeParseStrategy: FeeParseStrategy {
     if let firstPubkey = confirmedTransaction.message.accountKeys.first?.publicKey.base58EncodedString,
        feePayerPubkeys.contains(firstPubkey)
     {
-      if let lastTransaction = confirmedTransaction.message.instructions.last,
-         lastTransaction.programId == RelayProgram.id(network: apiClient.endpoint.network)
-           .base58EncodedString,
-           let innerInstruction = transactionInfo.meta?.innerInstructions?
-             .first(where: { $0.index == UInt32(confirmedTransaction.message.instructions.count - 1) }),
-             let innerInstructionAmount = innerInstruction.instructions.first?.parsed?.info.lamports,
-             innerInstructionAmount > accountCreationFee
-      {
-        // do nothing
-      } else {
-        // mark transaction as paid by P2p org
+        // TODO: - Fix later
         transactionFee = 0
-      }
+//      // check last "returning instruction"
+//      if let lastTransaction = confirmedTransaction.message.instructions.last,
+//         // returning transaction must have RelayProgram id
+//         lastTransaction.programId == RelayProgram.id(network: apiClient.endpoint.network)
+//           .base58EncodedString,
+//           // get inner transaction to get amount that have been returned
+//           let innerInstruction = transactionInfo.meta?.innerInstructions?
+//             .first(where: { $0.index == UInt32(confirmedTransaction.message.instructions.count - 1) }),
+//             let innerInstructionAmount = innerInstruction.instructions.first?.parsed?.info.lamports,
+//             // got the amount, check if user had to pay the transaction fee (not account creation fee)
+//             innerInstructionAmount > accountCreationFee + depositFee
+//      {
+//        // do nothing
+//      } else {
+//        // mark transaction as paid by P2p org
+//        transactionFee = 0
+//      }
     }
 
     return .init(transaction: transactionFee, accountBalances: accountCreationFee, deposit: depositFee)

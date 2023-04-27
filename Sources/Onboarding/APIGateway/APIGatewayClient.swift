@@ -4,6 +4,10 @@
 
 import Foundation
 
+public struct APIGatewayCooldownError: Error {
+    let cooldown: TimeInterval
+}
+
 public enum APIGatewayError: Int, Error, CaseIterable {
     case invalidOTP = -32061
     case wait10Min = -32053
@@ -20,33 +24,65 @@ public enum APIGatewayError: Int, Error, CaseIterable {
     case callNotPermit = -32055
     case publicKeyExists = -32056
     case publicKeyAndPhoneExists = -32057
+    case youRequestOTPTooOften = -32059
+    case notVerified = -32060
+
+    case invalidE164NumberStandard = -40000
+    case failedSending = -40001
+    case failedConvertingFromBase64 = -40002
 }
 
-public enum APIGatewayChannel: String {
+public struct UndefinedAPIGatewayError: Error {
+    public var _code: Int
+
+    public init(code: Int) {
+        _code = code
+    }
+}
+
+public enum APIGatewayChannel: String, Codable {
     case sms
     case call
 }
 
-public struct RestoreWalletResult: Codable {
+public struct APIGatewayRestoreWalletResult: Codable, Equatable {
     let solanaPublicKey: String
     let ethereumId: String
     let encryptedShare: String
     let encryptedPayload: String
+    let encryptedMetaData: String
+}
+
+public struct APIGatewayMetaData: Codable, Equatable {
+    public let deviceName: String
+    public let phoneNumber: String
+    public let email: String
+    public let authProvider: String
 }
 
 public protocol APIGatewayClient {
+    /// Get metadata from api gateway
+    ///
+    /// - Parameters:
+    ///   - ethAddress: Ethereum address.
+    ///   - solanaPrivateKey: Base58 key.
+    ///   - timestampDevice: Timestamp of request.
+    /// - Returns: Encrypted base64 metadata
+    /// - Throws:
+    func getMetadata(ethAddress: String, solanaPrivateKey: String, timestampDevice: Date) async throws -> String
+
     /// Binding a phone number to solana wallet
     ///
     /// - Parameters:
-    ///   - solanaPublicKey: Base58 key.
-    ///   - ethereumId: Ethereum public key.
+    ///   - solanaPrivateKey: Base58 key.
+    ///   - ethAddress: Ethereum address.
     ///   - phone: E.164 phone number format.
     ///   - channel: The channel through which the otp code will be delivered.
     ///   - timestampDevice: Timestamp of request.
     /// - Throws: ``APIGatewayError``
     func registerWallet(
-        solanaPublicKey: String,
-        ethereumId: String,
+        solanaPrivateKey: String,
+        ethAddress: String,
         phone: String,
         channel: APIGatewayChannel,
         timestampDevice: Date
@@ -55,18 +91,20 @@ public protocol APIGatewayClient {
     /// Confirm binding by delivered otp code.
     ///
     /// - Parameters:
-    ///   - solanaPublicKey: Base58 key.
-    ///   - ethereumId: Ethereum public key.
+    ///   - solanaPrivateKey: Base58 key.
+    ///   - ethAddress: Ethereum address.
     ///   - share: TKey share.
     ///   - encryptedPayload: Encrypted mnemonic (base64).
+    ///   - encryptedMetaData: Encrypted metadata
     ///   - phone: E.164 phone number format.
     ///   - otpCode: delivered OTP code
     ///   - timestampDevice:
     func confirmRegisterWallet(
-        solanaPublicKey: String,
-        ethereumId: String,
+        solanaPrivateKey: String,
+        ethAddress: String,
         share: String,
         encryptedPayload: String,
+        encryptedMetaData: String,
         phone: String,
         otpCode: String,
         timestampDevice: Date
@@ -76,137 +114,35 @@ public protocol APIGatewayClient {
     ///
     /// The user will get a share after success confirmation (by calling ``confirmRestoreWallet``).
     /// - Parameters:
+    ///   - solPrivateKey: Solana private key
     ///   - phone: E.164 phone number format.
+    ///   - channel: OTP delivery channel
     ///   - timestampDevice:
-    ///   - restoreID: Temporary solana public key.
     func restoreWallet(
+        solPrivateKey: Data,
         phone: String,
-        timestampDevice: Date,
-        restoreID: String
+        channel: BindingPhoneNumberChannel,
+        timestampDevice: Date
     ) async throws
 
     /// Confirm restore by sending otp code.
     ///
     /// The user will get a share after success confirmation.
     /// - Parameters:
+    ///   - solanaPrivateKey:
     ///   - phone: E.164 phone number format.
     ///   - otpCode: delivered OTP code
     ///   - timestampDevice:
-    ///   - restoreID:
     func confirmRestoreWallet(
+        solanaPrivateKey: Data,
         phone: String,
         otpCode: String,
-        timestampDevice: Date,
-        restoreID: String
-    ) async throws -> RestoreWalletResult
+        timestampDevice: Date
+    ) async throws -> APIGatewayRestoreWalletResult
 
     func isValidOTPFormat(code: String) -> Bool
 }
 
 public extension APIGatewayClient {
     func isValidOTPFormat(code: String) -> Bool { code.count == 6 }
-}
-
-public class APIGatewayClientImpl: APIGatewayClient {
-    public func registerWallet(
-        solanaPublicKey _: String,
-        ethereumId _: String,
-        phone _: String,
-        channel _: APIGatewayChannel,
-        timestampDevice _: Date
-    ) async throws {
-        fatalError()
-    }
-
-    public func confirmRegisterWallet(
-        solanaPublicKey _: String,
-        ethereumId _: String,
-        share _: String,
-        encryptedPayload _: String,
-        phone _: String,
-        otpCode _: String,
-        timestampDevice _: Date
-    ) async throws {
-        fatalError()
-    }
-
-    public func restoreWallet(phone _: String, timestampDevice _: Date, restoreID _: String) async throws {
-        fatalError()
-    }
-
-    public func confirmRestoreWallet(
-        phone _: String,
-        otpCode _: String,
-        timestampDevice _: Date,
-        restoreID _: String
-    ) async throws -> RestoreWalletResult {
-        fatalError()
-    }
-}
-
-public class APIGatewayClientImplMock: APIGatewayClient {
-    private var code = "000000"
-    private var phone: String?
-
-    public init() {}
-
-    public func registerWallet(
-        solanaPublicKey _: String,
-        ethereumId _: String,
-        phone: String,
-        channel _: APIGatewayChannel,
-        timestampDevice _: Date
-    ) async throws {
-        debugPrint("SMSServiceImplMock code: \(code) for phone \(phone)")
-        sleep(4)
-
-        if
-            let exep = APIGatewayError(rawValue: -(Int(String(phone.suffix(5))) ?? 0)),
-            exep.rawValue != APIGatewayError.invalidOTP.rawValue
-        {
-            throw exep
-        }
-
-        self.phone = phone
-    }
-
-    public func confirmRegisterWallet(
-        solanaPublicKey _: String,
-        ethereumId _: String,
-        share _: String,
-        encryptedPayload _: String,
-        phone: String,
-        otpCode: String,
-        timestampDevice _: Date
-    ) async throws {
-        sleep(4)
-        debugPrint("SMSServiceImplMock confirm isConfirmed: \(code == code && phone == self.phone)")
-
-        if
-            let exep = APIGatewayError(rawValue: -(Int(code) ?? 0)),
-            exep.rawValue != APIGatewayError.invalidOTP.rawValue
-        {
-            throw exep
-        }
-
-        guard
-            otpCode == code,
-            phone == self.phone
-        else {
-            throw APIGatewayError.invalidOTP
-        }
-    }
-
-    public func restoreWallet(phone _: String, timestampDevice _: Date, restoreID _: String) async throws {
-        fatalError()
-    }
-
-    public func confirmRestoreWallet(
-        phone _: String,
-        otpCode _: String,
-        timestampDevice _: Date,
-        restoreID _: String
-    ) async throws -> RestoreWalletResult {
-        fatalError()
-    }
 }

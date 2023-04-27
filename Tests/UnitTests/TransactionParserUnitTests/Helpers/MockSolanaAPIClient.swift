@@ -2,7 +2,6 @@ import Foundation
 @testable import SolanaSwift
 
 class MockSolanaAPIClient: SolanaAPIClient {
-    
     var endpoint: APIEndPoint {
         APIEndPoint.defaultEndpoints.first!
     }
@@ -188,5 +187,23 @@ class MockSolanaAPIClient: SolanaAPIClient {
     
     func getMinimumBalanceForRentExemption(dataLength: UInt64, commitment: Commitment?) async throws -> UInt64 {
         2039280
+    }
+    
+    func batchRequest<Entity>(method: String, params: [[Encodable]]) async throws -> [Entity?] where Entity : Decodable {
+        fatalError()
+    }
+    
+    func getRecentPerformanceSamples(
+        limit: [UInt]
+    ) async throws -> [PerfomanceSamples] {
+        fatalError("getRecentPerformanceSamples(limit:) has not been implemented")
+    }
+    
+    func getSlot() async throws -> UInt64 {
+        fatalError()
+    }
+    
+    func getAddressLookupTable(accountKey: SolanaSwift.PublicKey) async throws -> SolanaSwift.AddressLookupTableAccount? {
+        fatalError()
     }
 }

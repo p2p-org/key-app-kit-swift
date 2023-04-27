@@ -3,14 +3,19 @@
 // found in the LICENSE file.
 
 public protocol TKeyFacade {
-    func signUp(tokenID: TokenID) async throws -> SignUpResult
-    func signIn(tokenID: TokenID, deviceShare: String) async throws -> SignInResult
-    func signIn(tokenID: TokenID, withCustomShare: String) async throws -> SignInResult
+    func initialize() async throws
+    
+    func obtainTorusKey(tokenID: TokenID) async throws -> TorusKey
+    
+    func signUp(torusKey: TorusKey, privateInput: String) async throws -> SignUpResult
+    func signIn(torusKey: TorusKey, deviceShare: String) async throws -> SignInResult
+    func signIn(torusKey: TorusKey, customShare: String, encryptedMnemonic: String) async throws -> SignInResult
+    func signIn(deviceShare: String, customShare: String, encryptedMnemonic: String) async throws -> SignInResult
 }
 
 struct TKeyFacadeError: Error, Codable {
     let name: String
     let code: Int
     let message: String
-    let original: String
+    let original: String?
 }

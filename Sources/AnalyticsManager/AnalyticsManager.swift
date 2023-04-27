@@ -5,32 +5,39 @@
 //  Created by Chung Tran on 11/06/2021.
 //
 
-import Amplitude
 import Foundation
 
 public protocol AnalyticsManager {
     func log(event: AnalyticsEvent)
+    func log(parameter: AnalyticsParameter)
 }
 
 public class AnalyticsManagerImpl: AnalyticsManager {
-    public init(apiKey: String) {
-        // Enable sending automatic session events
-        Amplitude.instance().trackingSessionEvents = true
-        // Initialize SDK
-        Amplitude.instance().initializeApiKey(apiKey)
-        // FIXME: Set userId later
-//        Amplitude.instance().setUserId("userId")
+    private let providers: [AnalyticsProvider]
+    
+    public init(providers: [AnalyticsProvider]) {
+        self.providers = providers
     }
 
     public func log(event: AnalyticsEvent) {
-        guard let eventName = event.eventName else { return }
-        // Amplitude
-        if let params = event.params {
-            debugPrint([eventName, params])
-            Amplitude.instance().logEvent(eventName, withEventProperties: params)
-        } else {
-            debugPrint([eventName])
-            Amplitude.instance().logEvent(eventName)
+        providers.forEach { provider in
+            // fillter providers to send
+            guard event.providerIds.contains(provider.providerId)
+            else { return }
+            
+            // log event to provider
+            provider.logEvent(event)
+        }
+    }
+    
+    public func log(parameter: AnalyticsParameter) {
+        providers.forEach { provider in
+            // fillter providers to send
+            guard parameter.providerIds.contains(provider.providerId)
+            else { return }
+            
+            // log event to provider
+            provider.logParameter(parameter)
         }
     }
 }

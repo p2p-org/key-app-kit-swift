@@ -26,7 +26,12 @@ public class JSBValue: JSBridge, CustomStringConvertible {
 
     public convenience init(string: String, in context: JSBContext, name: String? = nil) async throws {
         self.init(in: context, name: name)
-        try await currentContext?.evaluate("\(self.name) = \"\(string.safed)\"")
+        try await currentContext?.evaluate("\(self.name) = \"\(string.safe)\"")
+    }
+
+    public convenience init(jsonString: String, in context: JSBContext, name: String? = nil) async throws {
+        self.init(in: context, name: name)
+        try await currentContext?.evaluate("\(self.name) = JSON.parse(\"\(jsonString.safe)\")")
     }
 
     public convenience init(number: Int, in context: JSBContext, name: String? = nil) async throws {
@@ -39,7 +44,7 @@ public class JSBValue: JSBridge, CustomStringConvertible {
         try await currentContext?.evaluate("\(self.name) = \"\(parse(dictionary))\"")
     }
 
-    public var description: String { "JSBValue(\(name))" }
+    public var description: String { "\(name)" }
 
     public func valueForKey(_ property: String) async throws -> JSBValue {
         let context = try await getContext()
@@ -51,9 +56,9 @@ public class JSBValue: JSBridge, CustomStringConvertible {
         try await context.evaluate("\(name).\(property) = \(value.name)")
     }
 
-    public func invokeMethod<T: CustomStringConvertible>(
+    public func invokeMethod(
         _ method: String,
-        withArguments args: [T]
+        withArguments args: [CustomStringConvertible]
     ) async throws -> JSBValue {
         let context = try await getContext()
         let result = JSBValue(in: context)
@@ -61,9 +66,9 @@ public class JSBValue: JSBridge, CustomStringConvertible {
         return result
     }
 
-    public func invokeAsyncMethod<T: CustomStringConvertible>(
+    public func invokeAsyncMethod(
         _ method: String,
-        withArguments args: [T]
+        withArguments args: [CustomStringConvertible]
     ) async throws -> JSBValue {
         let context = try await getContext()
         let result = JSBValue(in: context)
@@ -96,8 +101,6 @@ public class JSBValue: JSBridge, CustomStringConvertible {
                  0;
                 """
 
-                print(script)
-
                 await context.wkWebView.evaluateJavaScript(script) { _, error in
                     guard let error = error else { return }
                     Task { try await context.promiseDispatchTable.resolveWithError(for: id, error: error) }
@@ -106,8 +109,8 @@ public class JSBValue: JSBridge, CustomStringConvertible {
         }
         return result
     }
-    
-    public func invokeNew<T: CustomStringConvertible>(withArguments args: [T]) async throws -> JSBValue {
+
+    public func invokeNew(withArguments args: [CustomStringConvertible]) async throws -> JSBValue {
         let context = try await getContext()
         let result = JSBValue(in: context)
         try await context.evaluate("\(result.name) = new \(name)(\(try parseArgs(args)));")
@@ -115,15 +118,15 @@ public class JSBValue: JSBridge, CustomStringConvertible {
     }
 
     /// Parse swift args to js args.
-    internal func parseArgs<T: CustomStringConvertible>(_ args: [T]) throws -> String {
+    internal func parseArgs(_ args: [CustomStringConvertible]) throws -> String {
         try args
             .map(parse)
             .joined(separator: ", ")
     }
 
-    internal func parse<T: CustomStringConvertible>(_ arg: T) throws -> String {
+    internal func parse(_ arg: CustomStringConvertible) throws -> String {
         if let arg = arg as? String {
-            return "\"\(arg.safed)\""
+            return "\"\(arg.safe)\""
         }
 
         if let arg = arg as? Int {
@@ -174,6 +177,11 @@ public class JSBValue: JSBridge, CustomStringConvertible {
         try await currentContext?.evaluate("\(name)")
     }
 
+    /// Get value from reference as Dictionary
+    public func toJSON() async throws -> String? {
+        try await currentContext?.evaluate("JSON.stringify(\(name))")
+    }
+
     /// Current context that contains this JSBValue
     private func getContext() async throws -> JSBContext {
         if let context = currentContext {
@@ -185,7 +193,7 @@ public class JSBValue: JSBridge, CustomStringConvertible {
 
 internal extension String {
     /// Make string be safed in js
-    var safed: String {
+    var safe: String {
         replacingOccurrences(of: "\"", with: "\\\"")
     }
 }
