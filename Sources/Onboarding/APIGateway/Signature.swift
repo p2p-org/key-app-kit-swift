@@ -6,11 +6,11 @@ import Foundation
 import SolanaSwift
 import TweetNacl
 
-protocol Signature: BorshSerializable {
+public protocol Signature: BorshSerializable {
     func sign(secretKey: Data) throws -> Data
 }
 
-extension Signature {
+public extension Signature {
     func sign(secretKey: Data) throws -> Data {
         var data = Data()
         try serialize(to: &data)

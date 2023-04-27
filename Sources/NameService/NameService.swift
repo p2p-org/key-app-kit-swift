@@ -9,20 +9,30 @@ public protocol NameService {
     ///
     /// - Parameter owner: public key
     /// - Returns: user name
-    func getName(_ owner: String) async throws -> String?
-    
+    func getName(_ owner: String, withTLD: Bool) async throws -> String?
+
     /// Resolve first matched public key by username.
     ///
     /// - Parameter name: user name
     /// - Returns: account's public key
     func getOwnerAddress(_ name: String) async throws -> String?
-    
+
     /// Resolve all public keys by name.
     ///
     /// - Parameter name: username
-    /// - Returns: Array of ``Owners``
-    func getOwners(_ name: String) async throws -> [Owner]
-    
+    /// - Returns: Array of ``NameRecord``
+    func getOwners(_ name: String) async throws -> [NameRecord]
+
+    /// Bind name to public key
+    ///
+    /// - Parameters:
+    ///   - name: username
+    ///   - publicKey: account's public key
+    ///   - privateKey: account's secret key
+    /// - Returns: Transaction signature for binding username with public key
+    func create(name: String, publicKey: String, privateKey: Data) async throws -> CreateNameTransaction
+
+    // TODO: Tech debt, don't delete. This method will be used after release for users not authorized with web3auth
     /// Bind name to public key
     ///
     /// - Parameters:

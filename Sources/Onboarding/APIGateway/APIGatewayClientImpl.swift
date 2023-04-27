@@ -4,6 +4,15 @@
 
 import Foundation
 import TweetNacl
+import KeyAppKitCore
+
+public struct BlockErrorData: Codable {
+    public let cooldown_ttl: TimeInterval?
+
+    public init(cooldown_ttl: TimeInterval?) {
+        self.cooldown_ttl = cooldown_ttl
+    }
+}
 
 public class APIGatewayClientImpl: APIGatewayClient {
     private let endpoint: URL
@@ -59,7 +68,7 @@ public class APIGatewayClientImpl: APIGatewayClient {
         // Request
         let responseData = try await networkManager.requestData(request: request)
         let response = try JSONDecoder()
-            .decode(JSONRPCResponse<APIGatewayClientGetMetadataResult>.self, from: responseData)
+            .decode(JSONRPCResponse<APIGatewayClientGetMetadataResult, BlockErrorData>.self, from: responseData)
         if let error = response.error {
             throw apiGatewayError(from: error)
         }
@@ -113,7 +122,7 @@ public class APIGatewayClientImpl: APIGatewayClient {
         let responseData = try await networkManager.requestData(request: request)
 
         // Check result
-        let result = try JSONDecoder().decode(JSONRPCResponse<APIGatewayClientResult>.self, from: responseData)
+        let result = try JSONDecoder().decode(JSONRPCResponse<APIGatewayClientResult, BlockErrorData>.self, from: responseData)
         if let error = result.error {
             throw apiGatewayError(from: error)
         } else if result.result?.status != true {
@@ -168,7 +177,7 @@ public class APIGatewayClientImpl: APIGatewayClient {
         let responseData = try await networkManager.requestData(request: request)
 
         // Check result
-        let result = try JSONDecoder().decode(JSONRPCResponse<APIGatewayClientResult>.self, from: responseData)
+        let result = try JSONDecoder().decode(JSONRPCResponse<APIGatewayClientResult, BlockErrorData>.self, from: responseData)
         if let error = result.error {
             throw apiGatewayError(from: error)
         } else if result.result?.status != true {
@@ -211,7 +220,7 @@ public class APIGatewayClientImpl: APIGatewayClient {
         let responseData = try await networkManager.requestData(request: request)
 
         // Check result
-        let result = try JSONDecoder().decode(JSONRPCResponse<APIGatewayClientResult>.self, from: responseData)
+        let result = try JSONDecoder().decode(JSONRPCResponse<APIGatewayClientResult, BlockErrorData>.self, from: responseData)
         if let error = result.error {
             throw apiGatewayError(from: error)
         } else if result.result?.status != true {
@@ -253,7 +262,7 @@ public class APIGatewayClientImpl: APIGatewayClient {
 
         // Check result
         let response = try JSONDecoder()
-            .decode(JSONRPCResponse<APIGatewayClientConfirmRestoreWalletResult>.self, from: responseData)
+            .decode(JSONRPCResponse<APIGatewayClientConfirmRestoreWalletResult, BlockErrorData>.self, from: responseData)
         if let error = response.error {
             throw apiGatewayError(from: error)
         } else if response.result?.status != true {
@@ -270,7 +279,7 @@ public class APIGatewayClientImpl: APIGatewayClient {
         )
     }
 
-    private func apiGatewayError(from error: JSONRPCError) -> Error {
+    private func apiGatewayError(from error: JSONRPCError<BlockErrorData>) -> Error {
         let definedError = APIGatewayError(rawValue: error.code)
         if definedError == .wait10Min, let cooldown = error.data?.cooldown_ttl {
             return APIGatewayCooldownError(cooldown: cooldown)

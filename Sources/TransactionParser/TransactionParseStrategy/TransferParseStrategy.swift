@@ -158,7 +158,7 @@ public class TransferParseStrategy: TransactionParseStrategy {
         source: transferInfo.source,
         destination: transferInfo.destination,
         authority: transferInfo.authority,
-        destinationAuthority: accountInfo?.owner,
+        destinationAuthority: accountInfo?.data.owner.base58EncodedString,
         rawAmount: transferInfo.rawAmount,
         account: configuration.accountView
       )

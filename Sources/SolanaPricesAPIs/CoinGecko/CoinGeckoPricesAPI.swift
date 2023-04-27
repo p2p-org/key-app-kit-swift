@@ -1,10 +1,9 @@
-import Foundation
 import Cache
+import Foundation
 import SolanaSwift
 
 /// Prices provider from cryptocompare.com
 public class CoinGeckoPricesAPI: SolanaPricesAPI {
-    
     enum CacheKeys: String {
         case coinlist
     }
@@ -19,14 +18,32 @@ public class CoinGeckoPricesAPI: SolanaPricesAPI {
         self.pricesNetworkManager = pricesNetworkManager
     }
     
-    public func getCurrentPrices(coins: [Token], toFiat fiat: String) async throws -> [String: CurrentPrice?] {
-        let param = coins.compactMap {$0.extensions?.coingeckoId}.unique.joined(separator: ",")
+    public func getCurrentPrices(coins: [Token], toFiat fiat: String) async throws -> [Token: CurrentPrice?] {
+        let param = coins.compactMap { $0.extensions?.coingeckoId }.unique.joined(separator: ",")
         let pricesResult: [CoinMarketData] = try await get(urlString: endpoint + "/coins/markets/?vs_currency=\(fiat)&ids=\(param)")
-        return pricesResult.reduce(into: [String: CurrentPrice?](), { partialResult, data in
-            partialResult[data.symbol.uppercased()] = .init(
+        return pricesResult.reduce(into: [Token: CurrentPrice?]()) { partialResult, data in
+            guard let token = coins.first(where: { $0.extensions?.coingeckoId == data.id }) else { return }
+            partialResult[token] = .init(
                 value: data.current_price,
                 change24h: .init(value: data.price_change_24h, percentage: data.price_change_percentage_24h))
-        })
+        }
+    }
+    
+    /// Simple price response data struct. [Contract: [Fiat: Price]]
+    public typealias SimplePriceResponse = [String: [String: Decimal]]
+    
+    /// Return simple price by id.
+    public func getSimplePrice(ids: [String], fiat: [String]) async throws -> SimplePriceResponse {
+        let idsStr = ids.joined(separator: ",")
+        let fiatStr = fiat.joined(separator: ",")
+        return try await get(urlString: endpoint + "/simple/price?ids=\(idsStr)&vs_currencies=\(fiatStr)")
+    }
+    
+    /// Return simple price by platform and contracts.
+    public func getSimpleTokenPrice(platform: String, contractAddresses: [String], fiat: [String]) async throws -> SimplePriceResponse {
+        let fiatStr = fiat.joined(separator: ",")
+        let contractAddressesStr = contractAddresses.joined(separator: ",")
+        return try await get(urlString: endpoint + "/simple/token_price/\(platform)?contract_addresses=\(contractAddressesStr)&vs_currencies=\(fiatStr)")
     }
     
     public func getHistoricalPrice(of coinName: String, fiat: String, period: Period) async throws -> [PriceRecord] {
@@ -35,9 +52,9 @@ public class CoinGeckoPricesAPI: SolanaPricesAPI {
             geckoCoinsResult = try await get(urlString: endpoint + "/coins/list")
             await cache.insert(geckoCoinsResult, forKey: CacheKeys.coinlist.rawValue)
         }
-        let geckoCoins = geckoCoinsResult.filter({ geckoCoin in
+        let geckoCoins = geckoCoinsResult.filter { geckoCoin in
             geckoCoin.symbol.lowercased() == coinName.lowercased()
-        }).map { $0.id }
+        }.map { $0.id }
         assert(geckoCoins.count == 1)
         guard let coinId = geckoCoins.first else { return [] }
         
@@ -45,7 +62,7 @@ public class CoinGeckoPricesAPI: SolanaPricesAPI {
         var daily = "&period=daily"
         var days = 30
         switch period {
-        case .last1h,.last4h,.day:
+        case .last1h, .last4h, .day:
             daily = ""
             days = 1
         case .week:
@@ -58,31 +75,31 @@ public class CoinGeckoPricesAPI: SolanaPricesAPI {
         
         let result: HistoryResponse? = try await get(urlString: endpoint + "/coins/\(coinId)/market_chart?vs_currency=\(toFiat)&days=\(days)\(daily)")
         
-        result?.prices.forEach({ data in
+        result?.prices.forEach { data in
             assert(data.count == 2)
             
             guard let timestamp = data.first, let price = data.last else { return }
             
             switch (timestamp, price) {
             case (.timestamp(let tms), .price(let prc)):
-                let date = Date(timeIntervalSince1970: TimeInterval(tms/1000))
+                let date = Date(timeIntervalSince1970: TimeInterval(tms / 1000))
                 var components = Calendar.current.dateComponents([.year, .month, .day], from: date)
                 var key = Calendar.current.date(from: components) ?? Date()
                 switch period {
                 case .last1h:
                     components.hour = Calendar.current.component(.hour, from: date)
                     key = Calendar.current.date(from: components) ?? Date()
-                    guard date.timeIntervalSinceNow > -60*60 else {return}
+                    guard date.timeIntervalSinceNow > -60*60 else { return }
                 case .last4h:
                     components.hour = Calendar.current.component(.hour, from: date)
                     key = Calendar.current.date(from: components) ?? Date()
-                    guard date.timeIntervalSinceNow > -4*60*60 else {return}
+                    guard date.timeIntervalSinceNow > -4*60*60 else { return }
                 case .day:
-                    guard date.timeIntervalSinceNow > -60*60*24 else {return}
+                    guard date.timeIntervalSinceNow > -60*60*24 else { return }
                 case .week:
-                    guard date.timeIntervalSinceNow > -60*60*24*7 else {return}
+                    guard date.timeIntervalSinceNow > -60*60*24*7 else { return }
                 case .month:
-                    guard date.timeIntervalSinceNow > -60*60*24*31 else {return}
+                    guard date.timeIntervalSinceNow > -60*60*24*31 else { return }
                 }
                 if priceRecordData[key] == nil {
                     priceRecordData[key] = [prc]
@@ -92,7 +109,7 @@ public class CoinGeckoPricesAPI: SolanaPricesAPI {
             default:
                 assert(true)
             }
-        })
+        }
         
         return priceRecordData.compactMap { val in
             guard
@@ -123,8 +140,8 @@ public class CoinGeckoPricesAPI: SolanaPricesAPI {
         var symbol: String
         var name: String
         var current_price: Double
-        var price_change_24h: Double
-        var price_change_percentage_24h: Double
+        var price_change_24h: Double?
+        var price_change_percentage_24h: Double?
     }
     
     enum HistoryResponsePriceData: Decodable {

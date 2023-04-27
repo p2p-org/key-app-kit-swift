@@ -363,9 +363,12 @@ public enum RestoreWalletState: Codable, State, Equatable {
 
     private func handleRestoreICloud(result: RestoreICloudResult) -> RestoreWalletState {
         switch result {
-        case let .successful(account):
+        case let .successful(phrase, derivablePath):
             return .securitySetup(
-                wallet: OnboardingWallet(seedPhrase: account.phrase.joined(separator: " ")),
+                wallet: OnboardingWallet(
+                    seedPhrase: phrase,
+                    derivablePath: derivablePath
+                ),
                 ethPublicKey: nil,
                 metadata: nil,
                 SecuritySetupState.initialState
@@ -431,6 +434,8 @@ extension RestoreWalletState: Step, Continuable {
                 deviceShare: deviceShare,
                 customResult: customResult
             ).step
+        case let .restoreSocial(.signInProgress(tokenID, email, deviceShare, customResult, backState), option: .device):
+            return 4 * 100 + RestoreSocialState.signInProgress(tokenID: tokenID, email: email, deviceShare: deviceShare, customResult: customResult, backState: backState).step
 
         // Custom
         case let .restoreCustom(restoreCustomState):
@@ -462,6 +467,10 @@ extension RestoreWalletState: Step, Continuable {
                 deviceShare: deviceShare,
                 customResult: customResult
             ).step
+        case let .restoreSocial(.signInProgress(tokenID, email, deviceShare, customResult, backState), option: .custom):
+            return 6 * 100 + RestoreSocialState.signInProgress(tokenID: tokenID, email: email, deviceShare: deviceShare, customResult: customResult, backState: backState).step
+        case let .restoreSocial(.signInProgress(tokenID, email, deviceShare, customResult, backState), option: .customDevice):
+            return 6 * 100 + RestoreSocialState.signInProgress(tokenID: tokenID, email: email, deviceShare: deviceShare, customResult: customResult, backState: backState).step
 
         case let .securitySetup(_, _, _, securitySetupState):
             return 7 * 100 + securitySetupState.step

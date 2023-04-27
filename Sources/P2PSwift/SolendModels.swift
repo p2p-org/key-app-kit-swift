@@ -12,12 +12,12 @@ public enum SolendEnvironment: String {
     case devnet
 }
 
-public struct SolendCollateralAccount: Codable {
+public struct SolendCollateralAccount: Codable, Equatable {
     public let address: String
     public let mint: String
 }
 
-public struct SolendMarketInfo: Codable {
+public struct SolendMarketInfo: Codable, Hashable, Equatable {
     public let currentSupply, depositLimit, supplyInterest: String
 
     enum CodingKeys: String, CodingKey {
@@ -25,19 +25,37 @@ public struct SolendMarketInfo: Codable {
         case depositLimit = "deposit_limit"
         case supplyInterest = "supply_interest"
     }
+    
+    init(currentSupply: String, depositLimit: String, supplyInterest: String) {
+        self.currentSupply = currentSupply
+        self.depositLimit = depositLimit
+        self.supplyInterest = supplyInterest
+    }
 }
 
-public struct SolendUserDeposit: Codable {
+public struct SolendUserDeposit: Codable, Hashable, Equatable {
     public let symbol: String
     public let depositedAmount: String
+    
+    public init(symbol: String, depositedAmount: String) {
+        self.symbol = symbol
+        self.depositedAmount = depositedAmount
+    }
 }
 
-public struct SolendDepositFee: Codable {
+public struct SolendFee: Codable, Equatable {
     public let fee: UInt64
     public let rent: UInt64
+    public let reserve: UInt64
+    
+    public init(fee: UInt64, rent: UInt64, reserve: UInt64) {
+        self.fee = fee
+        self.rent = rent
+        self.reserve = reserve
+    }
 }
 
-public struct SolendPayFeeInToken: Codable {
+public struct SolendPayFeeInToken: Codable, Equatable {
     public let senderAccount: String
     public let recipientAccount: String
     public let mint: String

@@ -76,6 +76,13 @@ public struct ParsedTransaction: Hashable {
     }
     return ""
   }
+    
+  public var mintAddress: String {
+    if let info = info as? Info {
+      return info.mintAddress ?? ""
+    }
+    return ""
+  }
 
   public var isProcessing: Bool {
     switch status {

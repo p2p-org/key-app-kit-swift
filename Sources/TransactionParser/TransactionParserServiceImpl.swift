@@ -21,6 +21,7 @@ public class TransactionParserServiceImpl: TransactionParserService {
     return .init(
       strategies: [
         OrcaSwapParseStrategy(apiClient: apiClient, tokensRepository: tokensRepository),
+        P2POrcaSwapWrapperParseStrategy(apiClient: apiClient, tokensRepository: tokensRepository),
         SerumSwapParseStrategy(tokensRepository: tokensRepository),
         CreationAccountParseStrategy(tokensRepository: tokensRepository),
         CloseAccountParseStrategy(tokensRepository: tokensRepository),

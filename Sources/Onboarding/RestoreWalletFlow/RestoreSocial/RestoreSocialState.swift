@@ -16,6 +16,7 @@ public enum RestoreSocialResult: Codable, Equatable {
 public enum RestoreSocialEvent {
     case signInDevice(socialProvider: SocialProvider)
     case signInCustom(socialProvider: SocialProvider)
+    case signInTorus(tokenID: TokenID, email: String, deviceShare: String?, customResult: APIGatewayRestoreWalletResult?)
     case back
     case start
     case requireCustom
@@ -33,11 +34,13 @@ public struct RestoreSocialContainer {
     let authService: SocialAuthService
 }
 
-public enum RestoreSocialState: Codable, State, Equatable {
+public indirect enum RestoreSocialState: Codable, State, Equatable {
+
     public typealias Event = RestoreSocialEvent
     public typealias Provider = RestoreSocialContainer
 
     case signIn(deviceShare: String, customResult: APIGatewayRestoreWalletResult?)
+    case signInProgress(tokenID: TokenID, email: String, deviceShare: String?, customResult: APIGatewayRestoreWalletResult?, backState: RestoreSocialState)
     case social(result: APIGatewayRestoreWalletResult)
     case notFoundDevice(data: RestoreSocialData, deviceShare: String, customResult: APIGatewayRestoreWalletResult?)
     case notFoundCustom(result: APIGatewayRestoreWalletResult, email: String)
@@ -61,12 +64,36 @@ public enum RestoreSocialState: Codable, State, Equatable {
         case let .signIn(deviceShare, customShare):
             switch event {
             case let .signInDevice(socialProvider):
-                return try await handleSignInDevice(
-                    deviceShare: deviceShare,
-                    customResult: customShare,
-                    socialProvider: socialProvider,
-                    provider: provider
-                )
+                let (value, email) = try await provider.authService.auth(type: socialProvider)
+                return .signInProgress(tokenID: TokenID(value: value, provider: socialProvider.rawValue), email: email, deviceShare: deviceShare, customResult: customShare, backState: .finish(.start))
+            default:
+                throw StateMachineError.invalidEvent
+            }
+
+        case let .signInProgress(tokenID, email, deviceShare, customResult, backState):
+            switch event {
+            case let .signInTorus(tokenID, email, deviceShare, customResult):
+                if let deviceShare = deviceShare {
+                    return try await handleSignInDevice(
+                        deviceShare: deviceShare,
+                        customResult: customResult,
+                        provider: provider,
+                        email: email,
+                        tokenID: tokenID
+                    )
+                } else if let customResult = customResult {
+                    return try await handleSignInCustom(
+                        result: customResult,
+                        provider: provider,
+                        tokenID: tokenID,
+                        email: email
+                    )
+                } else {
+                    throw StateMachineError.invalidEvent
+                }
+            case .back:
+                return backState
+
             default:
                 throw StateMachineError.invalidEvent
             }
@@ -74,8 +101,8 @@ public enum RestoreSocialState: Codable, State, Equatable {
         case let .social(result):
             switch event {
             case let .signInCustom(socialProvider):
-                return try await handleSignInCustom(result: result, socialProvider: socialProvider, provider: provider)
-
+                let (value, email) = try await provider.authService.auth(type: socialProvider)
+                return .signInProgress(tokenID: TokenID(value: value, provider: socialProvider.rawValue), email: email, deviceShare: nil, customResult: result, backState: .social(result: result))
             case .back:
                 throw StateMachineError.invalidEvent
 
@@ -83,11 +110,11 @@ public enum RestoreSocialState: Codable, State, Equatable {
                 throw StateMachineError.invalidEvent
             }
 
-        case let .notFoundCustom(result, _):
+        case let .notFoundCustom(result, email):
             switch event {
             case let .signInCustom(socialProvider):
-                return try await handleSignInCustom(result: result, socialProvider: socialProvider, provider: provider)
-
+                let (value, email) = try await provider.authService.auth(type: socialProvider)
+                return .signInProgress(tokenID: TokenID(value: value, provider: socialProvider.rawValue), email: email, deviceShare: nil, customResult: result, backState: .notFoundCustom(result: result, email: email))
             case .start:
                 return .finish(.start)
             default:
@@ -97,12 +124,8 @@ public enum RestoreSocialState: Codable, State, Equatable {
         case let .notFoundDevice(data, deviceShare, customShare):
             switch event {
             case let .signInDevice(socialProvider):
-                return try await handleSignInDevice(
-                    deviceShare: deviceShare,
-                    customResult: customShare,
-                    socialProvider: socialProvider,
-                    provider: provider
-                )
+                let (value, email) = try await provider.authService.auth(type: socialProvider)
+                return .signInProgress(tokenID: TokenID(value: value, provider: socialProvider.rawValue), email: email, deviceShare: deviceShare, customResult: customShare, backState: .notFoundDevice(data: data, deviceShare: deviceShare, customResult: customShare))
             case .start:
                 return .finish(.start)
             case .requireCustom:
@@ -114,12 +137,8 @@ public enum RestoreSocialState: Codable, State, Equatable {
         case let .notFoundSocial(data, deviceShare, customShare):
             switch event {
             case let .signInDevice(socialProvider):
-                return try await handleSignInDevice(
-                    deviceShare: deviceShare,
-                    customResult: customShare,
-                    socialProvider: socialProvider,
-                    provider: provider
-                )
+                let (value, email) = try await provider.authService.auth(type: socialProvider)
+                return .signInProgress(tokenID: TokenID(value: value, provider: socialProvider.rawValue), email: email, deviceShare: deviceShare, customResult: customShare, backState: .notFoundSocial(data: data, deviceShare: deviceShare, customResult: customShare))
             case .start:
                 return .finish(.start)
             case .requireCustom:
@@ -129,25 +148,7 @@ public enum RestoreSocialState: Codable, State, Equatable {
             }
 
         case let .expiredSocialTryAgain(result, socialProvider, _, deviceShare):
-            do {
-                let state = try await handleSignInCustom(
-                    result: result,
-                    socialProvider: socialProvider,
-                    provider: provider
-                )
-                if case .notFoundCustom(result, _) = state, let deviceShare = deviceShare {
-                    return try await handleSignInDevice(
-                        deviceShare: deviceShare,
-                        customResult: result,
-                        socialProvider: socialProvider,
-                        provider: provider
-                    )
-                } else {
-                    return state
-                }
-            } catch {
-                throw error
-            }
+            throw StateMachineError.invalidEvent
 
         case .finish:
             throw StateMachineError.invalidEvent
@@ -159,12 +160,10 @@ private extension RestoreSocialState {
     func handleSignInDevice(
         deviceShare: String,
         customResult: APIGatewayRestoreWalletResult?,
-        socialProvider: SocialProvider,
-        provider: RestoreSocialContainer
+        provider: RestoreSocialContainer,
+        email: String,
+        tokenID: TokenID
     ) async throws -> RestoreSocialState {
-        let (value, email) = try await provider.authService.auth(type: socialProvider)
-        let tokenID = TokenID(value: value, provider: socialProvider.rawValue)
-
         try await provider.tKeyFacade.initialize()
         let torusKey = try await provider.tKeyFacade.obtainTorusKey(tokenID: tokenID)
 
@@ -206,11 +205,10 @@ private extension RestoreSocialState {
 
     func handleSignInCustom(
         result: APIGatewayRestoreWalletResult,
-        socialProvider: SocialProvider,
-        provider: RestoreSocialContainer
+        provider: RestoreSocialContainer,
+        tokenID: TokenID,
+        email: String
     ) async throws -> RestoreSocialState {
-        let (value, email) = try await provider.authService.auth(type: socialProvider)
-        let tokenID = TokenID(value: value, provider: socialProvider.rawValue)
         do {
             try await provider.tKeyFacade.initialize()
             let torusKey = try await provider.tKeyFacade.obtainTorusKey(tokenID: tokenID)
@@ -231,6 +229,18 @@ private extension RestoreSocialState {
             throw error
         }
     }
+
+    func handleSignInProgress(
+        socialProvider: SocialProvider,
+        provider: RestoreSocialContainer,
+        deviceShare: String?,
+        customResult: APIGatewayRestoreWalletResult?,
+        backState: RestoreSocialState
+    ) async throws -> RestoreSocialState {
+        let (value, email) = try await provider.authService.auth(type: socialProvider)
+        let tokenID = TokenID(value: value, provider: socialProvider.rawValue)
+        return .signInProgress(tokenID: tokenID, email: email, deviceShare: deviceShare, customResult: customResult, backState: backState)
+    }
 }
 
 extension RestoreSocialState: Step, Continuable {
@@ -240,6 +250,8 @@ extension RestoreSocialState: Step, Continuable {
         switch self {
         case .signIn:
             return 1
+        case let .signInProgress(_, _, _, _, backState):
+            return backState.step + 1
         case .social:
             return 2
         case .notFoundCustom:
