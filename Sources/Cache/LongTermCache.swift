@@ -10,7 +10,7 @@ public final class LongTermCache<Key: Hashable, Value> {
     private let entryLifetime: TimeInterval
     private let keyTracker = KeyTracker()
 
-    init(
+    public init(
         dateProvider: @escaping () -> Date = Date.init,
         entryLifetime: TimeInterval = 12 * 60 * 60,
         maximumEntryCount: Int = 50
@@ -25,7 +25,7 @@ public final class LongTermCache<Key: Hashable, Value> {
         let date = dateProvider().addingTimeInterval(entryLifetime)
         let entry = Entry(key: key, value: value, expirationDate: date)
         wrapped.setObject(entry, forKey: WrappedKey(key))
-        keyTracker.keys.insert(key)
+        keyTracker.insert(key)
     }
 
     public func value(forKey key: Key) -> Value? {
@@ -67,14 +67,42 @@ private extension LongTermCache {
 
 public extension LongTermCache {
     final class KeyTracker: NSObject, NSCacheDelegate {
-        var keys = Set<Key>()
+        /// Thread-safe
+        private var _lock: UnsafeMutablePointer<os_unfair_lock>
+
+        private var keys = Set<Key>()
+
+        override public init() {
+            _lock = UnsafeMutablePointer<os_unfair_lock>.allocate(capacity: 1)
+            _lock.initialize(to: os_unfair_lock())
+
+            super.init()
+        }
+
+        deinit {
+            _lock.deallocate()
+        }
+
+        public func insert(_ key: Key) {
+            os_unfair_lock_lock(_lock)
+            keys.insert(key)
+            os_unfair_lock_unlock(_lock)
+        }
 
         public func cache(_: NSCache<AnyObject, AnyObject>, willEvictObject object: Any) {
             guard let entry = object as? Entry else {
                 return
             }
 
+            os_unfair_lock_lock(_lock)
             keys.remove(entry.key)
+            os_unfair_lock_unlock(_lock)
+        }
+
+        public func getKeys() -> Set<Key> {
+            os_unfair_lock_lock(_lock)
+            defer { os_unfair_lock_unlock(_lock) }
+            return Set(keys)
         }
     }
 
@@ -120,7 +148,7 @@ extension LongTermCache: Codable where Key: Codable, Value: Codable {
 
     public func encode(to encoder: Encoder) throws {
         var container = encoder.singleValueContainer()
-        try container.encode(keyTracker.keys.compactMap(entry))
+        try container.encode(keyTracker.getKeys().compactMap(entry))
     }
 }
 
@@ -156,6 +184,6 @@ public extension LongTermCache {
 
     func insert(_ entry: Entry) {
         wrapped.setObject(entry, forKey: WrappedKey(entry.key))
-        keyTracker.keys.insert(entry.key)
+        keyTracker.insert(entry.key)
     }
 }

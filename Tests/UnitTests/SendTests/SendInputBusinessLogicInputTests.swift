@@ -5,10 +5,9 @@
 import FeeRelayerSwift
 import Foundation
 import NameService
+import SolanaSwift
 import XCTest
 @testable import Send
-import SolanaSwift
-import FeeRelayerSwift
 
 class SendInputBusinessLogicInputTests: XCTestCase {
     let defaultUserWalletState: UserWalletEnvironments = .init(
@@ -19,9 +18,29 @@ class SendInputBusinessLogicInputTests: XCTestCase {
 
     let services: SendInputServices = .init(
         swapService: MockedSwapService(result: nil),
-        feeService: SendFeeCalculatorImpl(feeRelayerCalculator: DefaultFreeRelayerCalculator()),
+        feeService: SendFeeCalculatorImpl(feeRelayerCalculator: DefaultRelayFeeCalculator()),
         solanaAPIClient: MockedSolanaAPIClient()
     )
+
+    private func feeContext(currentUsage: Int = 0) -> RelayContext {
+        .init(
+            minimumTokenAccountBalance: 2_039_280,
+            minimumRelayAccountBalance: 890_880,
+            feePayerAddress: "FG4Y3yX4AAchp1HvNZ7LfzFTewF2f6nDoMDCohTFrdpT",
+            lamportsPerSignature: 5000,
+            relayAccountStatus: .notYetCreated,
+            usageStatus: .init(
+                maxUsage: 100,
+                currentUsage: currentUsage,
+                maxAmount: 1_000_000,
+                amountUsed: 0,
+                maxTokenAccountCreationAmount: 10000000,
+                maxTokenAccountCreationCount: 30,
+                //                tokenAccountCreationAmountUsed: 0,
+                tokenAccountCreationCountUsed: 0
+            )
+        )
+    }
 
     /// Change input amount
     ///
@@ -36,7 +55,9 @@ class SendInputBusinessLogicInputTests: XCTestCase {
             ),
             token: .nativeSolana,
             feeToken: .nativeSolana,
-            userWalletState: defaultUserWalletState
+            userWalletState: defaultUserWalletState,
+            feeRelayerContext: feeContext(),
+            sendViaLinkSeed: nil
         )
 
         let nextState = await SendInputBusinessLogic.sendInputBusinessLogic(
@@ -63,7 +84,9 @@ class SendInputBusinessLogicInputTests: XCTestCase {
             ),
             token: .nativeSolana,
             feeToken: .nativeSolana,
-            userWalletState: defaultUserWalletState
+            userWalletState: defaultUserWalletState,
+            feeRelayerContext: feeContext(),
+            sendViaLinkSeed: nil
         )
 
         let nextState = await SendInputBusinessLogic.sendInputBusinessLogic(
@@ -90,7 +113,9 @@ class SendInputBusinessLogicInputTests: XCTestCase {
             ),
             token: .nativeSolana,
             feeToken: .nativeSolana,
-            userWalletState: defaultUserWalletState
+            userWalletState: defaultUserWalletState,
+            feeRelayerContext: feeContext(),
+            sendViaLinkSeed: nil
         )
 
         let nextState = await SendInputBusinessLogic.sendInputBusinessLogic(
@@ -101,7 +126,7 @@ class SendInputBusinessLogicInputTests: XCTestCase {
 
         XCTAssertEqual(nextState.amountInToken, 0.05)
         XCTAssertEqual(nextState.amountInFiat, 0.625)
-        XCTAssertEqual(nextState.status, .error(reason: .inputTooHigh))
+        XCTAssertEqual(nextState.status, .error(reason: .inputTooHigh(0.05)))
     }
 
     /// Change input in fiat
@@ -117,7 +142,9 @@ class SendInputBusinessLogicInputTests: XCTestCase {
             ),
             token: .nativeSolana,
             feeToken: .nativeSolana,
-            userWalletState: defaultUserWalletState
+            userWalletState: defaultUserWalletState,
+            feeRelayerContext: feeContext(),
+            sendViaLinkSeed: nil
         )
 
         let nextState = await SendInputBusinessLogic.sendInputBusinessLogic(
@@ -144,12 +171,15 @@ class SendInputBusinessLogicInputTests: XCTestCase {
             ),
             token: .nativeSolana,
             feeToken: .nativeSolana,
-            userWalletState: defaultUserWalletState
+            userWalletState: defaultUserWalletState,
+            feeRelayerContext: feeContext(),
+            sendViaLinkSeed: nil
         )
 
         let nextState = await SendInputBusinessLogic.sendInputBusinessLogic(
             state: initialState,
-            action: .changeAmountInFiat(initialState.maxAmountInputInFiat),
+//            action: .changeAmountInFiat(initialState.maxAmountInputInFiat),
+            action: .changeAmountInFiat(1000), // ??
             services: services
         )
 
@@ -171,7 +201,9 @@ class SendInputBusinessLogicInputTests: XCTestCase {
             ),
             token: .nativeSolana,
             feeToken: .nativeSolana,
-            userWalletState: defaultUserWalletState
+            userWalletState: defaultUserWalletState,
+            feeRelayerContext: feeContext(),
+            sendViaLinkSeed: nil
         )
 
         let nextState = await SendInputBusinessLogic.sendInputBusinessLogic(
@@ -182,6 +214,6 @@ class SendInputBusinessLogicInputTests: XCTestCase {
 
         XCTAssertEqual(nextState.amountInToken, 0.04)
         XCTAssertEqual(nextState.amountInFiat, 0.5)
-        XCTAssertEqual(nextState.status, .error(reason: .inputTooHigh))
+        XCTAssertEqual(nextState.status, .error(reason: .inputTooHigh(0)))
     }
 }

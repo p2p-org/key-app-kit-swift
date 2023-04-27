@@ -3,8 +3,6 @@
 //
 
 import Foundation
-import RxSwift
-import RxConcurrency
 
 /// The class that merges many sources into one and represents as single stream of sequential transactions.
 ///
@@ -22,19 +20,16 @@ public class MultipleStreamSource: HistoryStreamSource {
 
     public func currentItem() async throws -> HistoryStreamSource.Result? {
         if buffer.isEmpty {
-            return try await Observable
-                .from(sources)
-                .flatMap { source -> Observable<HistoryStreamSource.Result?> in
-                    Observable.async { () -> HistoryStreamSource.Result? in try await source.currentItem() }
-                }
-                .reduce(nil) { (mostFirst: HistoryStreamSource.Result?, trx: HistoryStreamSource.Result?) -> HistoryStreamSource.Result? in
-                    guard let t1 = trx?.0.blockTime else { return mostFirst }
-                    guard let t2 = mostFirst?.0.blockTime else { return trx }
-                    if t1 > t2 { return trx }
-                    return mostFirst
-                }
-                .asSingle()
-                .value
+            var results = [HistoryStreamSource.Result?]()
+            for source in sources {
+                results.append(try await source.currentItem())
+            }
+            return results.reduce(nil) { (mostFirst: HistoryStreamSource.Result?, trx: HistoryStreamSource.Result?) -> HistoryStreamSource.Result? in
+                guard let t1 = trx?.0.blockTime else { return mostFirst }
+                guard let t2 = mostFirst?.0.blockTime else { return trx }
+                if t1 > t2 { return trx }
+                return mostFirst
+            }
         } else {
             return buffer.first
         }

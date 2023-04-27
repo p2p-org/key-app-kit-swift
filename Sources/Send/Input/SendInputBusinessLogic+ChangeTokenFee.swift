@@ -20,24 +20,32 @@ extension SendInputBusinessLogic {
         }
 
         do {
-            let fee = try await services.feeService.getFees(
-                from: state.token,
-                recipient: state.recipient,
-                recipientAdditionalInfo: state.recipientAdditionalInfo,
-                payingTokenMint: feeToken.address,
-                feeRelayerContext: feeRelayerContext
-            ) ?? .zero
+            let fee: FeeAmount
+            let feeInToken: FeeAmount
+            if state.isSendingViaLink {
+                fee = .zero
+                feeInToken = .zero
+            } else {
+                fee = try await services.feeService.getFees(
+                    from: state.token,
+                    recipient: state.recipient,
+                    recipientAdditionalInfo: state.recipientAdditionalInfo,
+                    payingTokenMint: feeToken.address,
+                    feeRelayerContext: feeRelayerContext
+                ) ?? .zero
+                feeInToken = (try? await services.swapService.calculateFeeInPayingToken(
+                    feeInSOL: fee,
+                    payingFeeTokenMint: try PublicKey(string: feeToken.address)
+                )) ?? .zero
+            }
 
-            let feeInToken = try? await services.swapService.calculateFeeInPayingToken(
-                feeInSOL: fee,
-                payingFeeTokenMint: try PublicKey(string: state.tokenFee.address)
-            ) ?? .zero
-
-            return state.copy(
+            let state = state.copy(
                 fee: fee,
                 tokenFee: feeToken,
                 feeInToken: feeInToken
             )
+
+            return await validateFee(state: state)
         } catch {
             return await handleFeeCalculationError(state: state, services: services, error: error)
         }

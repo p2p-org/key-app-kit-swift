@@ -12,13 +12,13 @@ public enum Amount: Equatable {
 }
 
 public struct SendInputActionInitializeParams: Equatable {
-    let feeRelayerContext: () async throws -> FeeRelayerContext
+    let feeRelayerContext: () async throws -> RelayContext
 
-    public init(feeRelayerContext: @escaping () async throws -> FeeRelayerContext) {
+    public init(feeRelayerContext: @escaping () async throws -> RelayContext) {
         self.feeRelayerContext = feeRelayerContext
     }
 
-    public init(feeRelayerContext: FeeRelayerContext) {
+    public init(feeRelayerContext: RelayContext) {
         self.feeRelayerContext = { feeRelayerContext }
     }
 
@@ -55,15 +55,17 @@ public struct SendInputState: Equatable {
     public enum ErrorReason: Equatable {
         case networkConnectionError(NSError)
 
-        case inputTooHigh
+        case inputTooHigh(Double)
         case inputTooLow(Double)
+        case insufficientFunds
+        case insufficientAmountToCoverFee
 
         case feeCalculationFailed
 
         case requiredInitialize
         case missingFeeRelayer
         case initializeFailed(NSError)
-
+        
         case unknown(NSError)
     }
 
@@ -74,12 +76,24 @@ public struct SendInputState: Equatable {
     }
 
     public struct RecipientAdditionalInfo: Equatable {
+        /// Destination wallet
+        public let walletAccount: BufferInfo<SolanaAddressInfo>?
+
         ///  Usable when recipient category is ``Recipient.Category.solanaAddress``
         public let splAccounts: [SolanaSwift.TokenAccount<AccountInfo>]
 
-        public init(splAccounts: [SolanaSwift.TokenAccount<AccountInfo>]) { self.splAccounts = splAccounts }
+        public init(
+            walletAccount: BufferInfo<SolanaAddressInfo>?,
+            splAccounts: [SolanaSwift.TokenAccount<AccountInfo>]
+        ) {
+            self.walletAccount = walletAccount
+            self.splAccounts = splAccounts
+        }
 
-        public static let zero: RecipientAdditionalInfo = .init(splAccounts: [])
+        public static let zero: RecipientAdditionalInfo = .init(
+            walletAccount: nil,
+            splAccounts: []
+        )
     }
 
     public let status: Status
@@ -92,11 +106,27 @@ public struct SendInputState: Equatable {
     public let amountInFiat: Double
     public let amountInToken: Double
 
+    /// Amount fee in SOL
     public let fee: FeeAmount
+
+    /// Selected fee token
     public let tokenFee: Token
+
+    /// Amount fee in Token (Converted from amount fee in SOL)
     public let feeInToken: FeeAmount
-    public let feeRelayerContext: FeeRelayerContext?
+
     public let minAmount: UInt64
+
+    /// Fee relayer context
+    ///
+    /// Current state for free transactions
+    public let feeRelayerContext: RelayContext?
+    
+    /// Send via link
+    public let sendViaLinkSeed: String?
+    public var isSendingViaLink: Bool {
+        sendViaLinkSeed != nil
+    }
 
     public init(
         status: Status,
@@ -109,8 +139,9 @@ public struct SendInputState: Equatable {
         fee: FeeAmount,
         tokenFee: Token,
         feeInToken: FeeAmount,
-        feeRelayerContext: FeeRelayerContext?,
+        feeRelayerContext: RelayContext?,
         minAmount: UInt64
+        sendViaLinkSeed: String?
     ) {
         self.status = status
         self.recipient = recipient
@@ -124,6 +155,7 @@ public struct SendInputState: Equatable {
         self.feeInToken = feeInToken
         self.feeRelayerContext = feeRelayerContext
         self.minAmount = minAmount
+        self.sendViaLinkSeed = sendViaLinkSeed
     }
 
     public static func zero(
@@ -133,7 +165,8 @@ public struct SendInputState: Equatable {
         token: Token,
         feeToken: Token,
         userWalletState: UserWalletEnvironments,
-        feeRelayerContext: FeeRelayerContext? = nil
+        feeRelayerContext: RelayContext? = nil,
+        sendViaLinkSeed: String?
     ) -> SendInputState {
         .init(
             status: status,
@@ -148,6 +181,7 @@ public struct SendInputState: Equatable {
             feeInToken: .zero,
             feeRelayerContext: feeRelayerContext,
             minAmount: .zero
+            sendViaLinkSeed: sendViaLinkSeed
         )
     }
 
@@ -162,8 +196,9 @@ public struct SendInputState: Equatable {
         fee: FeeAmount? = nil,
         tokenFee: Token? = nil,
         feeInToken: FeeAmount? = nil,
-        feeRelayerContext: FeeRelayerContext? = nil,
-        minAmount: UInt64? = nil
+        feeRelayerContext: RelayContext? = nil,
+        minAmount: UInt64? = nil,
+        sendViaLinkSeed: String?? = nil
     ) -> SendInputState {
         return .init(
             status: status ?? self.status,
@@ -178,6 +213,7 @@ public struct SendInputState: Equatable {
             feeInToken: feeInToken ?? self.feeInToken,
             feeRelayerContext: feeRelayerContext ?? self.feeRelayerContext,
             minAmount: minAmount ?? self.minAmount
+            sendViaLinkSeed: sendViaLinkSeed ?? self.sendViaLinkSeed
         )
     }
 }
@@ -188,14 +224,26 @@ public extension SendInputState {
             .lamports ?? 0
 
         if token.address == tokenFee.address {
-            balance = balance - feeInToken.total
+            if balance >= feeInToken.total {
+                balance = balance - feeInToken.total
+            } else {
+                return 0
+            }
         }
 
         return Double(balance) / pow(10, Double(token.decimals))
     }
 
-    var maxAmountInputInFiat: Double {
-        maxAmountInputInToken * (userWalletEnvironments.exchangeRate[token.symbol]?.value ?? 0)
+    var maxAmountInputInSOLWithLeftAmount: Double {
+        var maxAmountInToken = maxAmountInputInToken.toLamport(decimals: token.decimals)
+
+        guard
+            let context = feeRelayerContext, token.isNativeSOL,
+            maxAmountInToken >= context.minimumRelayAccountBalance
+        else { return .zero }
+
+        maxAmountInToken = maxAmountInToken - context.minimumRelayAccountBalance
+        return Double(maxAmountInToken) / pow(10, Double(token.decimals))
     }
 
     var sourceWallet: Wallet? {

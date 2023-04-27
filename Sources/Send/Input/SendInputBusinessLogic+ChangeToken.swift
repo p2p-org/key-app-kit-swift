@@ -21,44 +21,65 @@ extension SendInputBusinessLogic {
 
         do {
             // Update fee in SOL and source token
-            let fee = try await services.feeService.getFees(
-                from: token,
-                recipient: state.recipient,
-                recipientAdditionalInfo: state.recipientAdditionalInfo,
-                payingTokenMint: state.tokenFee.address,
-                feeRelayerContext: feeRelayerContext
-            ) ?? .zero
-
+            let fee: FeeAmount
+            if state.isSendingViaLink {
+                fee = .zero
+            } else {
+                fee = try await services.feeService.getFees(
+                    from: token,
+                    recipient: state.recipient,
+                    recipientAdditionalInfo: state.recipientAdditionalInfo,
+                    payingTokenMint: state.tokenFee.address,
+                    feeRelayerContext: feeRelayerContext
+                ) ?? .zero
+            }
+            
             var state = state.copy(
                 token: token,
                 fee: fee,
                 minAmount: .zero
             )
 
-            // Auto select fee  token
-            state = state.copy(
-                tokenFee: await autoSelectTokenFee(
+            // Auto select fee token
+            if state.isSendingViaLink {
+                // do nothing as fee is free
+            } else {
+                let feeInfo = await autoSelectTokenFee(
                     userWallets: state.userWalletEnvironments.wallets,
                     feeInSol: state.fee,
                     token: state.token,
                     services: services
                 )
-            )
+                
+                state = state.copy(
+                    tokenFee: feeInfo.token,
+                    feeInToken: fee == .zero ? .zero : feeInfo.fee
+                )
+            }
+            
+            state = await sendInputChangeAmountInToken(state: state, amount: state.amountInToken, services: services)
+            state = await validateFee(state: state)
 
-            // Update fee in token
-            let feeInToken = try? await services.swapService.calculateFeeInPayingToken(
-                feeInSOL: fee,
-                payingFeeTokenMint: try PublicKey(string: state.tokenFee.address)
-            ) ?? .zero
-
-            state = state.copy(
-                feeInToken: feeInToken
-            )
-
+            print(state.status)
             return state
         } catch {
             return state.copy(status: .error(reason: .unknown(error as NSError)))
         }
+    }
+
+    static func validateFee(state: SendInputState) async -> SendInputState {
+        guard state.fee != .zero else { return state }
+        guard let wallet: Wallet = state.userWalletEnvironments.wallets
+            .first(where: { (wallet: Wallet) in wallet.token.address == state.tokenFee.address })
+        else {
+            return state.copy(status: .error(reason: .insufficientAmountToCoverFee))
+        }
+
+        if state.feeInToken.total > (wallet.lamports ?? 0) {
+            return state.copy(status: .error(reason: .insufficientAmountToCoverFee))
+        }
+
+        return state
     }
 
     static func autoSelectTokenFee(
@@ -66,23 +87,43 @@ extension SendInputBusinessLogic {
         feeInSol: FeeAmount,
         token: Token,
         services: SendInputServices
-    ) async -> Token? {
-        let preferOrder: [String: Int] = ["usdc": 1, "usdt": 2, token.symbol: 3, "sol": 4]
+    ) async -> (token: Token, fee: FeeAmount?) {
+        var preferOrder = ["SOL": 2]
+        if !preferOrder.keys.contains(token.symbol) {
+            preferOrder[token.symbol] = 1
+        }
+
         let sortedWallets = userWallets.sorted { (lhs: Wallet, rhs: Wallet) -> Bool in
-            (preferOrder[lhs.token.symbol] ?? 5) < (preferOrder[rhs.token.symbol] ?? 5)
+            let lhsValue = (preferOrder[lhs.token.symbol] ?? 3)
+            let rhsValue = (preferOrder[rhs.token.symbol] ?? 3)
+
+            if lhsValue < rhsValue {
+                return true
+            } else if lhsValue == rhsValue {
+                let lhsCost = lhs.amount ?? 0
+                let rhsCost = rhs.amount ?? 0
+
+                return lhsCost < rhsCost
+            }
+
+            return false
         }
 
         for wallet in sortedWallets {
-            let feeInToken: FeeAmount = (try? await services.swapService.calculateFeeInPayingToken(
-                feeInSOL: feeInSol,
-                payingFeeTokenMint: try PublicKey(string: wallet.token.address)
-            )) ?? .zero
+            do {
+                let feeInToken: FeeAmount = (try await services.swapService.calculateFeeInPayingToken(
+                    feeInSOL: feeInSol,
+                    payingFeeTokenMint: try PublicKey(string: wallet.token.address)
+                )) ?? .zero
 
-            if feeInToken.total < (wallet.lamports ?? 0) {
-                return wallet.token
+                if feeInToken.total <= (wallet.lamports ?? 0) {
+                    return (wallet.token, feeInToken)
+                }
+            } catch {
+                continue
             }
         }
 
-        return .nativeSolana
+        return (.nativeSolana, feeInSol)
     }
 }

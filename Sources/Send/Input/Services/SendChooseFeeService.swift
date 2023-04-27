@@ -9,17 +9,17 @@ public protocol SendChooseFeeService {
 public final class SendChooseFeeServiceImpl: SendChooseFeeService {
 
     private let orcaSwap: OrcaSwapType
-    private let feeRelayer: FeeRelayer
+    private let feeRelayer: RelayService
     private let wallets: [Wallet]
 
-    public init(wallets: [Wallet], feeRelayer: FeeRelayer, orcaSwap: OrcaSwapType) {
+    public init(wallets: [Wallet], feeRelayer: RelayService, orcaSwap: OrcaSwapType) {
         self.wallets = wallets
         self.feeRelayer = feeRelayer
         self.orcaSwap = orcaSwap
     }
 
     public func getAvailableWalletsToPayFee(feeInSOL: FeeAmount) async throws -> [Wallet] {
-        var filteredWallets = wallets.filter { ($0.lamports ?? 0) > 0 }
+        let filteredWallets = wallets.filter { ($0.lamports ?? 0) > 0 }
         var feeWallets = [Wallet]()
         for element in filteredWallets {
             if element.token.address == PublicKey.wrappedSOLMint.base58EncodedString && (element.lamports ?? 0) >= feeInSOL.total {

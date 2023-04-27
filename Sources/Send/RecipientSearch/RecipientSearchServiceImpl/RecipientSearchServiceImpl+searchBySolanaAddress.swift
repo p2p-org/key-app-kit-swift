@@ -3,9 +3,11 @@ import SolanaSwift
 
 extension RecipientSearchServiceImpl {
     /// Search by solana address
-    func searchBySolanaAddress(_ address: PublicKey, env: UserWalletEnvironments,
-                               preChosenToken: Token?) async -> RecipientSearchResult
-    {
+    func searchBySolanaAddress(
+        _ address: PublicKey,
+        config: RecipientSearchConfig,
+        preChosenToken: Token?
+    ) async -> RecipientSearchResult {
         do {
             // get address
             let addressBase58 = address.base58EncodedString
@@ -14,13 +16,13 @@ extension RecipientSearchServiceImpl {
             var attributes: Recipient.Attribute = []
 
             // Check self-sending
-            if let wallet: Wallet = env.wallets
+            if let wallet: Wallet = config.wallets
                 .first(where: { (wallet: Wallet) in wallet.pubkey == addressBase58 })
             {
                 return .selfSendingError(recipient: .init(
                     address: addressBase58,
                     category: wallet.isNativeSOL ? .solanaAddress : .solanaTokenAddress(
-                        walletAddress: (try? PublicKey(string: env.wallets.first(where: \.isNativeSOL)?
+                        walletAddress: (try? PublicKey(string: config.wallets.first(where: \.isNativeSOL)?
                                 .pubkey)) ?? address,
                         token: wallet.token
                     ),
@@ -49,8 +51,8 @@ extension RecipientSearchServiceImpl {
                     ])
                 case let .splAccount(accountInfo):
                     // detect token
-                    let token = env.tokens
-                        .first(where: { $0.address == accountInfo.mint.base58EncodedString }) ??
+                    let token = config
+                        .tokens[accountInfo.mint.base58EncodedString] ??
                         .unsupported(mint: accountInfo.mint.base58EncodedString)
 
                     // detect category
@@ -59,13 +61,6 @@ extension RecipientSearchServiceImpl {
                         token: token
                     )
 
-                    // detect incompatibility with preChosenToken
-                    if let preChosenToken,
-                       preChosenToken.address != token.address
-                    {
-                        attributes.insert(.incompatibleWithpreChosenToken)
-                    }
-
                     // Detect token account
                     let recipient: Recipient = .init(
                         address: addressBase58,
@@ -73,9 +68,10 @@ extension RecipientSearchServiceImpl {
                         attributes: [.funds, attributes]
                     )
 
-                    if let wallet = env.wallets
+                    if let wallet = config.wallets
                         .first(where: { $0.token.address == accountInfo.mint.base58EncodedString }),
-                        (wallet.lamports ?? 0) > 0
+                        (wallet.lamports ?? 0) > 0,
+                        token.address == preChosenToken?.address ?? token.address
                     {
                         // User has the same token
                         return .ok([recipient])
@@ -85,19 +81,28 @@ extension RecipientSearchServiceImpl {
                     }
                 }
             } else {
-                // This account doesn't exits in blockchain
-                if try await checkBalanceForCreateAccount(env: env) {
+                let splAccounts = try await solanaClient.getTokenAccountsByOwner(
+                    pubkey: address.base58EncodedString,
+                    params: .init(
+                        mint: nil,
+                        programId: TokenProgram.id.base58EncodedString
+                    ),
+                    configs: .init(encoding: "base64")
+                )
+
+                if splAccounts.isEmpty {
+                    // This account doesn't exits in blockchain
                     return .ok([.init(
                         address: addressBase58,
                         category: .solanaAddress,
-                        attributes: [attributes]
+                        attributes: [.funds, attributes]
                     )])
                 } else {
-                    return .insufficientUserFunds(recipient: .init(
+                    return .ok([.init(
                         address: addressBase58,
                         category: .solanaAddress,
-                        attributes: [attributes]
-                    ))
+                        attributes: [.funds, attributes]
+                    )])
                 }
             }
         } catch let error as SolanaSwift.APIClientError {
