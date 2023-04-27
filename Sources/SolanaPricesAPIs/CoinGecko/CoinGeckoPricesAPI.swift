@@ -29,6 +29,23 @@ public class CoinGeckoPricesAPI: SolanaPricesAPI {
         }
     }
     
+    /// Simple price response data struct. [Contract: [Fiat: Price]]
+    public typealias SimplePriceResponse = [String: [String: Decimal]]
+    
+    /// Return simple price by id.
+    public func getSimplePrice(ids: [String], fiat: [String]) async throws -> SimplePriceResponse {
+        let idsStr = ids.joined(separator: ",")
+        let fiatStr = fiat.joined(separator: ",")
+        return try await get(urlString: endpoint + "/simple/price?ids=\(idsStr)&vs_currencies=\(fiatStr)")
+    }
+    
+    /// Return simple price by platform and contracts.
+    public func getSimpleTokenPrice(platform: String, contractAddresses: [String], fiat: [String]) async throws -> SimplePriceResponse {
+        let fiatStr = fiat.joined(separator: ",")
+        let contractAddressesStr = contractAddresses.joined(separator: ",")
+        return try await get(urlString: endpoint + "/simple/token_price/\(platform)?contract_addresses=\(contractAddressesStr)&vs_currencies=\(fiatStr)")
+    }
+    
     public func getHistoricalPrice(of coinName: String, fiat: String, period: Period) async throws -> [PriceRecord] {
         var geckoCoinsResult: [Coin] = await cache.value(forKey: CacheKeys.coinlist.rawValue) ?? []
         if geckoCoinsResult.isEmpty {
@@ -123,8 +140,8 @@ public class CoinGeckoPricesAPI: SolanaPricesAPI {
         var symbol: String
         var name: String
         var current_price: Double
-        var price_change_24h: Double
-        var price_change_percentage_24h: Double
+        var price_change_24h: Double?
+        var price_change_percentage_24h: Double?
     }
     
     enum HistoryResponsePriceData: Decodable {
