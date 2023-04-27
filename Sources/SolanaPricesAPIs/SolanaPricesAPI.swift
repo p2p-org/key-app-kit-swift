@@ -11,7 +11,7 @@ public protocol SolanaPricesAPI {
     ///   - coins: The coin tickets to fetch
     ///   - fiat: the fiat, for example: USD
     /// - Returns: The current prices
-    func getCurrentPrices(coins: [Token], toFiat fiat: String) async throws -> [String: CurrentPrice?]
+    func getCurrentPrices(coins: [Token], toFiat fiat: String) async throws -> [Token: CurrentPrice?]
     
     /// Get the historical prices of a given coin
     /// - Parameters:

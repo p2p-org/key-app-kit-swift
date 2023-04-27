@@ -3,10 +3,11 @@
 // found in the LICENSE file.
 
 import Foundation
+import KeyAppKitCore
 import NameService
+@testable import Send
 import SolanaSwift
 import XCTest
-@testable import Send
 
 class RecipientSearchUsernameTests: XCTestCase {
     let defaultInitialWalletEnvs: UserWalletEnvironments = .init(
@@ -27,6 +28,7 @@ class RecipientSearchUsernameTests: XCTestCase {
                 token: .usdt
             ),
         ],
+        ethereumAccount: nil,
         exchangeRate: [:],
         tokens: [.nativeSolana, .usdc, .usdt]
     )
@@ -74,12 +76,12 @@ class RecipientSearchUsernameTests: XCTestCase {
             .init(
                 address: "6uc8ajD1mwNPeLrgP17FKNpBgHifqaTkyYySgdfs9F26",
                 category: .username(name: "kirill", domain: "key"),
-                attributes: []
+                attributes: [.funds]
             ),
             .init(
                 address: "C3csVsasSxQFX1f8EuihZCx9nu6HK2uujRNACxWB7SzS",
                 category: .username(name: "kirill.p2p", domain: "sol"),
-                attributes: []
+                attributes: [.funds]
             ),
         ]))
     }
@@ -126,7 +128,7 @@ class RecipientSearchUsernameTests: XCTestCase {
             .init(
                 address: "T3csVsasSxQFX1f8EuihZCx9nu6HK2uujRNACxWB7SzS",
                 category: .username(name: "kirill.p2p", domain: "sol"),
-                attributes: []
+                attributes: [.funds]
             ),
             .init(
                 address: "6uc8ajD1mwNPeLrgP17FKNpBgHifqaTkyYySgdfs9F26",

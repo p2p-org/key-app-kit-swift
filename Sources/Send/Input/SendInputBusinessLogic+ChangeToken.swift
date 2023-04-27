@@ -21,35 +21,41 @@ extension SendInputBusinessLogic {
 
         do {
             // Update fee in SOL and source token
-            let fee = try await services.feeService.getFees(
-                from: token,
-                recipient: state.recipient,
-                recipientAdditionalInfo: state.recipientAdditionalInfo,
-                payingTokenMint: state.tokenFee.address,
-                feeRelayerContext: feeRelayerContext
-            ) ?? .zero
-
+            let fee: FeeAmount
+            if state.isSendingViaLink {
+                fee = .zero
+            } else {
+                fee = try await services.feeService.getFees(
+                    from: token,
+                    recipient: state.recipient,
+                    recipientAdditionalInfo: state.recipientAdditionalInfo,
+                    payingTokenMint: state.tokenFee.address,
+                    feeRelayerContext: feeRelayerContext
+                ) ?? .zero
+            }
+            
             var state = state.copy(
                 token: token,
                 fee: fee
             )
 
-            if fee == .zero {
-                state = state.copy(feeInToken: .zero)
+            // Auto select fee token
+            if state.isSendingViaLink {
+                // do nothing as fee is free
             } else {
-                // Auto select fee token
                 let feeInfo = await autoSelectTokenFee(
                     userWallets: state.userWalletEnvironments.wallets,
                     feeInSol: state.fee,
                     token: state.token,
                     services: services
                 )
+                
                 state = state.copy(
                     tokenFee: feeInfo.token,
-                    feeInToken: feeInfo.fee
+                    feeInToken: fee == .zero ? .zero : feeInfo.fee
                 )
             }
-
+            
             state = await sendInputChangeAmountInToken(state: state, amount: state.amountInToken, services: services)
             state = await validateFee(state: state)
 
@@ -89,16 +95,16 @@ extension SendInputBusinessLogic {
         let sortedWallets = userWallets.sorted { (lhs: Wallet, rhs: Wallet) -> Bool in
             let lhsValue = (preferOrder[lhs.token.symbol] ?? 3)
             let rhsValue = (preferOrder[rhs.token.symbol] ?? 3)
-            
-            if (lhsValue < rhsValue) {
+
+            if lhsValue < rhsValue {
                 return true
             } else if lhsValue == rhsValue {
                 let lhsCost = lhs.amount ?? 0
                 let rhsCost = rhs.amount ?? 0
-                
-                return  lhsCost < rhsCost
+
+                return lhsCost < rhsCost
             }
-            
+
             return false
         }
 

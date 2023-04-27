@@ -8,14 +8,14 @@ public protocol SendFeeCalculator: AnyObject {
         recipient: Recipient,
         recipientAdditionalInfo: SendInputState.RecipientAdditionalInfo,
         payingTokenMint: String?,
-        feeRelayerContext context: FeeRelayerContext
+        feeRelayerContext context: RelayContext
     ) async throws -> FeeAmount?
 }
 
 public class SendFeeCalculatorImpl: SendFeeCalculator {
-    private let feeRelayerCalculator: FeeRelayerCalculator
+    private let feeRelayerCalculator: RelayFeeCalculator
 
-    public init(feeRelayerCalculator: FeeRelayerCalculator) { self.feeRelayerCalculator = feeRelayerCalculator }
+    public init(feeRelayerCalculator: RelayFeeCalculator) { self.feeRelayerCalculator = feeRelayerCalculator }
 
     // MARK: - Fees calculator
 
@@ -24,7 +24,7 @@ public class SendFeeCalculatorImpl: SendFeeCalculator {
         recipient: Recipient,
         recipientAdditionalInfo: SendInputState.RecipientAdditionalInfo,
         payingTokenMint: String?,
-        feeRelayerContext context: FeeRelayerContext
+        feeRelayerContext context: RelayContext
     ) async throws -> FeeAmount? {
         var transactionFee: UInt64 = 0
 
@@ -77,7 +77,7 @@ public class SendFeeCalculatorImpl: SendFeeCalculator {
         if isFreeTransactionNotAvailableAndUserIsPayingWithSOL(context, payingTokenMint: payingTokenMint) {
             return expectedFee
         }
-
+        
         return try await feeRelayerCalculator.calculateNeededTopUpAmount(
             context,
             expectedFee: expectedFee,
@@ -86,7 +86,7 @@ public class SendFeeCalculatorImpl: SendFeeCalculator {
     }
 
     private func isFreeTransactionNotAvailableAndUserIsPayingWithSOL(
-        _ context: FeeRelayerContext,
+        _ context: RelayContext,
         payingTokenMint: String?
     ) -> Bool {
         let expectedTransactionFee = context.lamportsPerSignature * 2

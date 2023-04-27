@@ -59,7 +59,7 @@ public enum StateMachineError: Error {
 infix operator <-
 
 public extension StateMachine {
-    static public func <-(lhs: inout StateMachine, rhs: S.Event) async throws -> S {
+    static func <-(lhs: inout StateMachine, rhs: S.Event) async throws -> S {
         try await lhs.accept(event: rhs)
     }
 }
