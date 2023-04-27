@@ -11,4 +11,7 @@ public protocol Info {
   
   /// The token symbol.
   var symbol: String? { get }
+  
+  /// Token address
+  var mintAddress: String? { get }
 }

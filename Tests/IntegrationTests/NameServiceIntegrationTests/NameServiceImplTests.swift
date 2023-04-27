@@ -9,21 +9,21 @@ import XCTest
 class NameServiceImplTests: XCTestCase {
     let cache: NameServiceCacheType = TmpCache()
     lazy var service: NameService = NameServiceImpl(
-        endpoint: "https://fee-relayer.solana.p2p.org/name_register",
+        endpoint: "https://name-register.key.app",
         cache: cache
     )
 
     func testGetName() async throws {
-        let name = try await service.getName("9RvNi4pPm8euMuPGPNQVjR8wWTPawZMvqfqA2QQmwVHC")
-        XCTAssertEqual(name, "amarannta-test")
+        let name = try await service.getName("6uc8ajD1mwNPeLrgP17FKNpBgHifqaTkyYySgdfs9F26", withTLD: false)
+        XCTAssertEqual(name, "kirill")
 
-        let cachedValue = try await service.getName("9RvNi4pPm8euMuPGPNQVjR8wWTPawZMvqfqA2QQmwVHC")
-        XCTAssertEqual(cachedValue, "amarannta-test")
+        let cachedValue = cache.getName(for: "6uc8ajD1mwNPeLrgP17FKNpBgHifqaTkyYySgdfs9F26")?.name
+        XCTAssertEqual(cachedValue, "kirill")
     }
 
     func testGetOwnerAddress() async throws {
-        let publicKey = try await service.getOwnerAddress("alla")
-        XCTAssertEqual(publicKey, "6PvJNsAoKJiyEaHEdFg3qEMGjWgR7tR6UmXi2imfPZS7")
+        let publicKey = try await service.getOwnerAddress("kirill")
+        XCTAssertEqual(publicKey, "6uc8ajD1mwNPeLrgP17FKNpBgHifqaTkyYySgdfs9F26")
     }
 
     func testGetOwnerFailedAddress() async throws {
@@ -32,7 +32,7 @@ class NameServiceImplTests: XCTestCase {
     }
 
     func testGetOwners() async throws {
-        let publicKeys = try await service.getOwners("all")
+        let publicKeys = try await service.getOwners("kirill")
         XCTAssertTrue(!publicKeys.isEmpty)
     }
 

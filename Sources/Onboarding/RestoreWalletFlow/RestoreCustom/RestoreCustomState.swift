@@ -176,17 +176,16 @@ public enum RestoreCustomState: Codable, State, Equatable {
                 }
 
             case .resendOTP:
-                attempt.value.attempt = attempt.value.attempt + 1
-                attempt.value.until = Date().addingTimeInterval(attempt.value.intervalForCurrentAttempt())
-
                 do {
-                    return try await sendOTP(
+                    let state = try await sendOTP(
                         phone: phone,
                         solPrivateKey: solPrivateKey,
                         social: social,
                         attempt: attempt,
                         provider: provider
                     )
+                    attempt.value = attempt.value.incremented()
+                    return state
                 }
                 catch let error as APIGatewayCooldownError {
                     return .block(until: Date() + error.cooldown, social: social, reason: .blockResend)

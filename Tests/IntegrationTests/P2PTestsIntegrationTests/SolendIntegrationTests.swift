@@ -73,7 +73,6 @@ class SolendIntegrationTests: XCTestCase {
     //         feePayerAddress: "FG4Y3yX4AAchp1HvNZ7LfzFTewF2f6nDoMDCohTFrdpT"
     //     )
     //
-    //     print(result)
     //     XCTAssertEqual(result.count, 1)
     // }
     //

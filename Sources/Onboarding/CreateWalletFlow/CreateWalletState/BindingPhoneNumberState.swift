@@ -115,12 +115,7 @@ public enum BindingPhoneNumberState: Codable, State, Equatable {
                     )
 
                     return .enterOTP(
-                        resendCounter: .init(
-                            .init(
-                                attempt: 0,
-                                until: Date().addingTimeInterval(TimeInterval(EnterSMSCodeCountdownLegs[0]))
-                            )
-                        ),
+                        resendCounter: .init(.zero()),
                         channel: channel,
                         phoneNumber: phoneNumber,
                         data: data
@@ -189,9 +184,6 @@ public enum BindingPhoneNumberState: Codable, State, Equatable {
 
                 return .finish(.success(metadata: metaData))
             case .resendOTP:
-                resendCounter.value.attempt = resendCounter.value.attempt + 1
-                resendCounter.value.until = Date().addingTimeInterval(resendCounter.value.intervalForCurrentAttempt())
-
                 let account = try await Account(
                     phrase: data.seedPhrase.components(separatedBy: " "),
                     network: .mainnetBeta,
@@ -206,6 +198,7 @@ public enum BindingPhoneNumberState: Codable, State, Equatable {
                         channel: channel,
                         timestampDevice: Date()
                     )
+                    resendCounter.value = resendCounter.value.incremented()
                     return currentState
                 } catch let error as APIGatewayError {
                     switch error._code {

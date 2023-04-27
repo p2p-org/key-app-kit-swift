@@ -96,7 +96,7 @@ public class OrcaSwapParseStrategy: TransactionParseStrategy {
     )
 
     let destinationWallet = Wallet(
-      pubkey: try? PublicKey(string: sourceInfo.source).base58EncodedString,
+      pubkey: try? PublicKey(string: destinationInfo.destination).base58EncodedString,
       lamports: destinationAccount?.lamports,
       token: destinationToken
     )
